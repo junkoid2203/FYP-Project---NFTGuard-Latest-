@@ -1,0 +1,476 @@
+{
+  "generated_at": "2026-07-27T18:54:17",
+  "source": "Alchemy getNFTSales \u00b7 Ethereum mainnet (every row verifiable on Etherscan)",
+  "dataset": {
+    "n_sales": 2208,
+    "collections": [
+      "Azuki",
+      "BoredApeYachtClub"
+    ],
+    "date_from": "2023-07-04",
+    "date_to": "2024-04-30"
+  },
+  "metrics": {
+    "accuracy": 0.831,
+    "roc_auc": 0.903,
+    "precision": 0.619,
+    "recall": 0.836,
+    "f1": 0.711,
+    "cv_auc": 0.868,
+    "cv_std": 0.039,
+    "train_acc": 0.909,
+    "test_acc": 0.831,
+    "best_params": {
+      "max_depth": null,
+      "min_samples_leaf": 3,
+      "n_estimators": 200
+    },
+    "n_test": 663,
+    "n_wash": 551,
+    "n_legit": 1657
+  },
+  "confusion": {
+    "tn": 413,
+    "fp": 85,
+    "fn": 27,
+    "tp": 138
+  },
+  "feature_importance": [
+    [
+      "seller_activity",
+      0.204
+    ],
+    [
+      "price_z",
+      0.198
+    ],
+    [
+      "buyer_activity",
+      0.196
+    ],
+    [
+      "price_eth",
+      0.183
+    ],
+    [
+      "mkt_code",
+      0.173
+    ],
+    [
+      "token_gap_h",
+      0.045
+    ]
+  ],
+  "flagged": [
+    {
+      "collection": "BoredApeYachtClub",
+      "tokenId": "6608",
+      "buyer": "0x97d1dbf04364163b3b26efba2f704dec1e2ffac4",
+      "seller": "0x97d1dbf04364163b3b26efba2f704dec1e2ffac4",
+      "price_eth": 17.062,
+      "pair_trade_count": 8,
+      "is_self_transfer": 1,
+      "marketplace": "seaport",
+      "txhash": "0x89c73bbc2e4244ebe9976ca79585d41f789d6489cc6aa84cd3ccc4973c305994",
+      "date": "2024-03-06"
+    },
+    {
+      "collection": "BoredApeYachtClub",
+      "tokenId": "3390",
+      "buyer": "0x97d1dbf04364163b3b26efba2f704dec1e2ffac4",
+      "seller": "0x97d1dbf04364163b3b26efba2f704dec1e2ffac4",
+      "price_eth": 17.014,
+      "pair_trade_count": 8,
+      "is_self_transfer": 1,
+      "marketplace": "seaport",
+      "txhash": "0x96595f6546062aa831e6aec2be6dea5da759d19c67d461744786e8dbb8856584",
+      "date": "2024-03-06"
+    },
+    {
+      "collection": "BoredApeYachtClub",
+      "tokenId": "7331",
+      "buyer": "0x97d1dbf04364163b3b26efba2f704dec1e2ffac4",
+      "seller": "0x97d1dbf04364163b3b26efba2f704dec1e2ffac4",
+      "price_eth": 17.014,
+      "pair_trade_count": 8,
+      "is_self_transfer": 1,
+      "marketplace": "seaport",
+      "txhash": "0x01387734d441c92a45acdf07b0a14f8e883393080ff3b0bf3b14bdfa20e07fef",
+      "date": "2024-03-06"
+    },
+    {
+      "collection": "BoredApeYachtClub",
+      "tokenId": "8163",
+      "buyer": "0x97d1dbf04364163b3b26efba2f704dec1e2ffac4",
+      "seller": "0x97d1dbf04364163b3b26efba2f704dec1e2ffac4",
+      "price_eth": 16.937,
+      "pair_trade_count": 8,
+      "is_self_transfer": 1,
+      "marketplace": "seaport",
+      "txhash": "0x44d13b40c8b8f1f7b16a16e9235826508a97a9bd9e02fd58dd681869fce887f0",
+      "date": "2024-03-06"
+    },
+    {
+      "collection": "BoredApeYachtClub",
+      "tokenId": "80",
+      "buyer": "0x97d1dbf04364163b3b26efba2f704dec1e2ffac4",
+      "seller": "0x97d1dbf04364163b3b26efba2f704dec1e2ffac4",
+      "price_eth": 16.916,
+      "pair_trade_count": 8,
+      "is_self_transfer": 1,
+      "marketplace": "seaport",
+      "txhash": "0x60505c9590fa2442fe93c9bcd7c97920f5ed2c2beef052aa3a3b93585d58dbd1",
+      "date": "2024-03-06"
+    },
+    {
+      "collection": "BoredApeYachtClub",
+      "tokenId": "765",
+      "buyer": "0x97d1dbf04364163b3b26efba2f704dec1e2ffac4",
+      "seller": "0x97d1dbf04364163b3b26efba2f704dec1e2ffac4",
+      "price_eth": 16.575,
+      "pair_trade_count": 8,
+      "is_self_transfer": 1,
+      "marketplace": "seaport",
+      "txhash": "0x42e4ce05bc8baa1eaf6895514c742314a464a7c62353b562df9567ffbb5c635c",
+      "date": "2024-03-06"
+    },
+    {
+      "collection": "BoredApeYachtClub",
+      "tokenId": "7697",
+      "buyer": "0x97d1dbf04364163b3b26efba2f704dec1e2ffac4",
+      "seller": "0x97d1dbf04364163b3b26efba2f704dec1e2ffac4",
+      "price_eth": 12.735,
+      "pair_trade_count": 8,
+      "is_self_transfer": 1,
+      "marketplace": "seaport",
+      "txhash": "0x22f4fd84f2433678d8dc1eb8f8a61315d5bcde1bd91e23e746d73fc1e7d59f50",
+      "date": "2024-03-12"
+    },
+    {
+      "collection": "BoredApeYachtClub",
+      "tokenId": "8396",
+      "buyer": "0x97d1dbf04364163b3b26efba2f704dec1e2ffac4",
+      "seller": "0x97d1dbf04364163b3b26efba2f704dec1e2ffac4",
+      "price_eth": 12.593,
+      "pair_trade_count": 8,
+      "is_self_transfer": 1,
+      "marketplace": "seaport",
+      "txhash": "0x876a4f53985a0a5ee180e46edb7390b19219d30c5467d8840805bbcb011161da",
+      "date": "2024-03-12"
+    },
+    {
+      "collection": "BoredApeYachtClub",
+      "tokenId": "9528",
+      "buyer": "0x17d7a5754304ffc13c82ebee0aa1cd3b21cc5069",
+      "seller": "0x17d7a5754304ffc13c82ebee0aa1cd3b21cc5069",
+      "price_eth": 28.322,
+      "pair_trade_count": 5,
+      "is_self_transfer": 1,
+      "marketplace": "seaport",
+      "txhash": "0x6f880e2c51825ccd82785e3cd7f209caa968df44e21dac8e7eaa7430fdead55e",
+      "date": "2023-11-24"
+    },
+    {
+      "collection": "BoredApeYachtClub",
+      "tokenId": "5488",
+      "buyer": "0xfaf296adf44b0eaf8d4223ae543d03d249caeabe",
+      "seller": "0xfaf296adf44b0eaf8d4223ae543d03d249caeabe",
+      "price_eth": 23.741,
+      "pair_trade_count": 5,
+      "is_self_transfer": 1,
+      "marketplace": "seaport",
+      "txhash": "0xe6f3cd647d9444380a030ef155e87f3e750cdedb679a00d1bec365acb2788e5a",
+      "date": "2023-10-14"
+    },
+    {
+      "collection": "BoredApeYachtClub",
+      "tokenId": "9126",
+      "buyer": "0xfaf296adf44b0eaf8d4223ae543d03d249caeabe",
+      "seller": "0xfaf296adf44b0eaf8d4223ae543d03d249caeabe",
+      "price_eth": 23.74,
+      "pair_trade_count": 5,
+      "is_self_transfer": 1,
+      "marketplace": "seaport",
+      "txhash": "0x0ba7cf53dbd5310403346eb7e20b73b3656dc1a9bdad79d212f7eb6d8b789267",
+      "date": "2023-10-14"
+    },
+    {
+      "collection": "BoredApeYachtClub",
+      "tokenId": "8199",
+      "buyer": "0xfaf296adf44b0eaf8d4223ae543d03d249caeabe",
+      "seller": "0xfaf296adf44b0eaf8d4223ae543d03d249caeabe",
+      "price_eth": 23.702,
+      "pair_trade_count": 5,
+      "is_self_transfer": 1,
+      "marketplace": "seaport",
+      "txhash": "0x5b2deb4320124405e4e53b21af015ef06318b3779edd44cad644ddd625023d89",
+      "date": "2023-10-14"
+    },
+    {
+      "collection": "BoredApeYachtClub",
+      "tokenId": "638",
+      "buyer": "0xfaf296adf44b0eaf8d4223ae543d03d249caeabe",
+      "seller": "0xfaf296adf44b0eaf8d4223ae543d03d249caeabe",
+      "price_eth": 23.685,
+      "pair_trade_count": 5,
+      "is_self_transfer": 1,
+      "marketplace": "seaport",
+      "txhash": "0xed583cc97847c882acd1b24b2ee44c81bfe695a08e2175e243741b29af12f7ad",
+      "date": "2023-10-14"
+    },
+    {
+      "collection": "BoredApeYachtClub",
+      "tokenId": "4463",
+      "buyer": "0xfaf296adf44b0eaf8d4223ae543d03d249caeabe",
+      "seller": "0xfaf296adf44b0eaf8d4223ae543d03d249caeabe",
+      "price_eth": 23.122,
+      "pair_trade_count": 5,
+      "is_self_transfer": 1,
+      "marketplace": "seaport",
+      "txhash": "0xc2b3e4903399ed9e9d5c2efcef95f75936557a2dd13a9dfcb3221736f32c9ca0",
+      "date": "2023-10-14"
+    },
+    {
+      "collection": "BoredApeYachtClub",
+      "tokenId": "9694",
+      "buyer": "0xa21a744957e0a483cfc2cebd312c2aeb24d53397",
+      "seller": "0xa21a744957e0a483cfc2cebd312c2aeb24d53397",
+      "price_eth": 21.345,
+      "pair_trade_count": 5,
+      "is_self_transfer": 1,
+      "marketplace": "seaport",
+      "txhash": "0xd0ca89d80ae9e1ccd3f95f9e928f3a07a5e3919dae71986ede88f86aadd5cef1",
+      "date": "2024-02-17"
+    }
+  ],
+  "marketplaces": {
+    "seaport": 1688,
+    "x2y2": 482,
+    "blur": 38
+  },
+  "sales_over_time": [
+    [
+      "2023-07-09",
+      121
+    ],
+    [
+      "2023-07-16",
+      37
+    ],
+    [
+      "2023-07-23",
+      43
+    ],
+    [
+      "2023-07-30",
+      39
+    ],
+    [
+      "2023-08-06",
+      33
+    ],
+    [
+      "2023-08-13",
+      44
+    ],
+    [
+      "2023-08-20",
+      86
+    ],
+    [
+      "2023-08-27",
+      128
+    ],
+    [
+      "2023-09-03",
+      60
+    ],
+    [
+      "2023-09-10",
+      39
+    ],
+    [
+      "2023-09-17",
+      30
+    ],
+    [
+      "2023-09-24",
+      35
+    ],
+    [
+      "2023-10-01",
+      43
+    ],
+    [
+      "2023-10-08",
+      57
+    ],
+    [
+      "2023-10-15",
+      58
+    ],
+    [
+      "2023-10-22",
+      81
+    ],
+    [
+      "2023-10-29",
+      75
+    ],
+    [
+      "2023-11-05",
+      65
+    ],
+    [
+      "2023-11-12",
+      97
+    ],
+    [
+      "2023-11-19",
+      53
+    ],
+    [
+      "2023-11-26",
+      66
+    ],
+    [
+      "2023-12-03",
+      41
+    ],
+    [
+      "2023-12-10",
+      35
+    ],
+    [
+      "2023-12-17",
+      36
+    ],
+    [
+      "2023-12-24",
+      39
+    ],
+    [
+      "2023-12-31",
+      50
+    ],
+    [
+      "2024-01-07",
+      78
+    ],
+    [
+      "2024-01-14",
+      55
+    ],
+    [
+      "2024-01-21",
+      52
+    ],
+    [
+      "2024-01-28",
+      31
+    ],
+    [
+      "2024-02-04",
+      33
+    ],
+    [
+      "2024-02-11",
+      40
+    ],
+    [
+      "2024-02-18",
+      43
+    ],
+    [
+      "2024-02-25",
+      38
+    ],
+    [
+      "2024-03-03",
+      36
+    ],
+    [
+      "2024-03-10",
+      83
+    ],
+    [
+      "2024-03-17",
+      98
+    ],
+    [
+      "2024-03-24",
+      59
+    ],
+    [
+      "2024-03-31",
+      36
+    ],
+    [
+      "2024-04-07",
+      12
+    ],
+    [
+      "2024-04-14",
+      7
+    ],
+    [
+      "2024-04-21",
+      9
+    ],
+    [
+      "2024-04-28",
+      5
+    ],
+    [
+      "2024-05-05",
+      2
+    ]
+  ],
+  "price_hist": {
+    "edges": [
+      0.01,
+      3.51,
+      7.01,
+      10.51,
+      14.01,
+      17.51,
+      21.0,
+      24.5,
+      28.0,
+      31.5,
+      35.0,
+      38.5,
+      42.0,
+      45.5,
+      49.0,
+      52.5,
+      56.0,
+      59.5,
+      63.0,
+      66.5,
+      70.0
+    ],
+    "counts": [
+      92,
+      724,
+      218,
+      95,
+      87,
+      58,
+      175,
+      292,
+      213,
+      125,
+      33,
+      35,
+      12,
+      9,
+      2,
+      6,
+      0,
+      3,
+      1,
+      28
+    ]
+  }
+}

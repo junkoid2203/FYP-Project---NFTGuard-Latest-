@@ -1,0 +1,22 @@
+node_modules/
+.env
+cache/
+artifacts/
+coverage/
+typechain-types/
+
+# Python ML environment & caches (THE big one — PyTorch etc., ~1GB)
+ml/.venv/
+.venv/
+__pycache__/
+*.pyc
+
+# logs & OS files
+*.log
+.DS_Store
+Thumbs.db
+
+# editor / local tooling (not part of the project)
+.claude/
+.vscode/
+.idea/

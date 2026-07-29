@@ -1,0 +1,45 @@
+{
+  "_comment": "All heuristic thresholds, penalties and score weights - configurable per non-functional requirement 5 (Maintainability). Change values here, no code change needed.",
+  "washTrade": {
+    "loopPairMinCount": 3,
+    "penalty": 45
+  },
+  "abnormalFrequency": {
+    "windowMinutes": 60,
+    "baselineMultiplier": 3,
+    "minCount": 4,
+    "penalty": 30
+  },
+  "selfTransfer": {
+    "penalty": 80,
+    "perExtra": 10
+  },
+  "rapidPriceEscalation": {
+    "minIncreasePct": 0.5,
+    "windowMinutes": 60,
+    "penalty": 30
+  },
+  "priceAnomaly": {
+    "zScoreThreshold": 2.5,
+    "basePenalty": 40,
+    "perAnomaly": 15,
+    "perExcessZ": 10
+  },
+  "authenticity": {
+    "nonCompliantPenalty": 70,
+    "tamperedPenalty": 80,
+    "duplicatePenalty": 50
+  },
+  "duplicateDetection": {
+    "phashMaxDistance": 0.15
+  },
+  "riskWeights": {
+    "authenticity": 0.3,
+    "fraud": 0.5,
+    "priceAnomaly": 0.2
+  },
+  "riskLevels": {
+    "mediumFrom": 40,
+    "highFrom": 70
+  }
+}

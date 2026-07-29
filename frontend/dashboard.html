@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NFTGuard — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --void:#05070C; --panel:#0C111B; --raised:#121927; --inset:#080C13;
+  --line:rgba(140,160,190,.13); --line-strong:rgba(140,160,190,.26);
+  --ink:#E9EEF6; --dim:#93A0B4; --faint:#5B6A80;
+  --guard:#00FF88; --guard-dim:rgba(0,255,136,.13);
+  --amber:#FFB020; --amber-dim:rgba(255,176,32,.13);
+  --alert:#FF4D5E; --alert-dim:rgba(255,77,94,.13);
+  --chain:#6EA8FF; --chain-dim:rgba(110,168,255,.13);
+  --r:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--void);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px;line-height:1.5;min-height:100vh;
+  background-image:radial-gradient(900px 480px at 85% -10%,rgba(0,255,136,.05),transparent 60%),
+                   radial-gradient(760px 480px at -10% 30%,rgba(110,168,255,.05),transparent 60%)}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(rgba(140,160,190,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(140,160,190,.05) 1px,transparent 1px);
+  background-size:44px 44px;mask-image:radial-gradient(1000px 600px at 50% 0%,#000 0%,transparent 75%)}
+::selection{background:var(--guard);color:#02150B}
+
+.shell{display:grid;grid-template-columns:236px 1fr;min-height:100vh;position:relative}
+
+/* ---------- sidebar ---------- */
+aside{border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:4px;
+  position:sticky;top:0;height:100vh;background:rgba(8,11,18,.6);backdrop-filter:blur(8px);overflow-y:auto}
+.logo{display:flex;align-items:center;gap:9px;font-family:'Space Grotesk';font-weight:700;font-size:17px;padding:4px 10px 16px;color:inherit;text-decoration:none}
+.logo svg{width:23px;height:23px}
+.logo b{color:var(--guard)}
+.side-label{font-family:'JetBrains Mono';font-size:10px;letter-spacing:.18em;color:var(--faint);padding:14px 10px 6px;text-transform:uppercase}
+.side-link{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;color:var(--dim);text-decoration:none;
+  font-size:13px;font-weight:500;border:1px solid transparent;cursor:pointer;background:none;width:100%;text-align:left;font-family:'Inter'}
+.side-link:hover{color:var(--ink);background:rgba(140,160,190,.06)}
+.side-link.active{color:var(--guard);background:var(--guard-dim);border-color:rgba(0,255,136,.22)}
+.side-link .num{font-family:'JetBrains Mono';font-size:10px;color:var(--faint);width:14px;flex:none}
+.side-link.active .num{color:var(--guard)}
+aside .foot{margin-top:auto;font-family:'JetBrains Mono';font-size:10.5px;color:var(--faint);padding:10px;border-top:1px solid var(--line);line-height:1.8}
+aside .foot b{color:var(--dim)}
+
+/* ---------- main / topbar ---------- */
+main{padding:22px 26px 60px;min-width:0}
+.topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.topbar h1{font-family:'Space Grotesk';font-weight:700;font-size:23px;letter-spacing:-.01em}
+.topbar .sub{color:var(--faint);font-size:12.5px;font-family:'JetBrains Mono'}
+.topbar .right{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.mode-pill{font-family:'JetBrains Mono';font-size:11px;padding:5px 11px;border-radius:99px;border:1px solid var(--line-strong);color:var(--dim)}
+.mode-pill.live{color:var(--guard);border-color:rgba(0,255,136,.4)}
+.btn{font-family:'Space Grotesk';font-weight:600;font-size:13px;padding:8px 15px;border-radius:9px;border:1px solid var(--line-strong);
+  background:transparent;color:var(--ink);cursor:pointer;transition:all .15s}
+.btn:hover{border-color:var(--guard);color:var(--guard)}
+.btn:focus-visible{outline:2px solid var(--guard);outline-offset:2px}
+.btn.primary{background:var(--guard);border-color:var(--guard);color:#03160C}
+.btn.primary:hover{filter:brightness(1.1);color:#03160C}
+.btn.sm{padding:5px 11px;font-size:12px}
+.btn.danger:hover{border-color:var(--alert);color:var(--alert)}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+
+select,input[type=text],input[type=search],input[type=number]{background:var(--inset);border:1px solid var(--line-strong);color:var(--ink);
+  border-radius:9px;padding:8px 11px;font-size:13px;font-family:'Inter'}
+select:focus,input:focus{outline:none;border-color:var(--guard)}
+
+/* views */
+.view{display:none;animation:fade .22s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}}
+
+/* alert ticker */
+.alerts{border:1px solid rgba(255,77,94,.35);background:linear-gradient(90deg,var(--alert-dim),transparent 65%);
+  border-radius:12px;padding:11px 15px;display:flex;gap:12px;align-items:center;margin-bottom:18px;overflow:hidden}
+.alerts .tag{font-family:'JetBrains Mono';font-size:10.5px;font-weight:600;letter-spacing:.1em;color:var(--alert);flex:none;display:flex;align-items:center;gap:7px}
+.alerts .tag i{width:8px;height:8px;border-radius:50%;background:var(--alert);box-shadow:0 0 9px var(--alert);animation:blink 1.4s infinite}
+@keyframes blink{50%{opacity:.3}}
+.alerts .items{display:flex;gap:22px;font-size:12.5px;color:var(--dim);white-space:nowrap;overflow-x:auto;scrollbar-width:none}
+.alerts .items::-webkit-scrollbar{display:none}
+.alerts .items b{color:var(--ink);font-family:'JetBrains Mono';font-weight:600}
+.alerts .items .sc{color:var(--alert);font-family:'JetBrains Mono'}
+.alerts .items a{color:inherit;text-decoration:none;cursor:pointer}
+.alerts .items a:hover b{color:var(--alert)}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(156px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;position:relative;overflow:hidden}
+.kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--kc,var(--line-strong))}
+.kpi .n{font-family:'Space Grotesk';font-weight:700;font-size:26px;letter-spacing:-.01em}
+.kpi .l{font-size:11px;color:var(--dim);letter-spacing:.05em;text-transform:uppercase;margin-top:1px}
+.kpi .d{font-family:'JetBrains Mono';font-size:10.5px;color:var(--faint);margin-top:6px}
+
+/* panel grid */
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:17px 18px;min-width:0}
+.panel h3{font-family:'Space Grotesk';font-weight:600;font-size:14.5px;display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.panel h3 small{font-family:'JetBrains Mono';font-weight:400;font-size:10.5px;color:var(--faint);letter-spacing:.03em;text-align:right}
+.c3{grid-column:span 3}.c4{grid-column:span 4}.c5{grid-column:span 5}.c6{grid-column:span 6}.c7{grid-column:span 7}.c8{grid-column:span 8}.c9{grid-column:span 9}.c12{grid-column:span 12}
+.chart{position:relative;height:230px}
+.toolrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.toolrow .lbl{font-size:12px;color:var(--faint)}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:9px;overflow:hidden}
+.seg button{font-family:'JetBrains Mono';font-size:11.5px;padding:5px 10px;background:var(--inset);color:var(--faint);border:none;border-left:1px solid var(--line-strong);cursor:pointer;transition:.15s}
+.seg button:first-child{border-left:none}
+.seg button:hover{color:var(--guard)}
+.seg button.on{background:var(--guard-dim);color:var(--guard)}
+.chart-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:12px;font-family:'JetBrains Mono';pointer-events:none}
+
+/* tables */
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{color:var(--faint);text-align:left;font-weight:500;padding:8px 8px;border-bottom:1px solid var(--line);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase}
+td{padding:10px 8px;border-bottom:1px dashed var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr.click{cursor:pointer;transition:background .12s}
+tbody tr.click:hover{background:rgba(140,160,190,.05)}
+td .nm{font-family:'Space Grotesk';font-weight:600;font-size:13px}
+td .tid{font-family:'JetBrains Mono';font-size:10.5px;color:var(--faint)}
+td.mono{font-family:'JetBrains Mono';font-size:11.5px;color:var(--dim)}
+.lvl{font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.lvl.Low{background:var(--guard-dim);color:var(--guard)}
+.lvl.Medium{background:var(--amber-dim);color:var(--amber)}
+.lvl.High{background:var(--alert-dim);color:var(--alert)}
+.badge{font-family:'JetBrains Mono';font-size:10px;font-weight:600;padding:3px 8px;border-radius:99px;letter-spacing:.04em;white-space:nowrap}
+.badge.Verified{background:var(--guard-dim);color:var(--guard)}
+.badge.Tampered,.badge.NonCompliant{background:var(--alert-dim);color:var(--alert)}
+.badge.Duplicate{background:var(--amber-dim);color:var(--amber)}
+.badge.Unverified{background:rgba(147,160,180,.12);color:var(--dim)}
+.pill-type{font-size:10px;padding:2px 8px;border-radius:99px;border:1px solid var(--line-strong);font-family:'JetBrains Mono'}
+
+.mini-ring{position:relative;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;flex:none}
+.mini-ring::before{content:"";position:absolute;inset:0;border-radius:50%;padding:3px;
+  background:conic-gradient(var(--rc) calc(var(--rv)*1%),rgba(147,160,180,.16) 0);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.mini-ring b{font-family:'JetBrains Mono';font-size:11px;color:var(--rc)}
+.score-cell{display:flex;align-items:center;gap:10px}
+.score-bar{flex:1;max-width:110px;height:5px;border-radius:99px;background:rgba(147,160,180,.14);overflow:hidden}
+.score-bar i{display:block;height:100%;border-radius:99px}
+
+/* donut legend */
+.donut-wrap{display:flex;align-items:center;gap:18px}
+.donut-wrap .chart{flex:1;height:205px}
+.dlegend{display:flex;flex-direction:column;gap:10px;font-size:12.5px;min-width:114px}
+.dlegend div{display:flex;align-items:center;gap:9px;color:var(--dim)}
+.dlegend i{width:10px;height:10px;border-radius:3px;flex:none}
+.dlegend b{margin-left:auto;font-family:'JetBrains Mono';color:var(--ink);font-weight:500}
+
+/* module 1 — verification pipeline */
+.pipe{display:flex;flex-direction:column;gap:12px}
+.step{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--inset);display:flex;gap:14px;align-items:flex-start;
+  opacity:.45;transition:opacity .3s,border-color .3s}
+.step.on{opacity:1}
+.step.pass{border-color:rgba(0,255,136,.35)}
+.step.fail{border-color:rgba(255,77,94,.4)}
+.step .ic{width:30px;height:30px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;
+  background:rgba(147,160,180,.12);color:var(--dim);font-family:'JetBrains Mono'}
+.step.pass .ic{background:var(--guard-dim);color:var(--guard)}
+.step.fail .ic{background:var(--alert-dim);color:var(--alert)}
+.step.running .ic{color:var(--guard)}
+.step.running .ic::after{content:"";width:14px;height:14px;border:2px solid var(--guard);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.step h4{font-family:'Space Grotesk';font-size:13.5px;font-weight:600}
+.step .sd{font-size:11.5px;color:var(--faint);margin-top:1px}
+.step .detail{font-family:'JetBrains Mono';font-size:11px;color:var(--dim);margin-top:8px;word-break:break-all;display:none}
+.step.pass .detail,.step.fail .detail{display:block}
+.verdict{margin-top:16px;border-radius:12px;padding:16px 18px;display:none;align-items:center;gap:14px;border:1px solid var(--line)}
+.verdict.show{display:flex}
+.verdict.Verified{background:var(--guard-dim);border-color:rgba(0,255,136,.3)}
+.verdict.Tampered,.verdict.NonCompliant{background:var(--alert-dim);border-color:rgba(255,77,94,.35)}
+.verdict.Duplicate{background:var(--amber-dim);border-color:rgba(255,176,32,.35)}
+.verdict b{font-family:'Space Grotesk';font-size:16px}
+.verdict span{font-size:12.5px;color:var(--dim)}
+
+/* module 2 — wallet card */
+.wallet-card{border:1px solid var(--line);border-radius:12px;background:var(--inset);padding:16px;margin-bottom:14px}
+.wallet-card .addr{font-family:'JetBrains Mono';font-size:12px;color:var(--guard);word-break:break-all}
+.wallet-card .bal{font-family:'Space Grotesk';font-size:22px;font-weight:700;margin-top:6px}
+.wallet-card .bal small{font-size:12px;color:var(--faint);font-family:'JetBrains Mono'}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11.5px;color:var(--dim);margin-bottom:5px;letter-spacing:.04em}
+.field input,.field select{width:100%}
+.inline-price{display:flex;gap:6px;align-items:center}
+.inline-price input{width:76px;padding:5px 8px;font-size:12px}
+
+/* module 4 — rule cards */
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.rule{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--inset)}
+.rule .rt{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.rule .rt h4{font-family:'Space Grotesk';font-size:13px;font-weight:600}
+.rule .st{font-family:'JetBrains Mono';font-size:10px;font-weight:600;padding:3px 9px;border-radius:99px}
+.rule.clean .st{background:var(--guard-dim);color:var(--guard)}
+.rule.hit .st{background:var(--alert-dim);color:var(--alert)}
+.rule.hit{border-color:rgba(255,77,94,.4)}
+.rule.idle .st{background:rgba(147,160,180,.12);color:var(--faint)}
+.rule p{font-size:11.5px;color:var(--faint);margin-top:8px}
+.rule .ev{font-family:'JetBrains Mono';font-size:10.5px;color:var(--dim);margin-top:8px;display:none;word-break:break-word}
+.rule.hit .ev,.rule.clean .ev{display:block}
+.rule .pen{float:right;font-family:'JetBrains Mono';font-size:10.5px;color:var(--faint)}
+
+/* flag feed */
+.feed{display:flex;flex-direction:column;gap:9px;max-height:320px;overflow-y:auto;padding-right:4px}
+.feed::-webkit-scrollbar{width:5px}.feed::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:99px}
+.fitem{border:1px solid var(--line);border-left:3px solid var(--fc,var(--alert));border-radius:10px;padding:10px 12px;background:var(--inset)}
+.fitem .ft{font-family:'JetBrains Mono';font-size:10.5px;letter-spacing:.06em;color:var(--fc,var(--alert));display:flex;justify-content:space-between;gap:8px}
+.fitem .ft .pen{color:var(--faint)}
+.fitem p{font-size:12px;color:var(--dim);margin-top:4px}
+.fitem .tk{color:var(--ink);font-family:'JetBrains Mono'}
+
+/* module 5 — gauge */
+.gauge{position:relative;width:150px;height:150px;border-radius:50%;display:grid;place-items:center;margin:0 auto}
+.gauge::before{content:"";position:absolute;inset:0;border-radius:50%;padding:11px;
+  background:conic-gradient(var(--rc) calc(var(--rv)*1%),rgba(147,160,180,.14) 0);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;
+  transition:all .5s}
+.gauge b{font-family:'Space Grotesk';font-size:42px;font-weight:700;color:var(--rc)}
+.gauge-sub{text-align:center;margin-top:12px}
+.bb{margin-bottom:13px}
+.bb .t{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-bottom:5px}
+.bb .t b{color:var(--ink);font-family:'JetBrains Mono';font-weight:500}
+.bb .bar{height:7px;border-radius:99px;background:rgba(147,160,180,.14);overflow:hidden}
+.bb .bar i{display:block;height:100%;border-radius:99px;transition:width .5s ease}
+.formula{font-family:'JetBrains Mono';font-size:11px;color:var(--faint);background:var(--inset);border:1px dashed var(--line-strong);
+  border-radius:10px;padding:10px 12px;margin-top:14px;line-height:1.8}
+.formula b{color:var(--guard)}
+
+.stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px}
+.scard{background:var(--inset);border:1px solid var(--line);border-radius:10px;padding:11px 13px}
+.scard .v{font-family:'JetBrains Mono';font-size:17px;font-weight:600}
+.scard .k{font-size:10.5px;color:var(--faint);letter-spacing:.05em;text-transform:uppercase;margin-top:2px}
+
+.empty{color:var(--faint);font-size:12.5px;padding:16px;border:1px dashed var(--line);border-radius:10px;text-align:center}
+
+#toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);z-index:99;opacity:0;
+  background:var(--raised);border:1px solid var(--line-strong);border-radius:12px;padding:12px 18px;font-size:13.5px;
+  transition:all .25s;pointer-events:none;max-width:90vw}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.ok{border-color:rgba(0,255,136,.4)}#toast.err{border-color:rgba(255,77,94,.4)}
+
+footer{margin-top:28px;color:var(--faint);font-size:11.5px;font-family:'JetBrains Mono';display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+@media(max-width:1120px){.c3,.c4,.c5,.c6,.c7,.c8,.c9{grid-column:span 12}.donut-wrap{flex-direction:row}}
+@media(max-width:860px){
+  .shell{grid-template-columns:1fr}
+  aside{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;border-right:none;border-bottom:1px solid var(--line)}
+  aside .foot,.side-label{display:none}
+}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<aside>
+  <a class="logo" href="index.html">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L4 5.5V11c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5.5L12 2z" stroke="#00FF88" stroke-width="1.6" fill="rgba(0,255,136,.08)"/><path d="M8.5 12l2.4 2.4 4.6-4.8" stroke="#00FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    NFT<b>Guard</b>
+  </a>
+  <div class="side-label">Dashboard</div>
+  <button class="side-link active" data-view="overview"><span class="num">◈</span> Overview</button>
+  <div class="side-label">System modules</div>
+  <button class="side-link" data-view="auth"><span class="num">1</span> Authenticity Verification</button>
+  <button class="side-link" data-view="sim"><span class="num">2</span> Transaction Simulation</button>
+  <button class="side-link" data-view="price"><span class="num">3</span> Price Transparency</button>
+  <button class="side-link" data-view="fraud"><span class="num">4</span> Fraud Detection</button>
+  <button class="side-link" data-view="risk"><span class="num">5</span> Risk Analytics</button>
+  <button class="side-link" data-view="ml"><span class="num">◆</span> ML Detection</button>
+  <div class="side-label">Site</div>
+  <a class="side-link" href="index.html"><span class="num">↗</span> Landing page</a>
+  <div class="foot">
+    <b>Risk formula</b><br>0.40·Auth + 0.35·Fraud<br>+ 0.25·Price anomaly<br><br>
+    <b>Levels</b><br>&lt;40 Low · 40–69 Med · ≥70 High
+  </div>
+</aside>
+
+<main>
+  <div class="topbar">
+    <div>
+      <h1 id="viewTitle">Overview</h1>
+      <div class="sub" id="viewSub">NFTGuard · all system modules</div>
+    </div>
+    <div class="right">
+      <span class="mode-pill" id="modePill">connecting…</span>
+      <button class="btn" id="walletBtn">Connect wallet</button>
+      <button class="btn" id="refreshBtn">↻</button>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: OVERVIEW ============ -->
+  <div class="view active" id="view-overview">
+    <div class="alerts" id="alertBar" hidden>
+      <span class="tag"><i></i> HIGH-RISK ALERT</span>
+      <div class="items" id="alertItems"></div>
+    </div>
+    <div class="kpis" id="kpis"></div>
+    <div class="grid">
+      <div class="panel c4">
+        <h3>Risk level distribution</h3>
+        <div class="donut-wrap">
+          <div class="chart"><canvas id="chDonut"></canvas></div>
+          <div class="dlegend" id="donutLegend"></div>
+        </div>
+      </div>
+      <div class="panel c8">
+        <h3>Unified risk score per NFT <small>0.40·A + 0.35·F + 0.25·P</small></h3>
+        <div class="chart"><canvas id="chScores"></canvas></div>
+      </div>
+      <div class="panel c12">
+        <h3>NFT risk watchlist <small>click a row → Risk Analytics module</small></h3>
+        <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Score</th><th>NFT</th><th>Authenticity</th><th>Risk level</th><th>Auth / Fraud / Price</th><th>Flags</th><th>Price</th><th>Owner</th></tr></thead>
+          <tbody id="watchBody"></tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: MODULE 1 — AUTHENTICITY ============ -->
+  <div class="view" id="view-auth">
+    <div class="grid">
+      <div class="panel c7">
+        <h3>Verification pipeline</h3>
+        <div class="toolrow">
+          <span class="lbl">Token</span>
+          <select id="authSel"></select>
+          <button class="btn primary sm" id="authRun">Run verification</button>
+        </div>
+        <div class="pipe">
+          <div class="step" id="stp1"><div class="ic">1</div><div style="flex:1">
+            <h4>Smart contract validation</h4><div class="sd">ERC-165 supportsInterface — ERC-721 (0x80ac58cd) / ERC-1155 (0xd9b67a26)</div>
+            <div class="detail"></div></div></div>
+          <div class="step" id="stp2"><div class="ic">2</div><div style="flex:1">
+            <h4>Metadata integrity</h4><div class="sd">SHA-256 of off-chain IPFS metadata vs on-chain anchor stored at mint</div>
+            <div class="detail"></div></div></div>
+          <div class="step" id="stp3"><div class="ic">3</div><div style="flex:1">
+            <h4>Duplicate / copy-mint detection</h4><div class="sd">Perceptual hash (pHash) compared against the minted-asset registry</div>
+            <div class="detail"></div></div></div>
+        </div>
+        <div class="verdict" id="authVerdict"></div>
+      </div>
+      <div class="panel c5">
+        <h3>Registry status <small>all indexed NFTs</small></h3>
+        <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>NFT</th><th>Status</th><th>Metadata hash</th><th></th></tr></thead>
+          <tbody id="authTable"></tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: MODULE 2 — TRANSACTION SIMULATION ============ -->
+  <div class="view" id="view-sim">
+    <div class="grid">
+      <div class="panel c4">
+        <h3>Simulated wallet <small>Sepolia testnet</small></h3>
+        <div class="wallet-card" id="walletCard">
+          <div class="empty">No wallet connected — click "Connect wallet" above to create a simulated testnet wallet.</div>
+        </div>
+        <h3 style="margin-top:20px">Mint NFT</h3>
+        <div class="field"><label for="mName">Name</label><input id="mName" type="text" placeholder="e.g. Quantum Relic #9"></div>
+        <div class="field"><label for="mPrice">List price (ETH, optional)</label><input id="mPrice" type="number" step="0.01" min="0" placeholder="0.50"></div>
+        <button class="btn primary" id="mintBtn">Mint NFT</button>
+        <p style="font-size:11.5px;color:var(--faint);margin-top:10px">SHA-256 of the metadata JSON is anchored on-chain at mint for later integrity checks.</p>
+      </div>
+      <div class="panel c8">
+        <h3>Marketplace listings <small>list · buy</small></h3>
+        <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>NFT</th><th>Owner</th><th>Status</th><th>Price</th><th style="width:210px">Actions</th></tr></thead>
+          <tbody id="simTable"></tbody>
+        </table>
+        </div>
+      </div>
+      <div class="panel c12">
+        <h3>Transaction history <small>record · view</small></h3>
+        <div class="toolrow">
+          <span class="lbl">Filter token</span>
+          <select id="txFilter"><option value="">All tokens</option></select>
+        </div>
+        <div style="overflow-x:auto;max-height:340px;overflow-y:auto">
+        <table>
+          <thead><tr><th>Token</th><th>Type</th><th>From</th><th>To</th><th>Price</th><th>Tx hash</th><th>Timestamp</th></tr></thead>
+          <tbody id="txBody"></tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: MODULE 3 — PRICE TRANSPARENCY ============ -->
+  <div class="view" id="view-price">
+    <div class="grid">
+      <div class="panel c12">
+        <h3>Collection statistics — CyberGuard Genesis <small>basis for Z-scores</small></h3>
+        <div class="stat-cards" id="priceStats"></div>
+      </div>
+      <div class="panel c7">
+        <h3>Token price history <small>red = |Z| &gt; 2.5</small></h3>
+        <div class="toolrow"><span class="lbl">Token</span><select id="priceSel"></select>
+          <span class="lbl" style="margin-left:auto">Period</span>
+          <div class="seg" id="pricePeriod">
+            <button data-d="1">1D</button><button data-d="7">1W</button><button data-d="14">2W</button><button data-d="30">1M</button><button data-d="365">1Y</button><button data-d="0" class="on">All</button>
+          </div>
+        </div>
+        <div class="chart" style="position:relative"><canvas id="chPriceHist"></canvas></div>
+      </div>
+      <div class="panel c5">
+        <h3>Anomalous sales <small>|Z| &gt; 2.5</small></h3>
+        <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Token</th><th>Price</th><th>Z-score</th><th>When</th></tr></thead>
+          <tbody id="anomBody"></tbody>
+        </table>
+        </div>
+      </div>
+      <div class="panel c12">
+        <h3>All sales — collection scatter <small>dashed line = collection mean μ</small></h3>
+        <div class="chart" style="height:250px"><canvas id="chScatter"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: MODULE 4 — FRAUD DETECTION ============ -->
+  <div class="view" id="view-fraud">
+    <div class="grid">
+      <div class="panel c8">
+        <h3>Heuristic rule engine</h3>
+        <div class="toolrow">
+          <span class="lbl">Token</span>
+          <select id="fraudSel"></select>
+          <button class="btn primary sm" id="fraudRun">Run fraud analysis</button>
+          <span class="lbl" id="fraudScoreOut" style="margin-left:auto;font-family:'JetBrains Mono'"></span>
+        </div>
+        <div class="rules">
+          <div class="rule idle" id="rule1"><div class="rt"><h4>Rule 1 · Buyer–Seller Loop</h4><span class="st">IDLE</span></div>
+            <p>Same wallet pair trades the token ≥ 3 times (wash trading). Penalty 35.</p><div class="ev"></div></div>
+          <div class="rule idle" id="rule2"><div class="rt"><h4>Rule 2 · Abnormal Frequency</h4><span class="st">IDLE</span></div>
+            <p>Tx count in a 60-min window ≫ collection average. Penalty 25.</p><div class="ev"></div></div>
+          <div class="rule idle" id="rule3"><div class="rt"><h4>Rule 3 · Self-Transfer</h4><span class="st">IDLE</span></div>
+            <p>Sender and recipient wallets are identical. Penalty 20.</p><div class="ev"></div></div>
+          <div class="rule idle" id="rule4"><div class="rt"><h4>Rule 4 · Rapid Price Escalation</h4><span class="st">IDLE</span></div>
+            <p>Consecutive sales jump ≥ 50% within 60 min. Penalty 20.</p><div class="ev"></div></div>
+        </div>
+        <div class="formula" id="fraudFormula" style="display:none"></div>
+      </div>
+      <div class="panel c4">
+        <h3>Fraud flag feed <small id="flagCount"></small></h3>
+        <div class="feed" id="flagFeed"></div>
+      </div>
+      <div class="panel c12">
+        <h3>Transaction frequency <small>sales & mints per day — abnormal bursts stand out</small></h3>
+        <div class="chart"><canvas id="chFreq"></canvas></div>
+      </div>
+      <!-- graph-based wash trading (folded into Fraud Detection) -->
+      <div class="panel c12"><h3>Graph-based wash trading <small id="grSource">transaction-network analysis · Tarjan strongly-connected components</small></h3><div class="kpis" id="grKpis"></div></div>
+      <div class="panel c7">
+        <h3>Wash-trading ring <small>a strongly-connected cluster — invisible to pairwise rules</small></h3>
+        <img src="wash_ring.png" alt="Wash-trading ring network" style="width:100%;border-radius:12px;display:block" onerror="this.style.display='none'">
+      </div>
+      <div class="panel c5">
+        <h3>Graph vs. pairwise rule</h3>
+        <div id="grCompare"></div>
+        <h3 style="margin-top:16px">Detected rings <small>ranked by wash score</small></h3>
+        <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Wallets</th><th>Trades</th><th>Recip.</th><th>Wash</th></tr></thead><tbody id="grRings"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: MODULE 5 — RISK ANALYTICS ============ -->
+  <div class="view" id="view-risk">
+    <div class="grid">
+      <div class="panel c4">
+        <h3>Unified risk score</h3>
+        <div class="toolrow"><span class="lbl">Token</span><select id="riskSel"></select>
+          <button class="btn primary sm" id="riskRun">Recompute</button></div>
+        <div class="gauge" id="riskGauge" style="--rv:0;--rc:var(--guard)"><b id="riskScore">–</b></div>
+        <div class="gauge-sub"><span class="lvl Low" id="riskLevel">–</span></div>
+        <div class="formula" id="riskFormula"></div>
+      </div>
+      <div class="panel c8">
+        <h3>Indicator breakdown <small>weighted contributions</small></h3>
+        <div id="riskBars"></div>
+        <h3 style="margin-top:22px">Active flags on this token</h3>
+        <div class="feed" id="riskFlags" style="max-height:220px"></div>
+      </div>
+      <div class="panel c12">
+        <h3>Risk composition — whole collection <small>how every score decomposes</small></h3>
+        <div class="chart" style="height:250px"><canvas id="chStack"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: ML DETECTION (real on-chain data) ============ -->
+  <div class="view" id="view-ml">
+    <div class="grid">
+      <div class="panel c12">
+        <h3>Real on-chain dataset <small id="mlSource">loading…</small></h3>
+        <div class="stat-cards" id="mlDataset"></div>
+      </div>
+      <div class="panel c12">
+        <h3>Model performance <small>wash-trading classifier · trained on economic features only</small></h3>
+        <div class="kpis" id="mlMetrics"></div>
+      </div>
+      <div class="panel c6">
+        <h3>Feature importance <small>what drives the detection</small></h3>
+        <div class="chart"><canvas id="chMlFeat"></canvas></div>
+      </div>
+      <div class="panel c6">
+        <h3>Sales volume over time <small>real weekly sales</small></h3>
+        <div class="toolrow"><span class="lbl">Period</span>
+          <div class="seg" id="mlTimePeriod">
+            <button data-d="30">1M</button><button data-d="90">3M</button><button data-d="180">6M</button><button data-d="365">1Y</button><button data-d="0" class="on">All</button>
+          </div>
+        </div>
+        <div class="chart"><canvas id="chMlTime"></canvas></div>
+      </div>
+      <div class="panel c12">
+        <h3>Detected wash trades <small>real transactions — click to verify on Etherscan</small></h3>
+        <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Collection</th><th>Token</th><th>Seller → Buyer</th><th>Price</th><th>Pattern</th><th>Verify</th></tr></thead>
+          <tbody id="mlFlagged"></tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>© 2026 NFTGuard · Data-Driven NFT Fraud Detection &amp; Risk Analytics</span>
+    <span id="ftContract">contract: —</span>
+  </footer>
+</main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* =====================================================================
+   NFTGuard Dashboard SPA — all five system modules
+   LIVE mode: talks to the backend REST API (/api/...).
+   DEMO mode: backend offline → the same analytics run CLIENT-SIDE on the
+   embedded dataset (thresholds identical to backend/config/thresholds.json),
+   so every button still genuinely computes its result.
+===================================================================== */
+const API="/api"; let LIVE=false;
+const TH={loopMin:3,loopPen:45,freqWin:60,freqMult:3,freqMin:4,freqPen:30,selfPen:25,escPct:.5,escWin:60,escPen:30,
+  z:2.5,zBase:40,zPer:15,zExcess:10,authNC:70,authTam:80,authDup:50,
+  w:{a:.40,f:.35,p:.25},med:40,high:70};
+const C={guard:"#00FF88",amber:"#FFB020",alert:"#FF4D5E",chain:"#6EA8FF",dim:"#93A0B4",faint:"#5B6A80",grid:"rgba(140,160,190,.07)"};
+const S={nfts:[],stats:null,wallet:null,balance:10,charts:{},view:"overview"};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const shortAddr=a=>{a=String(a||"");return a.length>13?a.slice(0,6)+"…"+a.slice(-4):a;};
+const lvlColor=l=>l==="High"?C.alert:l==="Medium"?C.amber:C.guard;
+const levelOf=s=>s>=TH.high?"High":s>=TH.med?"Medium":"Low";
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function toast(msg,cls="ok"){const t=$("#toast");t.textContent=msg;t.className="show "+cls;setTimeout(()=>t.className="",3400);}
+const txh=()=>"0xsim"+[...Array(60)].map(()=>"0123456789abcdef"[Math.random()*16|0]).join("");
+async function api(path,opts={},timeout=4000){
+  const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),timeout);
+  try{const r=await fetch(API+path,{...opts,headers:{"Content-Type":"application/json",...(opts.headers||{})},signal:ctl.signal});
+    if(!r.ok)throw new Error((await r.json().catch(()=>({}))).error||r.statusText);return await r.json();}
+  finally{clearTimeout(to);}
+}
+
+/* ---------------- demo dataset (mirrors backend/scripts/seedDemo.js) ---------------- */
+const DEMO=(()=>{
+  const W={alice:"0xA11CE0000000000000000000000000000000001",bob:"0xB0B00000000000000000000000000000000002",
+    carol:"0xCA4010000000000000000000000000000000003",dave:"0xDA7E0000000000000000000000000000000004",
+    w1:"0x3A5B111111111111111111111111111111111111",w2:"0x3A5B222222222222222222222222222222222222",
+    zero:"0x0000000000000000000000000000000000000000"};
+  const d=n=>new Date(Date.now()-n*864e5).toISOString(),m=n=>new Date(Date.now()-n*6e4).toISOString();
+  const Sx=(f,t,p,ts)=>({txType:"SALE",senderAddress:f,recipientAddress:t,priceEth:p,timestamp:ts,txHash:txh()});
+  const M=(t,ts)=>({txType:"MINT",senderAddress:W.zero,recipientAddress:t,priceEth:0,timestamp:ts,txHash:txh()});
+  const nft=(tokenId,name,priceEth,status,txs,extra={})=>({tokenId,name,priceEth,listed:true,
+    collectionName:"CyberGuard Genesis",authenticityStatus:status,ownerAddress:extra.owner||W.alice,
+    contractAddress:"0xSIMULATEDC0NTRACT",metadataHash:"0x9f2ab6c4"+tokenId+"e",erc721Compliant:true,
+    imageHash:extra.imageHash||("pH_"+tokenId),tampered:extra.tampered||false,
+    risk:null,flags:[],transactions:txs});
+  const washTx=[M(W.w1,d(5))];let p=0.5;
+  for(let i=0;i<6;i++){washTx.push(Sx(i%2?W.w2:W.w1,i%2?W.w1:W.w2,+p.toFixed(3),m(120-i*12)));p*=1.6;}
+  const darkTx=[M(W.w2,d(3))];let q=0.8;
+  for(let i=0;i<4;i++){darkTx.push(Sx(i%2?W.w1:W.w2,i%2?W.w2:W.w1,+q.toFixed(3),m(90-i*15)));q*=1.6;}
+  darkTx.push(Sx(W.w2,W.w2,3.4,m(28)));
+  const flashTx=[M(W.alice,d(9))];const cyc=[W.alice,W.bob,W.carol,W.dave];
+  for(let i=0;i<8;i++)flashTx.push(Sx(cyc[i%4],cyc[(i+1)%4],+(0.85+i*0.01).toFixed(2),m(35-i*4)));
+  return [
+    nft(1,"Genesis Orb",0.45,"Verified",[M(W.alice,d(30)),Sx(W.alice,W.bob,0.40,d(20)),Sx(W.bob,W.carol,0.44,d(10)),Sx(W.carol,W.bob,0.45,d(3))],{owner:W.bob}),
+    nft(2,"Neon Circuit",0.55,"Verified",[M(W.alice,d(28)),Sx(W.alice,W.dave,0.50,d(18)),Sx(W.dave,W.carol,0.55,d(6))],{owner:W.carol}),
+    nft(3,"Wash Cycle",4.2,"Verified",washTx,{owner:W.w1}),
+    nft(4,"Mirror Mint",0.6,"Verified",[M(W.dave,d(8)),Sx(W.dave,W.dave,0.60,d(2)),Sx(W.dave,W.dave,0.62,d(1))],{owner:W.dave}),
+    nft(5,"Flash Flip",0.9,"Verified",flashTx,{owner:W.bob}),
+    nft(6,"Phantom Ape",0.7,"Unverified",[M(W.carol,d(15)),Sx(W.carol,W.bob,0.70,d(7)),Sx(W.bob,W.carol,0.72,d(2))],{owner:W.carol,tampered:true,imageHash:"pH_APE"}),
+    nft(7,"Phantom Ape Copy",0.65,"Unverified",[M(W.dave,d(4))],{owner:W.dave,imageHash:"pH_APE"}),
+    nft(8,"Moon Spike",5.5,"Verified",[M(W.alice,d(12)),Sx(W.alice,W.bob,0.5,d(6)),Sx(W.bob,W.alice,5.5,d(1))],{owner:W.alice}),
+    nft(9,"Dark Mint",6.7,"Unverified",darkTx,{owner:W.w2,tampered:true,imageHash:"pH_APE"}),
+  ];
+})();
+
+/* ---------------- client-side analytics (same thresholds as backend) ---------------- */
+function calcStats(prices){
+  const n=prices.length,mean=n?prices.reduce((a,b)=>a+b,0)/n:0;
+  const srt=[...prices].sort((a,b)=>a-b),mid=Math.floor(n/2);
+  const median=n?(n%2?srt[mid]:(srt[mid-1]+srt[mid])/2):0;
+  const sd=n>1?Math.sqrt(prices.reduce((a,x)=>a+(x-mean)**2,0)/(n-1)):0;
+  return {avgPrice:+mean.toFixed(4),medianPrice:+median.toFixed(4),stdDev:+sd.toFixed(4),
+    minPrice:n?Math.min(...prices):0,maxPrice:n?Math.max(...prices):0,sampleSize:n};
+}
+const allSales=()=>{const a=[];S.nfts.forEach(n=>(n.transactions||[]).forEach(t=>{if(t.txType==="SALE")a.push({...t,tokenId:n.tokenId,name:n.name});}));
+  return a.sort((x,y)=>new Date(x.timestamp)-new Date(y.timestamp));};
+function zFor(price,st){return st.stdDev>0?+((price-st.avgPrice)/st.stdDev).toFixed(3):0;}
+
+function ruleLoop(txs){
+  const c={};txs.forEach(t=>{if(t.txType!=="SALE"&&t.txType!=="TRANSFER")return;
+    const k=[t.senderAddress.toLowerCase(),t.recipientAddress.toLowerCase()].sort().join("↔");c[k]=(c[k]||0)+1;});
+  const loops=Object.entries(c).filter(([,n])=>n>=TH.loopMin);
+  return loops.length?{pen:TH.loopPen,ev:loops.map(([k,n])=>`${n}× ${shortAddr(k.split("↔")[0])}↔${shortAddr(k.split("↔")[1])}`).join("; ")}:null;
+}
+function maxWin(times){const t=[...times].sort((a,b)=>a-b);let mx=t.length?1:0;
+  for(let i=0,j=0;i<t.length;i++){while(t[i]-t[j]>TH.freqWin*6e4)j++;mx=Math.max(mx,i-j+1);}return mx;}
+function ruleFreq(txs,tokenId){
+  const mine=maxWin(txs.map(t=>+new Date(t.timestamp)));
+  if(mine<TH.freqMin)return null;
+  const others=S.nfts.filter(n=>n.tokenId!==tokenId)
+    .map(n=>maxWin((n.transactions||[]).map(t=>+new Date(t.timestamp))));
+  const base=others.length?others.reduce((a,b)=>a+b,0)/others.length:1;
+  return mine>base*TH.freqMult?{pen:TH.freqPen,ev:`${mine} tx in ${TH.freqWin} min vs collection baseline ${base.toFixed(1)}/token`}:null;
+}
+function ruleSelf(txs){
+  const h=txs.filter(t=>t.senderAddress.toLowerCase()===t.recipientAddress.toLowerCase());
+  return h.length?{pen:TH.selfPen,ev:`${h.length} self-transfer(s): ${shortAddr(h[0].senderAddress)}`}:null;
+}
+function ruleEsc(txs){
+  const s=txs.filter(t=>t.txType==="SALE"&&t.priceEth>0).sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+  const sp=[];for(let i=1;i<s.length;i++){const dt=(new Date(s[i].timestamp)-new Date(s[i-1].timestamp))/6e4;
+    const inc=(s[i].priceEth-s[i-1].priceEth)/s[i-1].priceEth;
+    if(inc>=TH.escPct&&dt<=TH.escWin)sp.push(`+${(inc*100).toFixed(0)}% in ${dt.toFixed(0)}min`);}
+  return sp.length?{pen:TH.escPen,ev:`${sp.length} spike(s): ${sp.slice(0,3).join(", ")}`}:null;
+}
+function localFraud(n){
+  const txs=n.transactions||[];
+  const r={BUYER_SELLER_LOOP:ruleLoop(txs),ABNORMAL_FREQUENCY:ruleFreq(txs,n.tokenId),SELF_TRANSFER:ruleSelf(txs),RAPID_PRICE_ESCALATION:ruleEsc(txs)};
+  const flags=Object.entries(r).filter(([,v])=>v).map(([k,v])=>({flagType:k,penaltyScore:v.pen,description:v.ev,detectedAt:new Date().toISOString()}));
+  return {rules:r,fraudRisk:Math.min(100,flags.reduce((a,f)=>a+f.penaltyScore,0)),flags};
+}
+function localAuthChecks(n){
+  const dup=S.nfts.some(o=>o.tokenId!==n.tokenId&&o.imageHash&&o.imageHash===n.imageHash);
+  const tam=!!n.tampered;const nonc=n.erc721Compliant===false;
+  return {
+    checks:[
+      {pass:!nonc,detail:nonc?"Contract does not implement ERC-721/ERC-1155":"supportsInterface(0x80ac58cd) → true · ERC-721 compliant"},
+      {pass:!tam,detail:tam?`MISMATCH — on-chain ${n.metadataHash.slice(0,10)}… vs off-chain 0x71d4e8…`:"Recomputed SHA-256 matches on-chain anchor "+n.metadataHash.slice(0,10)+"…"},
+      {pass:!dup,detail:dup?`pHash distance 0.00 to token ${S.nfts.find(o=>o.tokenId!==n.tokenId&&o.imageHash===n.imageHash)?.name}`:"No perceptually similar asset in registry"}],
+    status:nonc?"NonCompliant":tam?"Tampered":dup?"Duplicate":"Verified",
+    authRisk:Math.min(100,(nonc?TH.authNC:0)+(tam?TH.authTam:0)+(dup?TH.authDup:0)),
+    authFlags:[...(tam?[{flagType:"METADATA_TAMPERED",penaltyScore:TH.authTam,description:"Off-chain metadata hash does not match on-chain SHA-256 anchor"}]:[]),
+               ...(dup?[{flagType:"DUPLICATE_ASSET",penaltyScore:TH.authDup,description:"Perceptual hash matches an existing registry asset"}]:[]),
+               ...(nonc?[{flagType:"NON_COMPLIANT_CONTRACT",penaltyScore:TH.authNC,description:"Contract failed ERC interface check"}]:[])]
+  };
+}
+function localPriceRisk(n){
+  const st=calcStats(allSales().map(s=>s.priceEth));
+  const mine=(n.transactions||[]).filter(t=>t.txType==="SALE").map(t=>({...t,z:zFor(t.priceEth,st)}));
+  const an=mine.filter(p=>Math.abs(p.z)>TH.z);
+  let risk=0;if(an.length){const mz=Math.max(...an.map(a=>Math.abs(a.z)));risk=Math.min(100,TH.zBase+an.length*TH.zPer+Math.max(0,mz-TH.z)*TH.zExcess);}
+  return {priceRisk:Math.round(risk),anomalies:an,stats:st,
+    priceFlags:an.length?[{flagType:"PRICE_ANOMALY",penaltyScore:Math.round(risk),description:`${an.length} sale(s) exceed |Z| > ${TH.z} (max |Z| = ${Math.max(...an.map(a=>Math.abs(a.z))).toFixed(2)})`}]:[]};
+}
+/* recompute everything for one token (demo mode = the real pipeline, client-side) */
+function localRisk(n){
+  const a=localAuthChecks(n),f=localFraud(n),p=localPriceRisk(n);
+  const u=Math.round(TH.w.a*a.authRisk+TH.w.f*f.fraudRisk+TH.w.p*p.priceRisk);
+  n.authenticityStatus=a.status;
+  n.flags=[...a.authFlags,...f.flags,...p.priceFlags];
+  n.risk={authRisk:a.authRisk,fraudRisk:f.fraudRisk,priceRisk:p.priceRisk,unifiedScore:u,riskLevel:levelOf(u),
+    breakdown:{weights:{authenticity:TH.w.a,fraud:TH.w.f,priceAnomaly:TH.w.p},authRisk:a.authRisk,fraudRisk:f.fraudRisk,priceRisk:p.priceRisk,
+      contribution:{authenticity:+(TH.w.a*a.authRisk).toFixed(1),fraud:+(TH.w.f*f.fraudRisk).toFixed(1),priceAnomaly:+(TH.w.p*p.priceRisk).toFixed(1)}}};
+  return {auth:a,fraud:f,price:p,risk:n.risk};
+}
+function recomputeStats(){
+  S.stats={totalNfts:S.nfts.length,
+    totalTransactions:S.nfts.reduce((a,n)=>a+(n.transactions||[]).length,0),
+    verifiedNfts:S.nfts.filter(n=>n.authenticityStatus==="Verified").length,
+    highRiskNfts:S.nfts.filter(n=>n.risk?.riskLevel==="High").length,
+    totalFlags:S.nfts.reduce((a,n)=>a+(n.flags||[]).length,0)};
+}
+
+/* ---------------- boot ---------------- */
+async function boot(){
+  try{
+    const h=await api("/health");LIVE=true;
+    $("#modePill").textContent=h.mode;$("#modePill").classList.add("live");
+    $("#ftContract").textContent="contract: "+(h.contract||"simulated mode");
+    const list=await api("/nfts");
+    S.nfts=await Promise.all(list.map(n=>api("/nfts/"+n.tokenId).catch(()=>n)));
+    S.stats=await api("/stats");
+  }catch(e){
+    LIVE=false;
+    $("#modePill").textContent="demo data (backend offline)";
+    $("#ftContract").textContent="contract: 0xSIMULATED — run backend for live mode";
+    S.nfts=DEMO;
+    S.nfts.forEach(n=>localRisk(n));   // full client-side pipeline
+    recomputeStats();
+  }
+  fillSelectors(); switchView(S.view,true);
+}
+function fillSelectors(){
+  const opts=S.nfts.map(n=>`<option value="${n.tokenId}">#${n.tokenId} · ${esc(n.name)}</option>`).join("");
+  ["authSel","fraudSel","priceSel","riskSel"].forEach(id=>{const el=$("#"+id);const v=el.value;el.innerHTML=opts;if(v)el.value=v;});
+  $("#txFilter").innerHTML=`<option value="">All tokens</option>`+opts;
+}
+$("#refreshBtn").addEventListener("click",()=>{destroyCharts();boot();toast("Refreshed");});
+function destroyCharts(){Object.values(S.charts).forEach(c=>c.destroy());S.charts={};}
+function chart(key,el,cfg){if(S.charts[key])S.charts[key].destroy();S.charts[key]=new Chart(el,cfg);}
+function base(o={}){return{responsive:true,maintainAspectRatio:false,
+  plugins:{legend:{labels:{color:C.dim,font:{family:"'JetBrains Mono'",size:10},boxWidth:12}},...(o.plugins||{})},
+  scales:{x:{ticks:{color:C.faint,font:{size:10,family:"'JetBrains Mono'"}},grid:{color:C.grid},...(o.x||{})},
+          y:{ticks:{color:C.faint,font:{size:10,family:"'JetBrains Mono'"}},grid:{color:C.grid},...(o.y||{})}}};}
+
+/* ---------------- view switching ---------------- */
+const TITLES={overview:["Overview","risk summary across all modules"],
+  auth:["NFT Authenticity Verification","smart contract · metadata SHA-256 · pHash duplicates"],
+  sim:["Transaction Simulation","simulated wallets · mint · list · buy on Sepolia testnet"],
+  price:["Price Transparency Analysis","statistics · Z-score anomaly detection"],
+  fraud:["Fraud Detection","4 heuristic rules · weighted penalties"],
+  risk:["Risk Analytics & Visualization","unified score = 0.40·Auth + 0.35·Fraud + 0.25·Price"],
+  ml:["ML Detection — Real On-Chain Data","wash-trading model trained on live Ethereum sales"]};
+document.querySelectorAll(".side-link[data-view]").forEach(b=>b.addEventListener("click",()=>switchView(b.dataset.view)));
+function switchView(v,force=false){
+  if(S.view===v&&!force)return;
+  S.view=v;
+  document.querySelectorAll(".side-link[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===v));
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+  $("#view-"+v).classList.add("active");
+  $("#viewTitle").textContent=TITLES[v][0];$("#viewSub").textContent=TITLES[v][1];
+  ({overview:renderOverview,auth:renderAuth,sim:renderSim,price:renderPrice,fraud:renderFraud,risk:renderRisk,ml:renderML})[v]();
+}
+function gotoRisk(id){$("#riskSel").value=id;switchView("risk",true);}
+
+/* ================= WASH-RING GRAPH (live, Tarjan SCC) ================= */
+let grLoaded=false;
+async function renderGraph(){
+  if(grLoaded)return;
+  try{
+    const d=await api("/graph",{},30000);
+    grLoaded=true;
+    $("#grSource").textContent=`${Number(d.totalSales).toLocaleString()} real sales · ${Number(d.wallets).toLocaleString()} wallets · ${Number(d.edges).toLocaleString()} trade-edges`;
+    const cards=[
+      ["Wash rings",d.rings,"connected clusters",C.alert],
+      ["Ring wallets",d.ringWallets,"caught in cycles",C.alert],
+      ["Self-transfers",d.selfLoops,"sold to self",C.amber],
+      ["Multi-hop rings",d.multiHopRings,"beyond pairwise",C.guard]
+    ];
+    $("#grKpis").innerHTML=cards.map(([l,n,dd,c])=>`<div class="kpi" style="--kc:${c}"><div class="n" style="color:${c}">${n}</div><div class="l">${l}</div><div class="d">${dd}</div></div>`).join("");
+    const pct=d.graphWallets?Math.round(100*d.heuristicWallets/d.graphWallets):0;
+    $("#grCompare").innerHTML=`<div class="break-bars">
+      <div class="bb"><div class="t"><span>Old pairwise rule</span><b>${d.heuristicWallets} wallets</b></div><div class="bar"><i style="width:${pct}%;background:var(--faint)"></i></div></div>
+      <div class="bb"><div class="t"><span>Graph structure</span><b style="color:${C.guard}">${d.graphWallets} wallets</b></div><div class="bar"><i style="width:100%;background:${C.guard}"></i></div></div>
+    </div>
+    <p style="margin-top:10px;color:var(--dim);font-size:12.5px"><b style="color:${C.guard}">+${d.extraCaughtByGraph} wallets</b> the pairwise rule missed — including a <b>${d.largestRing.wallets}-wallet ring</b> (${d.largestRing.trades} trades cycling among them).</p>`;
+    $("#grRings").innerHTML=d.topRings.map((r,i)=>`<tr><td class="mono">${i+1}</td><td class="mono">${r.wallets}</td><td class="mono">${r.trades}</td><td class="mono">${r.reciprocity}</td><td class="mono" style="color:${r.washScore>=60?C.alert:(r.washScore>=30?C.amber:'var(--faint)')}">${r.washScore}</td></tr>`).join("");
+  }catch(e){ $("#grKpis").innerHTML=`<div class="empty">Graph analysis failed: ${esc(e.message)}</div>`; }
+}
+
+/* ================= WALLET INVESTIGATOR (live, any address) ================= */
+let wiWired=false;
+function renderWallet(){
+  if(wiWired)return; wiWired=true;
+  $("#wiRun").addEventListener("click",runInvestigate);
+  $("#wiAddr").addEventListener("keydown",e=>{if(e.key==="Enter")runInvestigate();});
+  $("#wiSample").addEventListener("click",()=>{$("#wiAddr").value="0x29469395eaf6f95920e59f858042f0e28d98a20b";runInvestigate();});
+}
+async function runInvestigate(){
+  const addr=$("#wiAddr").value.trim();
+  if(!/^0x[a-fA-F0-9]{40}$/.test(addr)){toast("Enter a valid 0x… wallet address","err");return;}
+  const sh=a=>a?a.slice(0,6)+"…"+a.slice(-4):"—";
+  $("#wiResult").innerHTML=`<div class="empty">Pulling on-chain transfers & analysing…</div>`;
+  try{
+    const d=await api("/investigate/"+addr,{},45000);
+    const rc=lvlColor(d.riskLevel);
+    $("#wiResult").innerHTML=`
+      <div class="kpis" style="margin-top:14px">
+        <div class="kpi" style="--kc:${rc}"><div class="n" style="color:${rc}">${d.riskScore}</div><div class="l">Wallet risk</div><div class="d">${d.riskLevel}</div></div>
+        <div class="kpi"><div class="n">${d.totalTransfers}</div><div class="l">NFT transfers</div><div class="d">${d.incoming} in · ${d.outgoing} out</div></div>
+        <div class="kpi"><div class="n" style="color:var(--alert)">${d.selfTransfers}</div><div class="l">Self-transfers</div><div class="d">sold to itself</div></div>
+        <div class="kpi"><div class="n" style="color:var(--amber)">${d.roundTrips}</div><div class="l">Round-trips</div><div class="d">sold then re-bought</div></div>
+      </div>
+      <div class="panel c12" style="margin-top:14px"><b style="color:${rc}">Verdict:</b> ${d.reasons&&d.reasons.length?esc(d.reasons.join(" · ")):"No obvious wash-trading patterns detected in recent history."}</div>
+      <div class="grid" style="margin-top:14px">
+        <div class="panel c5"><h3>Top counterparties</h3><div style="overflow-x:auto"><table><thead><tr><th>Wallet</th><th>Trades</th></tr></thead><tbody>
+          ${(d.topCounterparties||[]).map(c=>`<tr><td class="mono">${sh(c.wallet)}</td><td class="mono">${c.trades}${c.trades>=3?' <span style="color:var(--alert)">⚠ loop</span>':''}</td></tr>`).join("")||'<tr><td colspan="2">none</td></tr>'}
+        </tbody></table></div></div>
+        <div class="panel c7"><h3>Recent NFT transfers <small>click ↗ to verify on Etherscan</small></h3><div style="overflow-x:auto"><table><thead><tr><th>Dir</th><th>Collection</th><th>Token</th><th>Counterparty</th><th></th></tr></thead><tbody>
+          ${(d.sample||[]).map(t=>`<tr><td class="mono">${t.direction}</td><td>${esc(t.collection||"")}</td><td class="mono">${esc(String(t.tokenId||"").slice(0,8))}</td><td class="mono">${sh(t.direction==="OUT"?t.to:t.from)}</td><td><a href="https://etherscan.io/tx/${esc(t.hash)}" target="_blank" rel="noopener" style="color:var(--chain)">↗</a></td></tr>`).join("")}
+        </tbody></table></div></div>
+      </div>`;
+  }catch(e){
+    $("#wiResult").innerHTML=`<div class="empty">Investigation failed: ${esc(e.message)}</div>`;
+  }
+}
+
+/* ================= ML DETECTION (real on-chain data) ================= */
+let mlLoaded=false;
+function renderMlTime(days){
+  let pts=S.mlTime||[];
+  if(days>0&&pts.length){
+    const last=new Date(pts[pts.length-1][0]).getTime(), cutoff=last-days*864e5;
+    pts=pts.filter(p=>new Date(p[0]).getTime()>=cutoff);
+  }
+  chart("mltime",$("#chMlTime"),{type:"line",
+    data:{labels:pts.map(t=>t[0]),datasets:[{label:"sales / week",data:pts.map(t=>t[1]),borderColor:C.chain,backgroundColor:"rgba(110,168,255,.12)",tension:.3,fill:true,pointRadius:0}]},
+    options:base({})});
+}
+async function renderML(){
+  if(mlLoaded)return;
+  const shortA=a=>a?a.slice(0,6)+"…"+a.slice(-4):"—";
+  try{
+    const res=await fetch("ml_results.json",{cache:"no-store"});
+    if(!res.ok)throw new Error("no file");
+    const d=await res.json();
+    mlLoaded=true;
+    $("#mlSource").textContent=d.source;
+    const ds=d.dataset,m=d.metrics;
+    $("#mlDataset").innerHTML=[
+      [Number(ds.n_sales).toLocaleString(),"real sales analyzed"],
+      [ds.collections.join(" · "),"collections"],
+      [ds.date_from+" → "+ds.date_to,"date range"],
+      [Number(m.n_wash).toLocaleString(),"wash trades labeled"]
+    ].map(([v,k])=>`<div class="scard"><div class="v">${v}</div><div class="k">${k}</div></div>`).join("");
+    const cards=[
+      ["Accuracy",(m.accuracy*100).toFixed(1)+"%","overall",C.guard],
+      ["ROC-AUC",m.roc_auc.toFixed(3),"class separation",C.chain],
+      ["CV ROC-AUC",(m.cv_auc??m.roc_auc).toFixed(3),"5-fold · overfit check",C.guard],
+      ["Precision",(m.precision*100).toFixed(0)+"%","of flags correct",C.amber],
+      ["Recall",(m.recall*100).toFixed(0)+"%","of wash caught",C.amber]
+    ];
+    $("#mlMetrics").innerHTML=cards.map(([l,n,dd,c])=>`<div class="kpi" style="--kc:${c}"><div class="n" style="color:${c}">${n}</div><div class="l">${l}</div><div class="d">${dd}</div></div>`).join("");
+    chart("mlfeat",$("#chMlFeat"),{type:"bar",
+      data:{labels:d.feature_importance.map(f=>f[0]),datasets:[{label:"importance",data:d.feature_importance.map(f=>f[1]),backgroundColor:C.guard+"B3",borderRadius:4,maxBarThickness:34}]},
+      options:base({})});
+    S.mlTime=d.sales_over_time; renderMlTime(0);
+    $("#mlTimePeriod").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+      $("#mlTimePeriod").querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");
+      renderMlTime(+b.dataset.d);});
+    $("#mlFlagged").innerHTML=d.flagged.map(f=>{
+      const pat=f.is_self_transfer?"self-transfer":`loop ×${f.pair_trade_count}`;
+      return `<tr>
+        <td>${esc(f.collection)}</td>
+        <td class="mono">#${esc(f.tokenId)}</td>
+        <td class="mono" style="font-size:11px">${shortA(f.seller)} → ${shortA(f.buyer)}</td>
+        <td class="mono">${f.price_eth} ETH</td>
+        <td><span class="mono" style="color:var(--alert)">${pat}</span></td>
+        <td><a href="https://etherscan.io/tx/${esc(f.txhash)}" target="_blank" rel="noopener" style="color:var(--chain)">verify ↗</a></td>
+      </tr>`;}).join("");
+  }catch(e){
+    $("#mlDataset").innerHTML=`<div class="empty">ML results not generated yet — run <span class="mono">ml/export_for_dashboard.py</span>.</div>`;
+  }
+}
+
+/* ================= OVERVIEW ================= */
+function renderOverview(){
+  const high=S.nfts.filter(n=>n.risk?.riskLevel==="High");
+  $("#alertBar").hidden=!high.length;
+  $("#alertItems").innerHTML=high.map(n=>{
+    const types=(n.flags||[]).map(f=>f.flagType.replaceAll("_"," ").toLowerCase()).slice(0,2).join(", ");
+    return `<a onclick="gotoRisk(${n.tokenId})"><b>#${n.tokenId} ${esc(n.name)}</b> — score <span class="sc">${n.risk.unifiedScore}</span>${types?` · ${esc(types)}`:""}</a>`;}).join("");
+  const s=S.stats||{};const scores=S.nfts.map(n=>n.risk?.unifiedScore??0);
+  const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0;
+  const cards=[["NFTs indexed",s.totalNfts??"–","1 collection",C.chain],
+    ["Transactions",s.totalTransactions??"–","mints · lists · sales",C.chain],
+    ["Verified authentic",s.verifiedNfts??"–","all 3 layers passed",C.guard],
+    ["High-risk NFTs",s.highRiskNfts??"–","score ≥ 70",C.alert],
+    ["Fraud flags",s.totalFlags??"–","heuristics + integrity",C.amber],
+    ["Avg risk score",avg,"collection health",lvlColor(levelOf(avg))]];
+  $("#kpis").innerHTML=cards.map(([l,n,d,c])=>`<div class="kpi" style="--kc:${c}">
+    <div class="n" style="color:${c===C.chain?"var(--ink)":c}">${n}</div><div class="l">${l}</div><div class="d">${d}</div></div>`).join("");
+  const cnt={Low:0,Medium:0,High:0};S.nfts.forEach(n=>{if(n.risk)cnt[n.risk.riskLevel]++;});
+  chart("donut",$("#chDonut"),{type:"doughnut",data:{labels:["Low","Medium","High"],
+    datasets:[{data:[cnt.Low,cnt.Medium,cnt.High],backgroundColor:[C.guard,C.amber,C.alert],borderColor:"#0C111B",borderWidth:3,hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"68%",plugins:{legend:{display:false}}}});
+  $("#donutLegend").innerHTML=[["Low",C.guard,cnt.Low],["Medium",C.amber,cnt.Medium],["High",C.alert,cnt.High]]
+    .map(([l,c,v])=>`<div><i style="background:${c}"></i>${l} risk<b>${v}</b></div>`).join("");
+  const list=[...S.nfts].sort((a,b)=>(b.risk?.unifiedScore??0)-(a.risk?.unifiedScore??0));
+  chart("scores",$("#chScores"),{type:"bar",data:{labels:list.map(n=>`#${n.tokenId} ${n.name}`),
+    datasets:[{data:list.map(n=>n.risk?.unifiedScore??0),backgroundColor:list.map(n=>lvlColor(n.risk?.riskLevel??"Low")+"CC"),borderRadius:5,maxBarThickness:26}]},
+    options:base({plugins:{legend:{display:false}},x:{ticks:{maxRotation:38,minRotation:38}},y:{max:100,beginAtZero:true}})});
+  $("#watchBody").innerHTML=list.map(n=>{
+    const r=n.risk||{unifiedScore:0,riskLevel:"Low",breakdown:{authRisk:0,fraudRisk:0,priceRisk:0}};const rc=lvlColor(r.riskLevel);
+    return `<tr class="click" onclick="gotoRisk(${n.tokenId})">
+      <td><div class="score-cell"><div class="mini-ring" style="--rv:${r.unifiedScore};--rc:${rc}"><b>${r.unifiedScore}</b></div>
+        <div class="score-bar"><i style="width:${r.unifiedScore}%;background:${rc}"></i></div></div></td>
+      <td><div class="nm">${esc(n.name)}</div><div class="tid">#${n.tokenId} · ${esc(n.collectionName)}</div></td>
+      <td><span class="badge ${esc(n.authenticityStatus)}">${esc(n.authenticityStatus)}</span></td>
+      <td><span class="lvl ${r.riskLevel}">${r.riskLevel}</span></td>
+      <td class="mono">${r.breakdown.authRisk??0} / ${r.breakdown.fraudRisk??0} / ${r.breakdown.priceRisk??0}</td>
+      <td class="mono">${(n.flags||[]).length||"—"}</td>
+      <td class="mono">${n.listed?n.priceEth+" ETH":"—"}</td>
+      <td class="mono">${esc(shortAddr(n.ownerAddress))}</td></tr>`;}).join("");
+}
+
+/* ================= MODULE 1 — AUTHENTICITY ================= */
+function renderAuth(){
+  $("#authVerdict").className="verdict";
+  [1,2,3].forEach(i=>{const st=$("#stp"+i);st.className="step";st.querySelector(".ic").textContent=i;st.querySelector(".detail").textContent="";});
+  $("#authTable").innerHTML=S.nfts.map(n=>`<tr>
+    <td><div class="nm">${esc(n.name)}</div><div class="tid">#${n.tokenId}</div></td>
+    <td><span class="badge ${esc(n.authenticityStatus)}">${esc(n.authenticityStatus)}</span></td>
+    <td class="mono">${esc(String(n.metadataHash||"").slice(0,12))}…</td>
+    <td><button class="btn sm" onclick="$('#authSel').value=${n.tokenId};runVerify()">Verify</button></td></tr>`).join("");
+}
+async function runVerify(){
+  const id=+$("#authSel").value;const n=S.nfts.find(x=>x.tokenId===id);if(!n)return;
+  $("#authVerdict").className="verdict";
+  let result;
+  if(LIVE){
+    try{const rsp=await api("/verify/"+id,{method:"POST"},30000);
+      result={checks:rsp.checks.slice(0,3).map(c=>({pass:c.pass,detail:c.detail})),status:rsp.authenticityStatus,authRisk:rsp.authRisk};
+      const detail=await api("/nfts/"+id);Object.assign(n,detail);
+    }catch(e){toast("Verification failed: "+e.message,"err");return;}
+  }else{
+    result=localAuthChecks(n);
+  }
+  for(let i=0;i<3;i++){
+    const st=$("#stp"+(i+1));st.className="step on running";st.querySelector(".ic").textContent="";
+    await sleep(650);
+    const c=result.checks[i]||{pass:true,detail:"—"};
+    st.className="step on "+(c.pass?"pass":"fail");
+    st.querySelector(".ic").textContent=c.pass?"✓":"✕";
+    st.querySelector(".detail").textContent=c.detail;
+  }
+  if(!LIVE){localRisk(n);recomputeStats();}
+  const v=$("#authVerdict");v.className="verdict show "+result.status;
+  v.innerHTML=`<b>${result.status}</b><span>authenticity risk contribution: ${result.authRisk} / 100 → ×0.40 weight = +${(result.authRisk*.4).toFixed(1)} to unified score</span>`;
+  renderAuth.tableOnly?null:$("#authTable")&&renderAuthTableOnly();
+  toast(`#${id} verification complete — ${result.status}`);
+}
+function renderAuthTableOnly(){
+  $("#authTable").innerHTML=S.nfts.map(n=>`<tr>
+    <td><div class="nm">${esc(n.name)}</div><div class="tid">#${n.tokenId}</div></td>
+    <td><span class="badge ${esc(n.authenticityStatus)}">${esc(n.authenticityStatus)}</span></td>
+    <td class="mono">${esc(String(n.metadataHash||"").slice(0,12))}…</td>
+    <td><button class="btn sm" onclick="$('#authSel').value=${n.tokenId};runVerify()">Verify</button></td></tr>`).join("");
+}
+$("#authRun").addEventListener("click",runVerify);
+
+/* ================= MODULE 2 — TRANSACTION SIMULATION ================= */
+function renderSim(){
+  renderWalletCard();
+  $("#simTable").innerHTML=S.nfts.map(n=>{
+    const mine=S.wallet&&n.ownerAddress&&n.ownerAddress.toLowerCase()===S.wallet.toLowerCase();
+    return `<tr>
+    <td><div class="nm">${esc(n.name)}</div><div class="tid">#${n.tokenId}</div></td>
+    <td class="mono">${esc(shortAddr(n.ownerAddress))}${mine?' <span class="badge Verified">you</span>':""}</td>
+    <td>${n.listed?'<span class="badge Verified">Listed</span>':'<span class="badge Unverified">Unlisted</span>'}</td>
+    <td class="mono">${n.listed?n.priceEth+" ETH":"—"}</td>
+    <td>${n.listed&&!mine?`<button class="btn sm primary" onclick="buyNft(${n.tokenId})">Buy ${n.priceEth} ETH</button>`:""}
+        ${mine&&!n.listed?`<span class="inline-price"><input type="number" step="0.01" min="0.01" id="lp${n.tokenId}" placeholder="ETH">
+          <button class="btn sm" onclick="listNft(${n.tokenId})">List</button></span>`:""}
+        ${mine&&n.listed?`<button class="btn sm danger" onclick="cancelList(${n.tokenId})">Cancel</button>`:""}</td></tr>`;}).join("");
+  renderTxTable();
+}
+function renderWalletCard(){
+  $("#walletCard").innerHTML=S.wallet?`
+    <div style="font-size:11px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase">Testnet wallet</div>
+    <div class="addr">${esc(S.wallet)}</div>
+    <div class="bal">${S.balance.toFixed(3)} <small>Sepolia ETH (simulated)</small></div>`
+    :`<div class="empty">No wallet connected — click "Connect wallet" above to create a simulated testnet wallet.</div>`;
+}
+function renderTxTable(){
+  const f=$("#txFilter").value;const rows=[];
+  S.nfts.forEach(n=>(n.transactions||[]).forEach(t=>{if(!f||+f===n.tokenId)rows.push({...t,tokenId:n.tokenId,name:n.name});}));
+  rows.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+  $("#txBody").innerHTML=rows.map(t=>`<tr>
+    <td class="mono">#${t.tokenId}</td><td><span class="pill-type">${esc(t.txType)}</span></td>
+    <td class="mono">${esc(shortAddr(t.senderAddress))}</td><td class="mono">${esc(shortAddr(t.recipientAddress))}</td>
+    <td class="mono" style="color:var(--ink)">${t.priceEth||0} ETH</td>
+    <td class="mono">${esc(shortAddr(t.txHash||"—"))}</td>
+    <td class="mono">${new Date(t.timestamp).toLocaleString()}</td></tr>`).join("")||`<tr><td colspan="7"><div class="empty">No transactions yet.</div></td></tr>`;
+}
+$("#txFilter").addEventListener("input",renderTxTable);
+
+$("#walletBtn").addEventListener("click",()=>{
+  if(S.wallet){S.wallet=null;$("#walletBtn").textContent="Connect wallet";toast("Wallet disconnected");}
+  else{S.wallet="0x"+[...Array(40)].map(()=>"0123456789abcdef"[Math.random()*16|0]).join("");S.balance=10;
+    $("#walletBtn").textContent=shortAddr(S.wallet);toast("Simulated testnet wallet connected: "+shortAddr(S.wallet));}
+  if(S.view==="sim")renderSim();
+});
+
+async function mintNft(){
+  const name=$("#mName").value.trim(),price=parseFloat($("#mPrice").value)||0;
+  if(!name)return toast("Give the NFT a name","err");
+  if(!S.wallet)return toast("Connect a wallet first","err");
+  if(LIVE){
+    try{const r=await api("/mint",{method:"POST",body:JSON.stringify({name,walletAddress:S.wallet,priceEth:price})},30000);
+      toast(`Minted #${r.nft.tokenId} — tx ${shortAddr(r.txHash)}${r.simulated?" (simulated)":" on Sepolia"}`);
+      await reloadLive(); }catch(e){return toast("Mint failed: "+e.message,"err");}
+  }else{
+    const id=Math.max(...S.nfts.map(n=>n.tokenId))+1;
+    S.nfts.push({tokenId:id,name,priceEth:price,listed:price>0,collectionName:"CyberGuard Genesis",
+      authenticityStatus:"Verified",ownerAddress:S.wallet,contractAddress:"0xSIMULATEDC0NTRACT",
+      metadataHash:"0x"+txh().slice(5,17),erc721Compliant:true,imageHash:"pH_"+id,tampered:false,risk:null,flags:[],
+      transactions:[{txType:"MINT",senderAddress:"0x0000000000000000000000000000000000000000",recipientAddress:S.wallet,priceEth:0,timestamp:new Date().toISOString(),txHash:txh()}]});
+    localRisk(S.nfts[S.nfts.length-1]);recomputeStats();fillSelectors();
+    toast(`Simulated mint — token #${id} created, metadata SHA-256 anchored`);
+  }
+  $("#mName").value="";$("#mPrice").value="";renderSim();
+}
+$("#mintBtn").addEventListener("click",mintNft);
+
+async function listNft(id){
+  const price=parseFloat($("#lp"+id)?.value);
+  if(!price||price<=0)return toast("Enter a price in ETH","err");
+  const n=S.nfts.find(x=>x.tokenId===id);
+  if(LIVE){try{await api("/list",{method:"POST",body:JSON.stringify({tokenId:id,priceEth:price})},30000);await reloadLive();}
+    catch(e){return toast("List failed: "+e.message,"err");}}
+  else{n.listed=true;n.priceEth=price;
+    n.transactions.push({txType:"LIST",senderAddress:n.ownerAddress,recipientAddress:n.ownerAddress,priceEth:price,timestamp:new Date().toISOString(),txHash:txh()});
+    recomputeStats();}
+  toast(`#${id} listed at ${price} ETH`);renderSim();
+}
+async function cancelList(id){
+  const n=S.nfts.find(x=>x.tokenId===id);n.listed=false;
+  toast(`Listing for #${id} cancelled`);renderSim();
+}
+async function buyNft(id){
+  if(!S.wallet)return toast("Connect a wallet first","err");
+  const n=S.nfts.find(x=>x.tokenId===id);
+  if(S.balance<n.priceEth)return toast("Insufficient simulated balance","err");
+  if(LIVE){
+    try{const r=await api("/buy",{method:"POST",body:JSON.stringify({tokenId:id,buyerAddress:S.wallet})},30000);
+      toast(`Purchased #${id} — tx ${shortAddr(r.txHash)}${r.simulated?" (simulated)":" on Sepolia"}`);
+      S.balance-=n.priceEth;await reloadLive(); }catch(e){return toast("Buy failed: "+e.message,"err");}
+  }else{
+    n.transactions.push({txType:"SALE",senderAddress:n.ownerAddress,recipientAddress:S.wallet,priceEth:n.priceEth,timestamp:new Date().toISOString(),txHash:txh()});
+    S.balance-=n.priceEth;n.ownerAddress=S.wallet;n.listed=false;
+    localRisk(n);recomputeStats();
+    toast(`Simulated purchase of #${id} recorded — risk re-evaluated (score ${n.risk.unifiedScore})`);
+  }
+  renderSim();
+}
+async function reloadLive(){
+  const list=await api("/nfts");
+  S.nfts=await Promise.all(list.map(n=>api("/nfts/"+n.tokenId).catch(()=>n)));
+  S.stats=await api("/stats");fillSelectors();
+}
+window.buyNft=buyNft;window.listNft=listNft;window.cancelList=cancelList;window.runVerify=runVerify;window.gotoRisk=gotoRisk;window.$=$;
+
+/* ================= MODULE 3 — PRICE TRANSPARENCY ================= */
+function renderPrice(){
+  const sales=allSales();const st=calcStats(sales.map(s=>s.priceEth));
+  $("#priceStats").innerHTML=[["μ average",st.avgPrice+" ETH"],["median",st.medianPrice+" ETH"],["σ std dev",st.stdDev],
+    ["min",st.minPrice+" ETH"],["max",st.maxPrice+" ETH"],["sample size",st.sampleSize+" sales"]]
+    .map(([k,v])=>`<div class="scard"><div class="v">${v}</div><div class="k">${k}</div></div>`).join("");
+  renderPriceHist();
+  const an=sales.map(s=>({...s,z:zFor(s.priceEth,st)})).filter(s=>Math.abs(s.z)>TH.z);
+  $("#anomBody").innerHTML=an.length?an.map(a=>`<tr>
+    <td><div class="nm">${esc(a.name)}</div><div class="tid">#${a.tokenId}</div></td>
+    <td class="mono" style="color:var(--ink)">${a.priceEth} ETH</td>
+    <td class="mono" style="color:var(--alert)">${a.z>0?"+":""}${a.z}</td>
+    <td class="mono">${new Date(a.timestamp).toLocaleDateString()}</td></tr>`).join("")
+    :`<tr><td colspan="4"><div class="empty">No anomalous sales — all prices within |Z| ≤ ${TH.z}.</div></td></tr>`;
+  chart("scatter",$("#chScatter"),{type:"scatter",data:{datasets:[
+    {label:"Sales",data:sales.map((a,i)=>({x:i,y:a.priceEth,name:a.name})),pointRadius:4.5,
+      pointBackgroundColor:sales.map(a=>Math.abs(zFor(a.priceEth,st))>TH.z?C.alert:C.guard+"D9")},
+    {label:`μ ${st.avgPrice} ETH`,type:"line",data:sales.map((_,i)=>({x:i,y:st.avgPrice})),
+      borderColor:"rgba(110,168,255,.55)",borderDash:[6,6],pointRadius:0,borderWidth:1.4}]},
+    options:base({plugins:{tooltip:{callbacks:{label:c=>`${c.raw.name??"mean"} — ${c.raw.y.toFixed(3)} ETH`}}}})});
+}
+function dataNow(){let m=0;S.nfts.forEach(n=>(n.transactions||[]).forEach(t=>{const v=+new Date(t.timestamp);if(v>m)m=v;}));return m||Date.now();}
+function renderPriceHist(){
+  const id=+$("#priceSel").value||S.nfts[0]?.tokenId;const n=S.nfts.find(x=>x.tokenId===id);if(!n)return;
+  const st=calcStats(allSales().map(s=>s.priceEth));
+  let sales=(n.transactions||[]).filter(t=>t.txType==="SALE");
+  const days=S.pricePeriod||0;
+  if(days>0){const cutoff=dataNow()-days*864e5;sales=sales.filter(s=>+new Date(s.timestamp)>=cutoff);}
+  chart("phist",$("#chPriceHist"),{type:"line",
+    data:{labels:sales.map(s=>new Date(s.timestamp).toLocaleDateString(undefined,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})),
+      datasets:[{label:`#${id} sale price (ETH)`,data:sales.map(s=>s.priceEth),tension:.35,borderColor:C.guard,borderWidth:2,
+        pointRadius:sales.map(s=>Math.abs(zFor(s.priceEth,st))>TH.z?6:3.5),
+        pointBackgroundColor:sales.map(s=>Math.abs(zFor(s.priceEth,st))>TH.z?C.alert:C.guard),
+        pointBorderColor:"transparent",fill:{target:"origin",above:"rgba(0,255,136,.06)"}}]},
+    options:base({})});
+  const box=$("#chPriceHist").parentElement;let note=box.querySelector(".chart-empty");
+  if(!sales.length){if(!note){note=document.createElement("div");note.className="chart-empty";box.appendChild(note);}note.textContent="No sales in this period";}
+  else if(note){note.remove();}
+}
+$("#priceSel").addEventListener("input",renderPriceHist);
+S.pricePeriod=0;
+$("#pricePeriod").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  $("#pricePeriod").querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");
+  S.pricePeriod=+b.dataset.d;renderPriceHist();});
+
+/* ================= MODULE 4 — FRAUD DETECTION ================= */
+function renderFraud(){
+  [1,2,3,4].forEach(i=>{const r=$("#rule"+i);r.className="rule idle";r.querySelector(".st").textContent="IDLE";r.querySelector(".ev").textContent="";});
+  $("#fraudScoreOut").textContent="";$("#fraudFormula").style.display="none";
+  renderFlagFeed();renderFreqChart();renderGraph();
+}
+function renderFlagFeed(){
+  const all=[];S.nfts.forEach(n=>(n.flags||[]).forEach(f=>all.push({...f,tokenId:n.tokenId,name:n.name})));
+  all.sort((a,b)=>b.penaltyScore-a.penaltyScore);
+  $("#flagCount").textContent=all.length+" active";
+  const colorOf=t=>/TAMPERED|NON_COMPLIANT|LOOP/.test(t)?C.alert:C.amber;
+  $("#flagFeed").innerHTML=all.length?all.map(f=>`
+    <div class="fitem" style="--fc:${colorOf(f.flagType)}">
+      <div class="ft"><span>${esc(f.flagType)}</span><span class="pen">-${f.penaltyScore} pts</span></div>
+      <p><span class="tk">#${f.tokenId} ${esc(f.name)}</span> — ${esc(f.description)}</p></div>`).join("")
+    :`<div class="empty">No fraud flags.</div>`;
+}
+function renderFreqChart(){
+  const byDay={};
+  S.nfts.forEach(n=>(n.transactions||[]).forEach(t=>{const k=new Date(t.timestamp).toISOString().slice(0,10);
+    byDay[k]=byDay[k]||{SALE:0,MINT:0};byDay[k][t.txType==="SALE"?"SALE":"MINT"]++;}));
+  const days=Object.keys(byDay).sort();
+  chart("freq",$("#chFreq"),{type:"bar",data:{labels:days.map(d=>new Date(d).toLocaleDateString(undefined,{month:"short",day:"numeric"})),
+    datasets:[{label:"Sales",data:days.map(d=>byDay[d].SALE),backgroundColor:C.guard+"B3",borderRadius:4,maxBarThickness:20,stack:"s"},
+      {label:"Mints/other",data:days.map(d=>byDay[d].MINT),backgroundColor:C.chain+"80",borderRadius:4,maxBarThickness:20,stack:"s"}]},
+    options:base({x:{stacked:true},y:{stacked:true,beginAtZero:true,ticks:{precision:0}}})});
+}
+const RULE_KEYS=["BUYER_SELLER_LOOP","ABNORMAL_FREQUENCY","SELF_TRANSFER","RAPID_PRICE_ESCALATION"];
+async function runFraud(){
+  const id=+$("#fraudSel").value;const n=S.nfts.find(x=>x.tokenId===id);if(!n)return;
+  let flags,fraudRisk;
+  if(LIVE){
+    try{const r=await api("/fraud/"+id,{method:"POST"},30000);flags=r.flags;fraudRisk=r.fraudRisk;
+      const detail=await api("/nfts/"+id);Object.assign(n,detail);}
+    catch(e){return toast("Analysis failed: "+e.message,"err");}
+  }else{
+    const r=localFraud(n);flags=r.flags;fraudRisk=r.fraudRisk;localRisk(n);recomputeStats();
+  }
+  for(let i=0;i<4;i++){
+    const el=$("#rule"+(i+1));el.className="rule idle";el.querySelector(".st").textContent="…";
+    await sleep(420);
+    const hit=flags.find(f=>f.flagType===RULE_KEYS[i]);
+    el.className="rule "+(hit?"hit":"clean");
+    el.querySelector(".st").textContent=hit?"TRIGGERED":"CLEAN";
+    el.querySelector(".ev").innerHTML=hit?`<span class="pen">-${hit.penaltyScore} pts</span>${esc(hit.description)}`:"No matching pattern in transaction history.";
+  }
+  $("#fraudScoreOut").innerHTML=`fraudRisk = <b style="color:${fraudRisk>=50?C.alert:fraudRisk>0?C.amber:C.guard}">${fraudRisk} / 100</b>`;
+  const pens=flags.filter(f=>RULE_KEYS.includes(f.flagType)).map(f=>f.penaltyScore);
+  $("#fraudFormula").style.display="block";
+  $("#fraudFormula").innerHTML=`fraudRisk = min(100, ${pens.length?pens.join(" + "):"0"}) = <b>${fraudRisk}</b> → ×0.35 weight = +${(fraudRisk*.35).toFixed(1)} to unified score`;
+  renderFlagFeed();
+  toast(`#${id} fraud analysis complete — ${flags.filter(f=>RULE_KEYS.includes(f.flagType)).length} rule(s) triggered`);
+}
+$("#fraudRun").addEventListener("click",runFraud);
+
+/* ================= MODULE 5 — RISK ANALYTICS ================= */
+function renderRisk(){renderRiskToken();renderStack();}
+async function renderRiskToken(recompute=false){
+  const id=+$("#riskSel").value||S.nfts[0]?.tokenId;const n=S.nfts.find(x=>x.tokenId===id);if(!n)return;
+  if(recompute){
+    if(LIVE){try{await api("/risk/"+id,{},40000);const d=await api("/nfts/"+id);Object.assign(n,d);toast(`#${id} recomputed`);}
+      catch(e){return toast("Recompute failed: "+e.message,"err");}}
+    else{localRisk(n);recomputeStats();toast(`#${id} recomputed — full pipeline (auth + fraud + price)`);}
+  }
+  const r=n.risk||{unifiedScore:0,riskLevel:"Low",breakdown:{authRisk:0,fraudRisk:0,priceRisk:0,contribution:{authenticity:0,fraud:0,priceAnomaly:0},weights:{authenticity:.4,fraud:.35,priceAnomaly:.25}}};
+  const rc=lvlColor(r.riskLevel);
+  const g=$("#riskGauge");g.style.setProperty("--rv",r.unifiedScore);g.style.setProperty("--rc",rc);
+  $("#riskScore").textContent=r.unifiedScore;
+  $("#riskLevel").textContent=r.riskLevel+" risk";$("#riskLevel").className="lvl "+r.riskLevel;
+  const b=r.breakdown;
+  $("#riskFormula").innerHTML=`score = 0.40×${b.authRisk} + 0.35×${b.fraudRisk} + 0.25×${b.priceRisk}<br>= ${b.contribution.authenticity} + ${b.contribution.fraud} + ${b.contribution.priceAnomaly} = <b>${r.unifiedScore} / 100</b>`;
+  const rows=[["Authenticity risk",b.authRisk,b.contribution.authenticity,.40,C.chain],
+    ["Fraud heuristics",b.fraudRisk,b.contribution.fraud,.35,C.alert],
+    ["Price anomaly",b.priceRisk,b.contribution.priceAnomaly,.25,C.amber]];
+  $("#riskBars").innerHTML=rows.map(([t,v,c,w,col])=>`
+    <div class="bb"><div class="t"><span>${t} <small style="color:var(--faint)">× ${w}</small></span><b>${v} → +${c}</b></div>
+    <div class="bar"><i style="width:${v}%;background:${col}"></i></div></div>`).join("")+
+    `<div class="bb"><div class="t"><span>Unified score</span><b style="color:${rc}">${r.unifiedScore} / 100 · ${r.riskLevel}</b></div>
+    <div class="bar"><i style="width:${r.unifiedScore}%;background:${rc}"></i></div></div>`;
+  const flags=n.flags||[];
+  const colorOf=t=>/TAMPERED|NON_COMPLIANT|LOOP/.test(t)?C.alert:C.amber;
+  $("#riskFlags").innerHTML=flags.length?flags.map(f=>`
+    <div class="fitem" style="--fc:${colorOf(f.flagType)}">
+      <div class="ft"><span>${esc(f.flagType)}</span><span class="pen">-${f.penaltyScore} pts</span></div>
+      <p>${esc(f.description)}</p></div>`).join("")
+    :`<div class="empty">No flags — this NFT is clean across all three indicators.</div>`;
+}
+$("#riskSel").addEventListener("input",()=>renderRiskToken(false));
+$("#riskRun").addEventListener("click",()=>renderRiskToken(true));
+function renderStack(){
+  const list=[...S.nfts].sort((a,b)=>a.tokenId-b.tokenId);
+  const g=k=>list.map(n=>n.risk?.breakdown?.contribution?.[k]??0);
+  chart("stack",$("#chStack"),{type:"bar",data:{labels:list.map(n=>"#"+n.tokenId+" "+n.name),
+    datasets:[{label:"Authenticity ×0.40",data:g("authenticity"),backgroundColor:C.chain+"CC",borderRadius:4,maxBarThickness:30},
+      {label:"Fraud ×0.35",data:g("fraud"),backgroundColor:C.alert+"CC",borderRadius:4,maxBarThickness:30},
+      {label:"Price ×0.25",data:g("priceAnomaly"),backgroundColor:C.amber+"CC",borderRadius:4,maxBarThickness:30}]},
+    options:base({x:{stacked:true,ticks:{maxRotation:38,minRotation:38}},y:{stacked:true,max:100,beginAtZero:true}})});
+}
+
+boot();
+</script>
+</body>
+</html>

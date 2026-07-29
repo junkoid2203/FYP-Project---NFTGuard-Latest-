@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NFTGuard — Data-Driven NFT Fraud Detection & Risk Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/examples/jsm/loaders/GLTFLoader": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js"
+      }
+    }
+    </script>
+<style>
+:root{
+  --void:#05070C; --panel:rgba(13,18,28,.72); --panel-solid:#0D121C; --raised:#131A28;
+  --line:rgba(140,160,190,.14); --line-strong:rgba(140,160,190,.28);
+  --ink:#E9EEF6; --dim:#93A0B4; --faint:#5B6A80;
+  --guard:#00FF88; --guard-dim:rgba(0,255,136,.14);
+  --amber:#FFB020; --amber-dim:rgba(255,176,32,.14);
+  --alert:#FF4D5E; --alert-dim:rgba(255,77,94,.14);
+  --chain:#6EA8FF;
+  --r:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--void);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:15px;line-height:1.55;overflow-x:hidden}
+::selection{background:var(--guard);color:#02150B}
+
+/* ---------- particle backdrop (user's sphere effect) ---------- */
+#particle-container{position:fixed;inset:0;z-index:0;pointer-events:none}
+#particle-container canvas{display:block}
+.veil{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(1200px 640px at 50% 8%,transparent 0%,rgba(5,7,12,.42) 62%,rgba(5,7,12,.9) 100%),
+             linear-gradient(180deg,rgba(5,7,12,.15) 0%,rgba(5,7,12,.6) 58vh,var(--void) 100vh)}
+.page{position:relative;z-index:2}
+
+/* ---------- nav ---------- */
+nav{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:26px;
+  padding:14px 4vw;background:rgba(5,7,12,.55);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.logo{display:flex;align-items:center;gap:10px;font-family:'Space Grotesk';font-weight:700;font-size:19px;letter-spacing:.02em}
+.logo .shield{width:26px;height:26px}
+.logo b{color:var(--guard)}
+nav .links{display:flex;gap:22px;margin-left:8px}
+nav .links a{color:var(--dim);text-decoration:none;font-size:13.5px;font-weight:500;transition:color .15s}
+nav .links a:hover{color:var(--ink)}
+.wallet{margin-left:auto;display:flex;align-items:center;gap:10px}
+.mode-pill{font-family:'JetBrains Mono';font-size:11px;padding:5px 10px;border-radius:99px;border:1px solid var(--line-strong);color:var(--dim)}
+.mode-pill.live{color:var(--guard);border-color:rgba(0,255,136,.4)}
+.btn{font-family:'Space Grotesk';font-weight:600;font-size:13.5px;padding:9px 16px;border-radius:10px;border:1px solid var(--line-strong);
+  background:transparent;color:var(--ink);cursor:pointer;transition:all .15s}
+.btn:hover{border-color:var(--guard);color:var(--guard)}
+.btn:focus-visible{outline:2px solid var(--guard);outline-offset:2px}
+.btn.primary{background:var(--guard);border-color:var(--guard);color:#03160C}
+.btn.primary:hover{filter:brightness(1.12);color:#03160C}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+
+/* ---------- hero ---------- */
+.hero{min-height:88vh;display:flex;flex-direction:column;justify-content:center;padding:0 4vw;max-width:1240px;margin:0 auto}
+.eyebrow{font-family:'JetBrains Mono';font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--guard);margin-bottom:18px}
+.hero h1{font-family:'Space Grotesk';font-weight:700;font-size:clamp(40px,6.2vw,78px);line-height:1.04;letter-spacing:-.015em;max-width:13ch}
+.hero h1 .g{color:var(--guard)}
+.hero p.sub{margin-top:20px;max-width:56ch;color:var(--dim);font-size:16.5px}
+.hero .cta{margin-top:30px;display:flex;gap:14px;flex-wrap:wrap}
+
+/* verification console — signature element */
+.console{margin-top:46px;max-width:660px;border:1px solid var(--line);border-radius:var(--r);
+  background:rgba(8,11,18,.78);backdrop-filter:blur(8px);overflow:hidden}
+.console .bar{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--line);color:var(--faint);
+  font-family:'JetBrains Mono';font-size:11px}
+.console .bar i{width:9px;height:9px;border-radius:50%;background:var(--guard);box-shadow:0 0 8px var(--guard);animation:blink 1.6s infinite}
+@keyframes blink{50%{opacity:.35}}
+.console pre{padding:14px 16px;font-family:'JetBrains Mono';font-size:12.5px;line-height:1.75;color:var(--dim);white-space:pre-wrap;min-height:118px}
+.console pre .ok{color:var(--guard)} .console pre .bad{color:var(--alert)} .console pre .k{color:var(--chain)}
+
+/* stat strip */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin:64px auto 0;max-width:1240px;width:92%}
+.stat{background:var(--panel);backdrop-filter:blur(10px);padding:20px 22px}
+.stat .n{font-family:'Space Grotesk';font-weight:700;font-size:30px;letter-spacing:-.01em}
+.stat .l{font-size:12px;color:var(--dim);margin-top:2px;letter-spacing:.04em;text-transform:uppercase}
+.stat.hl .n{color:var(--alert)}
+.stat.ok .n{color:var(--guard)}
+
+/* ---------- sections ---------- */
+section{max-width:1240px;margin:0 auto;padding:84px 4vw 20px}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:26px}
+.sec-head h2{font-family:'Space Grotesk';font-weight:700;font-size:30px;letter-spacing:-.01em}
+.sec-head .hint{color:var(--faint);font-size:13px}
+
+/* filters */
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+.filters select,.filters input{background:var(--panel-solid);border:1px solid var(--line-strong);color:var(--ink);
+  border-radius:10px;padding:9px 12px;font-size:13.5px;font-family:'Inter'}
+.filters input{min-width:220px}
+.filters select:focus,.filters input:focus{outline:none;border-color:var(--guard)}
+
+/* ---------- NFT grid ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:18px}
+.card{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:var(--r);
+  overflow:hidden;cursor:pointer;transition:transform .18s,border-color .18s}
+.card:hover{transform:translateY(-3px);border-color:var(--line-strong)}
+.card .art{position:relative;aspect-ratio:1/1;background:#0A0F18}
+.card .art svg{width:100%;height:100%;display:block}
+.card .art img{width:100%;height:100%;object-fit:cover;display:block}
+.wflag{position:fixed;top:0;left:0;right:0;z-index:300;display:flex;justify-content:space-between;align-items:center;gap:16px;background:linear-gradient(90deg,#3a0d12,#521018);color:#ffdadd;border-bottom:1px solid var(--alert,#FF4D5E);padding:11px 20px;font-family:'Space Grotesk';font-size:13px;transform:translateY(-105%);transition:transform .35s ease;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+.wflag.show{transform:translateY(0)}
+.wflag #wfClose{cursor:pointer;opacity:.7;font-size:16px;flex:none}
+.wflag #wfClose:hover{opacity:1}
+#walletBtn.flagged{border-color:var(--alert,#FF4D5E)!important;color:var(--alert,#FF4D5E)!important}
+.wc-overlay{position:fixed;inset:0;background:rgba(4,8,14,.72);backdrop-filter:blur(4px);z-index:400;display:none;align-items:center;justify-content:center}
+.wc-overlay.open{display:flex}
+.wc-modal{background:var(--panel,#0e1420);border:1px solid var(--line,#202a3a);border-radius:16px;padding:22px;width:340px;max-width:92vw;display:flex;flex-direction:column;gap:10px}
+.wc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-family:'Space Grotesk';font-size:16px}
+.wc-x{cursor:pointer;opacity:.6}.wc-x:hover{opacity:1}
+.wc-full{width:100%}
+.wc-or{text-align:center;color:var(--faint,#7a8aa0);font-size:11px;margin:6px 0}
+.wc-modal input{width:100%}
+.wc-hint{font-size:11px;color:var(--faint,#7a8aa0)}
+.wc-hint a{color:var(--guard,#00FF88)}
+/* ---------- OpenSea-style detail modal ---------- */
+.modal.os{max-width:1040px;width:94vw;max-height:92vh;overflow:hidden;position:relative;padding:0}
+.modal.os .x{position:absolute;top:12px;right:14px;z-index:5;background:rgba(10,15,24,.6);border-radius:8px}
+.os-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);max-height:92vh}
+.os-left{background:#0a0f18;display:flex;align-items:center;justify-content:center}
+.os-art{width:100%;aspect-ratio:1/1;background:#0a0f18;overflow:hidden}
+.os-art img,.os-art svg{width:100%;height:100%;object-fit:cover;display:block}
+.os-right{padding:26px 28px;overflow-y:auto;max-height:92vh}
+.os-coll{display:flex;align-items:center;gap:8px;color:var(--chain,#6EA8FF);font-family:'Space Grotesk';font-weight:600;font-size:13px}
+.os-ver{color:var(--guard,#00FF88);font-size:11px;background:var(--guard-dim,rgba(0,255,136,.13));padding:1px 8px;border-radius:20px}
+.os-title{font-family:'Space Grotesk';font-size:26px;font-weight:700;margin:6px 0 4px}
+.os-owner{color:var(--faint,#7a8aa0);font-size:12.5px;margin-bottom:12px}
+.os-owner .mono{color:var(--ink,#e8eef7)}
+.os-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.os-chip{font-family:'JetBrains Mono';font-size:10.5px;color:var(--dim,#9fb0c4);border:1px solid var(--line,#202a3a);border-radius:7px;padding:4px 9px}
+.os-box{border:1px solid var(--line,#202a3a);border-radius:14px;padding:16px;margin-bottom:6px;background:var(--inset,rgba(255,255,255,.02))}
+.os-boxrow{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:14px}
+.os-risk{display:flex;align-items:center;gap:12px}
+.os-sub{color:var(--faint,#7a8aa0);font-size:11px;margin-top:2px}
+.os-priced{text-align:right}
+.os-price{font-family:'JetBrains Mono';font-size:22px;font-weight:600;color:var(--ink,#e8eef7)}
+.os-price small{font-size:12px;color:var(--faint,#7a8aa0)}
+.os-box .m-actions{border-top:none;padding:0;display:flex;gap:10px;flex-wrap:wrap}
+.os-sec{border-top:1px solid var(--line,#202a3a);padding:14px 0;margin-top:12px}
+.os-sec summary{cursor:pointer;font-family:'Space Grotesk';font-weight:600;font-size:14px;list-style:none}
+.os-sec summary::-webkit-details-marker{display:none}
+.os-traits{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.os-trait{border:1px solid var(--line,#202a3a);border-radius:10px;padding:9px 11px;background:var(--chain-dim,rgba(110,168,255,.07))}
+.os-tk{color:var(--chain,#6EA8FF);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;font-family:'JetBrains Mono'}
+.os-tv{font-size:13px;font-weight:600;margin-top:3px;color:var(--ink,#e8eef7);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:820px){.os-body{grid-template-columns:1fr;max-height:none}.modal.os{overflow-y:auto}.os-traits{grid-template-columns:repeat(2,1fr)}}
+.badge{position:absolute;top:10px;left:10px;font-family:'JetBrains Mono';font-size:10.5px;font-weight:600;
+  padding:4px 9px;border-radius:99px;letter-spacing:.05em;backdrop-filter:blur(6px)}
+.badge.Verified{background:var(--guard-dim);color:var(--guard);border:1px solid rgba(0,255,136,.35)}
+.badge.Tampered,.badge.NonCompliant{background:var(--alert-dim);color:var(--alert);border:1px solid rgba(255,77,94,.35)}
+.badge.Duplicate{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(255,176,32,.35)}
+.badge.Unverified{background:rgba(147,160,180,.12);color:var(--dim);border:1px solid var(--line-strong)}
+
+/* risk ring — signature gauge */
+.ring{position:absolute;top:10px;right:10px;width:52px;height:52px;border-radius:50%;
+  display:grid;place-items:center;background:rgba(5,7,12,.72);backdrop-filter:blur(6px)}
+.ring::before{content:"";position:absolute;inset:0;border-radius:50%;padding:3px;
+  background:conic-gradient(var(--rc) calc(var(--rv)*1%),rgba(147,160,180,.16) 0);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude}
+.ring b{font-family:'JetBrains Mono';font-size:14px;font-weight:600;color:var(--rc)}
+.ring span{position:absolute;bottom:-16px;font-size:8.5px;letter-spacing:.1em;color:var(--faint)}
+
+.card .meta{padding:14px 15px 15px}
+.card .meta .row1{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card .name{font-family:'Space Grotesk';font-weight:600;font-size:15.5px}
+.card .tid{font-family:'JetBrains Mono';font-size:11px;color:var(--faint)}
+.card .row2{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.card .price{font-family:'JetBrains Mono';font-size:13.5px;color:var(--ink)}
+.card .price small{color:var(--faint)}
+.lvl{font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px}
+.lvl.Low{background:var(--guard-dim);color:var(--guard)}
+.lvl.Medium{background:var(--amber-dim);color:var(--amber)}
+.lvl.High{background:var(--alert-dim);color:var(--alert)}
+
+/* ---------- modal ---------- */
+.overlay{position:fixed;inset:0;z-index:80;background:rgba(3,5,9,.7);backdrop-filter:blur(6px);
+  display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:5vh 16px}
+.overlay.open{display:flex}
+.modal{background:var(--panel-solid);border:1px solid var(--line-strong);border-radius:18px;max-width:960px;width:100%;
+  overflow:hidden;animation:pop .22s ease}
+@keyframes pop{from{transform:translateY(14px);opacity:0}}
+.modal .m-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--line)}
+.modal .m-head h3{font-family:'Space Grotesk';font-size:21px}
+.modal .m-head .x{background:none;border:none;color:var(--dim);font-size:22px;cursor:pointer;line-height:1}
+.modal .m-body{display:grid;grid-template-columns:320px 1fr;gap:0}
+.m-left{padding:22px;border-right:1px solid var(--line)}
+.m-left .art{border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+.m-left .art svg{width:100%;display:block}
+.gauge-wrap{display:flex;align-items:center;gap:18px;margin-top:18px}
+.gauge{position:relative;width:96px;height:96px;border-radius:50%;display:grid;place-items:center}
+.gauge::before{content:"";position:absolute;inset:0;border-radius:50%;padding:7px;
+  background:conic-gradient(var(--rc) calc(var(--rv)*1%),rgba(147,160,180,.14) 0);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude}
+.gauge b{font-family:'Space Grotesk';font-size:28px;font-weight:700;color:var(--rc)}
+.gauge-wrap .gi .lvl{font-size:12px}
+.gauge-wrap .gi p{color:var(--faint);font-size:12px;margin-top:6px;max-width:150px}
+.kv{margin-top:18px;font-size:12.5px}
+.kv div{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line)}
+.kv span{color:var(--faint)} .kv code{font-family:'JetBrains Mono';font-size:11.5px;color:var(--dim)}
+.m-right{padding:22px;min-width:0}
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.tab{background:none;border:none;color:var(--dim);font-family:'Space Grotesk';font-weight:600;font-size:14px;
+  padding:9px 14px;cursor:pointer;border-bottom:2px solid transparent}
+.tab.active{color:var(--guard);border-bottom-color:var(--guard)}
+.tabpane{display:none}.tabpane.active{display:block}
+
+.break-bars{margin-top:6px}
+.bb{margin-bottom:14px}
+.bb .t{display:flex;justify-content:space-between;font-size:12.5px;color:var(--dim);margin-bottom:6px}
+.bb .t b{color:var(--ink);font-family:'JetBrains Mono'}
+.bb .bar{height:7px;border-radius:99px;background:rgba(147,160,180,.14);overflow:hidden}
+.bb .bar i{display:block;height:100%;border-radius:99px;transition:width .5s ease}
+
+.check{display:flex;gap:12px;padding:12px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+.check .ic{width:20px;height:20px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700}
+.check.pass .ic{background:var(--guard-dim);color:var(--guard)}
+.check.fail .ic{background:var(--alert-dim);color:var(--alert)}
+.check .d{color:var(--faint);font-size:12px;margin-top:2px;font-family:'JetBrains Mono';word-break:break-all}
+
+.flag{border:1px solid var(--line);border-left:3px solid var(--alert);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:rgba(255,77,94,.04)}
+.flag .ft{font-family:'JetBrains Mono';font-size:11.5px;color:var(--alert);letter-spacing:.06em}
+.flag p{font-size:13px;color:var(--dim);margin-top:4px}
+.flag .pen{float:right;font-family:'JetBrains Mono';font-size:11px;color:var(--faint)}
+.noflag{color:var(--faint);font-size:13.5px;padding:18px;border:1px dashed var(--line);border-radius:10px;text-align:center}
+
+.chart-box{position:relative;height:260px}
+.tx-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+.tx-table th{color:var(--faint);text-align:left;font-weight:500;padding:8px 6px;border-bottom:1px solid var(--line);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.tx-table td{padding:9px 6px;border-bottom:1px dashed var(--line);font-family:'JetBrains Mono';font-size:11.5px;color:var(--dim)}
+.tx-table td.price{color:var(--ink)}
+.pill-type{font-size:10px;padding:2px 8px;border-radius:99px;border:1px solid var(--line-strong)}
+
+.m-actions{display:flex;gap:10px;padding:16px 22px;border-top:1px solid var(--line)}
+
+/* mint drawer */
+.mint-panel{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:var(--r);padding:26px;max-width:560px}
+.mint-panel h3{font-family:'Space Grotesk';font-size:20px;margin-bottom:6px}
+.mint-panel p{color:var(--dim);font-size:13.5px;margin-bottom:18px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--dim);margin-bottom:6px;letter-spacing:.04em}
+.field input{width:100%;background:var(--void);border:1px solid var(--line-strong);color:var(--ink);border-radius:10px;padding:10px 12px;font-size:14px}
+.field input:focus{outline:none;border-color:var(--guard)}
+
+/* toast */
+#toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);z-index:99;opacity:0;
+  background:var(--raised);border:1px solid var(--line-strong);border-radius:12px;padding:12px 18px;font-size:13.5px;
+  transition:all .25s;pointer-events:none;max-width:90vw}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.ok{border-color:rgba(0,255,136,.4)} #toast.err{border-color:rgba(255,77,94,.4)}
+
+footer{margin-top:90px;border-top:1px solid var(--line);padding:30px 4vw;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  color:var(--faint);font-size:12.5px;position:relative;z-index:2;background:var(--void)}
+footer code{font-family:'JetBrains Mono'}
+
+@media(max-width:820px){
+  .modal .m-body{grid-template-columns:1fr}
+  .m-left{border-right:none;border-bottom:1px solid var(--line)}
+  nav .links{display:none}
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<div id="particle-container" aria-hidden="true"></div>
+<div class="veil" aria-hidden="true"></div>
+
+<div class="page">
+<nav>
+  <div class="logo">
+    <svg class="shield" viewBox="0 0 24 24" fill="none"><path d="M12 2L4 5.5V11c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5.5L12 2z" stroke="#00FF88" stroke-width="1.6" fill="rgba(0,255,136,.08)"/><path d="M8.5 12l2.4 2.4 4.6-4.8" stroke="#00FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    NFT<b>Guard</b>
+  </div>
+  <div class="links">
+    <a href="#market">Marketplace</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="#analytics">Price analytics</a>
+    <a href="#mint">Mint</a>
+  </div>
+  <div class="wallet">
+    <span class="mode-pill" id="modePill">connecting…</span>
+    <button class="btn" id="walletBtn">Connect wallet</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="eyebrow">ERC-721 · Sepolia Testnet · Heuristic Fraud Detection</div>
+  <h1>Trade NFTs with the <span class="g">risk made visible.</span></h1>
+  <p class="sub">NFTGuard verifies smart-contract compliance, anchors metadata with on-chain SHA-256 hashes,
+     and scans every transaction history for wash trading, self-transfers and abnormal price spikes —
+     then distils it all into a single 0–100 risk score before you buy.</p>
+  <div class="cta">
+    <a href="#market"><button class="btn primary">Browse marketplace</button></a>
+    <a href="dashboard.html"><button class="btn">Open risk dashboard</button></a>
+  </div>
+  <div class="console" role="log" aria-label="live verification feed">
+    <div class="bar"><i></i> nftguard · verification engine</div>
+    <pre id="consoleFeed"></pre>
+  </div>
+</header>
+
+<div class="stats" id="statStrip">
+  <div class="stat"><div class="n" id="stNfts">–</div><div class="l">NFTs indexed</div></div>
+  <div class="stat"><div class="n" id="stTx">–</div><div class="l">Transactions analysed</div></div>
+  <div class="stat ok"><div class="n" id="stVerified">–</div><div class="l">Verified authentic</div></div>
+  <div class="stat hl"><div class="n" id="stHigh">–</div><div class="l">High-risk flagged</div></div>
+  <div class="stat"><div class="n" id="stFlags">–</div><div class="l">Fraud flags raised</div></div>
+</div>
+
+<section id="market">
+  <div class="sec-head">
+    <h2>Marketplace</h2>
+    <span class="hint">Risk ring = unified score · 0.40 authenticity + 0.35 fraud + 0.25 price anomaly</span>
+  </div>
+  <div class="filters">
+    <input id="fSearch" type="search" placeholder="Search by name…" aria-label="Search NFTs">
+    <select id="fRisk" aria-label="Filter by risk level">
+      <option value="">All risk levels</option><option>Low</option><option>Medium</option><option>High</option>
+    </select>
+    <select id="fStatus" aria-label="Filter by authenticity">
+      <option value="">All authenticity</option><option>Verified</option><option>Tampered</option><option>Duplicate</option><option>NonCompliant</option><option>Unverified</option>
+    </select>
+  </div>
+  <div class="grid" id="nftGrid"></div>
+</section>
+
+<section id="analytics">
+  <div class="sec-head">
+    <h2>Collection price transparency</h2>
+    <span class="hint" id="anaHint">Z-score anomaly threshold |Z| &gt; 2.5</span>
+  </div>
+  <div class="mint-panel" style="max-width:100%;padding:22px">
+    <div class="chart-box" style="height:300px"><canvas id="collChart"></canvas></div>
+  </div>
+</section>
+
+<section id="mint">
+  <div class="sec-head"><h2>Mint a test NFT</h2></div>
+  <div class="mint-panel">
+    <h3>Simulated minting</h3>
+    <p>Creates an ERC-721 on the Sepolia testnet when the backend is chain-connected; otherwise the mint is
+       simulated locally. The metadata SHA-256 hash is anchored at mint time for later integrity checks.</p>
+    <div class="field"><label for="mName">Name</label><input id="mName" placeholder="e.g. Quantum Relic #9"></div>
+    <div class="field"><label for="mPrice">List price (ETH)</label><input id="mPrice" type="number" step="0.01" min="0" placeholder="0.50"></div>
+    <button class="btn primary" id="mintBtn">Mint NFT</button>
+  </div>
+</section>
+
+<footer>
+  <div>© 2026 NFTGuard · Data-Driven NFT Fraud Detection &amp; Risk Analytics</div>
+  <div>Contract: <code id="ftContract">not connected</code></div>
+</footer>
+</div><!-- /page -->
+
+<!-- detail modal (OpenSea-style) -->
+<div class="overlay" id="overlay" aria-modal="true" role="dialog">
+  <div class="modal os">
+    <button class="x" id="mClose" aria-label="Close">×</button>
+    <div class="os-body">
+      <div class="os-left">
+        <div class="os-art" id="mArt"></div>
+      </div>
+      <div class="os-right">
+        <div class="os-coll"><span id="mColl">Collection</span><span class="os-ver" id="mVerBadge" title="Authenticity verified">✓ Verified</span></div>
+        <h2 class="os-title" id="mTitle">NFT</h2>
+        <div class="os-owner">Owned by <span id="mOwner" class="mono">—</span></div>
+        <div class="os-chips" id="mChips"></div>
+        <div class="os-box">
+          <div class="os-boxrow">
+            <div class="os-risk">
+              <div class="gauge" id="mGauge"><b id="mScore">–</b></div>
+              <div><span class="lvl" id="mLevel">–</span><div class="os-sub">NFTGuard risk score</div></div>
+            </div>
+            <div class="os-priced"><div class="os-sub">Price</div><div class="os-price" id="mPriceVal">—</div></div>
+          </div>
+          <div class="m-actions">
+            <button class="btn primary" id="mBuy">Buy now</button>
+            <input id="mListPrice" type="number" min="0" step="0.01" placeholder="price ETH" style="width:120px;display:none">
+            <button class="btn primary" id="mList" style="display:none">List for sale</button>
+            <button class="btn" id="mVerify">Re-run verification</button>
+          </div>
+        </div>
+        <details class="os-sec" open><summary>Traits</summary><div class="os-traits" id="mTraits"></div></details>
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-t="risk">Risk breakdown</button>
+          <button class="tab" data-t="auth">Authenticity</button>
+          <button class="tab" data-t="fraud">Fraud flags</button>
+          <button class="tab" data-t="price">Price history</button>
+        </div>
+        <div class="tabpane active" id="pane-risk"><div class="break-bars" id="mBars"></div><div class="kv" id="mKv"></div></div>
+        <div class="tabpane" id="pane-auth"><div id="mChecks"></div></div>
+        <div class="tabpane" id="pane-fraud"><div id="mFlags"></div></div>
+        <div class="tabpane" id="pane-price">
+          <div class="chart-box"><canvas id="mChart"></canvas></div>
+          <div style="overflow-x:auto"><table class="tx-table"><thead><tr><th>Type</th><th>From</th><th>To</th><th>Price</th><th>When</th></tr></thead><tbody id="mTx"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ================================================================
+   NFTGuard dashboard logic
+   Talks to the backend REST API (same origin /api). If the backend
+   is unreachable (e.g. opening this file directly), it falls back
+   to an embedded demo dataset that mirrors backend/scripts/seedDemo.js
+   so the full UI remains demonstrable.
+================================================================ */
+const API = "/api";
+let LIVE = false;                      // backend reachable?
+const state = { nfts: [], stats: null, wallet: null, current: null, charts: {} };
+
+/* ---------- demo fallback dataset (mirrors seedDemo.js) ---------- */
+const DEMO = (() => {
+  const W = { alice:"0xA11C…0001", bob:"0xB0B0…0002", carol:"0xCA40…0003", dave:"0xDA7E…0004", w1:"0x3A5B…1111", w2:"0x3A5B…2222" };
+  const d = n => new Date(Date.now() - n*864e5).toISOString();
+  const m = n => new Date(Date.now() - n*6e4).toISOString();
+  const nft = (tokenId,name,priceEth,status,risk,flags,txs,traits) => ({
+    tokenId, name, priceEth, listed:true, collectionName:"CyberGuard Genesis",
+    authenticityStatus:status, ownerAddress:W.alice, contractAddress:"0xSIMULATED",
+    metadataHash:"0x9f2ab6…", traits:traits||{rarity:"Common"},
+    risk, flags, transactions:txs,
+  });
+  const R = (a,f,p) => { const u=Math.round(.4*a+.35*f+.25*p);
+    return {authRisk:a,fraudRisk:f,priceRisk:p,unifiedScore:u,riskLevel:u>=70?"High":u>=40?"Medium":"Low",
+      breakdown:{weights:{authenticity:.4,fraud:.35,priceAnomaly:.25},authRisk:a,fraudRisk:f,priceRisk:p,
+      contribution:{authenticity:+(a*.4).toFixed(1),fraud:+(f*.35).toFixed(1),priceAnomaly:+(p*.25).toFixed(1)}}}; };
+  const F = (t,desc,pen)=>({flagType:t,description:desc,penaltyScore:pen,detectedAt:d(0)});
+  const S=(f,t,p,ts)=>({txType:"SALE",senderAddress:f,recipientAddress:t,priceEth:p,timestamp:ts,txHash:"0xsim…"});
+  const M=(t,ts)=>({txType:"MINT",senderAddress:"0x0000…0000",recipientAddress:t,priceEth:0,timestamp:ts,txHash:"0xsim…"});
+  const washTx=[M(W.w1,d(5))]; let p=0.5;
+  for(let i=0;i<6;i++){washTx.push(S(i%2?W.w2:W.w1,i%2?W.w1:W.w2,+p.toFixed(3),m(120-i*12)));p*=1.6;}
+  const darkTx=[M(W.w2,d(3))];let q=0.8;
+  for(let i=0;i<4;i++){darkTx.push(S(i%2?W.w1:W.w2,i%2?W.w2:W.w1,+q.toFixed(3),m(90-i*15)));q*=1.6;}
+  darkTx.push(S(W.w2,W.w2,3.4,m(28)));
+  const flashTx=[M(W.alice,d(9))]; const cyc=[W.alice,W.bob,W.carol,W.dave];
+  for(let i=0;i<8;i++)flashTx.push(S(cyc[i%4],cyc[(i+1)%4],+(0.85+i*0.01).toFixed(2),m(35-i*4)));
+  return [
+    nft(1,"Genesis Orb",0.45,"Verified",R(0,0,0),[],[M(W.alice,d(30)),S(W.alice,W.bob,0.40,d(20)),S(W.bob,W.carol,0.44,d(10)),S(W.carol,W.bob,0.45,d(3))],{rarity:"Rare"}),
+    nft(2,"Neon Circuit",0.55,"Verified",R(0,0,0),[],[M(W.alice,d(28)),S(W.alice,W.dave,0.50,d(18)),S(W.dave,W.carol,0.55,d(6))]),
+    nft(3,"Wash Cycle",4.2,"Verified",R(0,75,58),[F("BUYER_SELLER_LOOP","Wallet pair traded this NFT 6x (0x3a5b…1111<->0x3a5b…2222) — wash trading pattern",45),F("RAPID_PRICE_ESCALATION","5 consecutive sales jumped ≥ 50% within 60 min (max +60%)",30),F("PRICE_ANOMALY","1 sale exceeds |Z| > 2.5",58)],washTx,{rarity:"Legendary?"}),
+    nft(4,"Mirror Mint",0.6,"Verified",R(0,25,0),[F("SELF_TRANSFER","2 transactions where sender and recipient wallets are identical",25)],[M(W.dave,d(8)),S(W.dave,W.dave,0.60,d(2)),S(W.dave,W.dave,0.62,d(1))]),
+    nft(5,"Flash Flip",0.9,"Verified",R(0,30,0),[F("ABNORMAL_FREQUENCY","8 transactions within 60 min vs collection baseline 2.1 per token",30)],flashTx),
+    nft(6,"Phantom Ape",0.7,"Tampered",R(100,0,0),[F("METADATA_TAMPERED","Off-chain metadata hash does not match on-chain SHA-256 anchor",80),F("DUPLICATE_ASSET","Perceptual hash shared with tokens #7, #9",50)],[M(W.carol,d(15)),S(W.carol,W.bob,0.70,d(7)),S(W.bob,W.carol,0.72,d(2))]),
+    nft(7,"Phantom Ape Copy",0.65,"Duplicate",R(50,0,0),[F("DUPLICATE_ASSET","Perceptual hash matches token #6 (distance 0.00)",50)],[M(W.dave,d(4))]),
+    nft(8,"Moon Spike",5.5,"Verified",R(0,0,60),[F("PRICE_ANOMALY","1 sale exceeds |Z| > 2.5 (max |Z| = 3.1)",60)],[M(W.alice,d(12)),S(W.alice,W.bob,0.5,d(6)),S(W.bob,W.alice,5.5,d(1))]),
+    nft(9,"Dark Mint",6.7,"Tampered",R(100,100,0),[F("METADATA_TAMPERED","Off-chain metadata hash does not match on-chain SHA-256 anchor",80),F("DUPLICATE_ASSET","Perceptual hash matches Phantom Ape family",50),F("BUYER_SELLER_LOOP","Wallet pair traded this NFT 5x — wash trading pattern",45),F("SELF_TRANSFER","1 transaction where sender and recipient wallets are identical",25),F("RAPID_PRICE_ESCALATION","3 consecutive sales jumped ≥ 50% within 60 min",30)],darkTx,{rarity:"Mythic??"}),
+  ];
+})();
+
+/* ---------- utilities ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const lvlColor = l => l==="High"?"var(--alert)":l==="Medium"?"var(--amber)":"var(--guard)";
+const shortAddr = a => { a=String(a||""); return a.length>13?a.slice(0,6)+"…"+a.slice(-4):a; };
+function toast(msg, cls="ok"){ const t=$("#toast"); t.textContent=msg; t.className="show "+cls; setTimeout(()=>t.className="",3200); }
+async function api(path, opts={}, timeout=2500){
+  const ctl = new AbortController(); const to=setTimeout(()=>ctl.abort(),timeout);
+  try{ const r = await fetch(API+path,{...opts,headers:{"Content-Type":"application/json",...(opts.headers||{})},signal:ctl.signal});
+    clearTimeout(to); if(!r.ok) throw new Error((await r.json().catch(()=>({}))).error||r.statusText); return await r.json(); }
+  finally{ clearTimeout(to); }
+}
+
+/* ---------- deterministic generative art per token ---------- */
+function tokenArt(id,size=400){
+  let h=2166136261; const s=String(id)+"guard";
+  for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619)>>>0;}
+  const rnd=()=>{h=Math.imul(h^h>>>15,2246822519)>>>0;return (h>>>8)/16777216;};
+  const hue=Math.floor(rnd()*360), hue2=(hue+80+rnd()*120)%360;
+  let rings=""; const cx=size/2,cy=size/2;
+  for(let i=0;i<5;i++){const r=size*0.12+i*size*0.075, dash=20+rnd()*90, off=rnd()*300;
+    rings+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="hsla(${i%2?hue2:hue},90%,62%,${0.6-i*0.09})" stroke-width="${2+rnd()*3}" stroke-dasharray="${dash} ${14+rnd()*40}" stroke-dashoffset="${off}"/>`;}
+  let nodes="";
+  for(let i=0;i<14;i++){const a=rnd()*Math.PI*2,r=size*(0.14+rnd()*0.3);
+    nodes+=`<circle cx="${cx+Math.cos(a)*r}" cy="${cy+Math.sin(a)*r}" r="${1.5+rnd()*3.5}" fill="hsla(${rnd()>0.5?hue:hue2},95%,70%,.9)"/>`;}
+  return `<svg viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Generative art for token ${id}">
+    <defs><radialGradient id="g${id}" cx="42%" cy="38%"><stop offset="0%" stop-color="hsl(${hue},70%,16%)"/><stop offset="100%" stop-color="#070B12"/></radialGradient></defs>
+    <rect width="${size}" height="${size}" fill="url(#g${id})"/>
+    <circle cx="${cx}" cy="${cy}" r="${size*0.30}" fill="hsla(${hue},90%,55%,.10)"/>${rings}${nodes}
+    <text x="${size-16}" y="${size-14}" text-anchor="end" font-family="monospace" font-size="15" fill="hsla(${hue2},80%,75%,.85)">#${id}</text></svg>`;
+}
+
+/* ---------- data loading ---------- */
+async function boot(){
+  try{
+    const h = await api("/health");
+    LIVE = true;
+    $("#modePill").textContent = h.mode; $("#modePill").classList.add("live");
+    $("#ftContract").textContent = h.contract || "simulated mode";
+    const [stats,nfts] = await Promise.all([api("/stats"), api("/nfts")]);
+    state.stats = stats;
+    state.nfts = await Promise.all(nfts.map(async n=>{
+      if(n.risk) return n;
+      return n;
+    }));
+  }catch(e){
+    LIVE = false;
+    $("#modePill").textContent = "demo data (backend offline)";
+    $("#ftContract").textContent = "0xSIMULATED — run backend for live mode";
+    state.nfts = DEMO.map(n=>({...n}));
+    state.stats = { totalNfts:8, totalTransactions:DEMO.reduce((s,n)=>s+n.transactions.length,0),
+      verifiedNfts:DEMO.filter(n=>n.authenticityStatus==="Verified").length,
+      highRiskNfts:DEMO.filter(n=>n.risk.riskLevel==="High").length,
+      totalFlags:DEMO.reduce((s,n)=>s+n.flags.length,0) };
+  }
+  renderStats(); renderGrid(); renderCollectionChart(); startConsole();
+}
+
+function renderStats(){
+  const s=state.stats||{};
+  $("#stNfts").textContent=s.totalNfts??"–"; $("#stTx").textContent=s.totalTransactions??"–";
+  $("#stVerified").textContent=s.verifiedNfts??"–"; $("#stHigh").textContent=s.highRiskNfts??"–";
+  $("#stFlags").textContent=s.totalFlags??"–";
+}
+
+/* ---------- marketplace grid ---------- */
+function renderGrid(){
+  const q=($("#fSearch").value||"").toLowerCase(), rl=$("#fRisk").value, st=$("#fStatus").value;
+  const list=state.nfts.filter(n=>
+    (!q||n.name.toLowerCase().includes(q)) &&
+    (!rl||(n.risk&&n.risk.riskLevel===rl)) &&
+    (!st||n.authenticityStatus===st));
+  $("#nftGrid").innerHTML = list.map(n=>{
+    const score=n.risk?n.risk.unifiedScore:null, lvl=n.risk?n.risk.riskLevel:"–";
+    const rc=lvlColor(lvl);
+    return `<article class="card" data-id="${n.tokenId}" tabindex="0" aria-label="${esc(n.name)}, risk ${score??"unknown"}">
+      <div class="art">${n.image?`<img src="${esc(n.image)}" alt="${esc(n.name)}" loading="lazy" onerror="this.remove()">`:tokenArt(n.tokenId)}
+        <span class="badge ${esc(n.authenticityStatus)}">${esc(n.authenticityStatus)}</span>
+        ${score!==null?`<div class="ring" style="--rv:${score};--rc:${rc}"><b>${score}</b></div>`:""}
+      </div>
+      <div class="meta">
+        <div class="row1"><span class="name">${esc(n.name)}</span><span class="tid">#${n.tokenId}</span></div>
+        <div class="row2">
+          <span class="price">${n.ownerAddress&&state.wallet&&n.ownerAddress.toLowerCase()===state.wallet.toLowerCase()?'<small style="color:var(--guard)">✓ You own this</small>':(n.listed?`${n.priceEth} <small>ETH</small>`:`<small>owned by ${shortAddr(n.ownerAddress)}</small>`)}</span>
+          <span class="lvl ${lvl}">${lvl} risk</span>
+        </div>
+      </div></article>`;
+  }).join("") || `<div class="noflag" style="grid-column:1/-1">No NFTs match the current filters.</div>`;
+  document.querySelectorAll(".card").forEach(c=>{
+    c.addEventListener("click",()=>openDetail(+c.dataset.id));
+    c.addEventListener("keydown",e=>{if(e.key==="Enter")openDetail(+c.dataset.id);});
+  });
+}
+["fSearch","fRisk","fStatus"].forEach(id=>$("#"+id).addEventListener("input",renderGrid));
+
+/* ---------- detail modal ---------- */
+async function openDetail(id){
+  let n;
+  if(LIVE){ try{ n = await api("/nfts/"+id); }catch(e){ toast("Failed to load: "+e.message,"err"); return; } }
+  else n = state.nfts.find(x=>x.tokenId===id);
+  if(!n) return;
+  state.current=n;
+  const realId=String(n.name).split("#")[1]||n.tokenId;
+  const ownedByMe = n.ownerAddress && state.wallet && n.ownerAddress.toLowerCase()===state.wallet.toLowerCase();
+  $("#mTitle").textContent = n.name;
+  $("#mColl").textContent = n.collectionName || "Collection";
+  $("#mOwner").textContent = ownedByMe ? "you" : shortAddr(n.ownerAddress);
+  $("#mVerBadge").style.display = n.authenticityStatus==="Verified" ? "" : "none";
+  $("#mChips").innerHTML = ["ERC-721","Ethereum",`Token #${esc(String(realId))}`].map(c=>`<span class="os-chip">${c}</span>`).join("");
+  $("#mPriceVal").innerHTML = n.listed ? `${n.priceEth} <small>ETH</small>` : `<small>Not for sale</small>`;
+  $("#mArt").innerHTML = n.image?`<img src="${esc(n.image)}" alt="${esc(n.name)}" onerror="this.remove()">`:tokenArt(n.tokenId,480);
+  const r=n.risk||{unifiedScore:0,riskLevel:"Low",breakdown:{authRisk:0,fraudRisk:0,priceRisk:0,contribution:{authenticity:0,fraud:0,priceAnomaly:0},weights:{authenticity:.4,fraud:.35,priceAnomaly:.25}}};
+  const rc=lvlColor(r.riskLevel);
+  $("#mGauge").style.setProperty("--rv",r.unifiedScore); $("#mGauge").style.setProperty("--rc",rc);
+  $("#mScore").textContent=r.unifiedScore; $("#mLevel").textContent=r.riskLevel+" risk"; $("#mLevel").className="lvl "+r.riskLevel;
+  const tr=n.traits||{};
+  const trKeys=Object.keys(tr).filter(k=>!["collection","realTokenId","source"].includes(k));
+  $("#mTraits").innerHTML = trKeys.length ? trKeys.map(k=>`<div class="os-trait"><div class="os-tk">${esc(k)}</div><div class="os-tv" title="${esc(String(tr[k]))}">${esc(String(tr[k]))}</div></div>`).join("") : `<div class="noflag" style="grid-column:1/-1">No trait data for this token.</div>`;
+  $("#mKv").innerHTML = `
+    <div><span>Contract</span><code>${esc(shortAddr(n.contractAddress))}</code></div>
+    <div><span>Metadata hash</span><code>${esc(shortAddr(n.metadataHash))}</code></div>
+    <div><span>Token standard</span><code>ERC-721</code></div>
+    <div><span>Chain</span><code>Ethereum</code></div>`;
+  // breakdown bars
+  const b=r.breakdown, rows=[
+    ["Authenticity risk", b.authRisk, b.contribution.authenticity, b.weights.authenticity, "var(--chain)"],
+    ["Fraud heuristics",  b.fraudRisk, b.contribution.fraud, b.weights.fraud, "var(--alert)"],
+    ["Price anomaly",     b.priceRisk, b.contribution.priceAnomaly, b.weights.priceAnomaly, "var(--amber)"]];
+  $("#mBars").innerHTML = rows.map(([t,v,c,w,col])=>`
+    <div class="bb"><div class="t"><span>${t} <small style="color:var(--faint)">× ${w}</small></span><b>${v} → +${c}</b></div>
+    <div class="bar"><i style="width:${v}%;background:${col}"></i></div></div>`).join("") +
+    `<div class="bb"><div class="t"><span>Unified score</span><b style="color:${rc}">${r.unifiedScore} / 100</b></div>
+     <div class="bar"><i style="width:${r.unifiedScore}%;background:${rc}"></i></div></div>`;
+  // authenticity checks
+  renderChecks(n.authChecks || defaultChecks(n));
+  // fraud flags
+  const flags=n.flags||[];
+  $("#mFlags").innerHTML = flags.length ? flags.map(f=>`
+    <div class="flag"><span class="pen">-${f.penaltyScore} pts</span><div class="ft">${esc(f.flagType)}</div><p>${esc(f.description)}</p></div>`).join("")
+    : `<div class="noflag">No heuristic rules triggered — transaction history looks organic.</div>`;
+  // price tab
+  renderPriceChart(n); renderTxTable(n);
+  $("#mBuy").style.display = (n.listed && !ownedByMe) ? "" : "none";
+  $("#mList").style.display = ownedByMe ? "" : "none";
+  $("#mList").textContent = n.listed ? "Update price" : "List for sale";
+  $("#mListPrice").style.display = ownedByMe ? "" : "none";
+  if(ownedByMe && n.listed) $("#mListPrice").value = n.priceEth;
+  $("#overlay").classList.add("open"); document.body.style.overflow="hidden";
+}
+function defaultChecks(n){
+  const tampered=n.authenticityStatus==="Tampered", dup=n.authenticityStatus==="Duplicate", nonc=n.authenticityStatus==="NonCompliant";
+  return [
+    {layer:"Smart contract validation",pass:!nonc,detail: nonc?"Contract failed ERC-721/ERC-1155 interface check":"ERC-165 supportsInterface → ERC-721: true"},
+    {layer:"Metadata integrity (SHA-256)",pass:!tampered,detail: tampered?"MISMATCH — off-chain hash differs from on-chain anchor":"Off-chain metadata hash matches on-chain anchor"},
+    {layer:"Duplicate detection (pHash)",pass:!dup,detail: dup?"Perceptual hash matches an existing registry asset":"No perceptually similar assets found in registry"},
+  ];
+}
+function renderChecks(checks){
+  $("#mChecks").innerHTML = checks.map(c=>`
+    <div class="check ${c.pass?"pass":"fail"}"><div class="ic">${c.pass?"✓":"✕"}</div>
+    <div><div>${esc(c.layer)}</div><div class="d">${esc(c.detail)}</div></div></div>`).join("");
+}
+function renderTxTable(n){
+  const txs=n.transactions||[];
+  $("#mTx").innerHTML = txs.map(t=>`
+    <tr><td><span class="pill-type">${esc(t.txType)}</span></td><td>${esc(shortAddr(t.senderAddress))}</td>
+    <td>${esc(shortAddr(t.recipientAddress))}</td><td class="price">${t.priceEth||0} ETH</td>
+    <td>${new Date(t.timestamp).toLocaleString()}</td></tr>`).join("");
+}
+function renderPriceChart(n){
+  const sales=(n.transactions||[]).filter(t=>t.txType==="SALE");
+  const prices=sales.map(s=>s.priceEth);
+  const m=prices.reduce((a,b)=>a+b,0)/(prices.length||1);
+  const sd=Math.sqrt(prices.reduce((a,x)=>a+(x-m)**2,0)/Math.max(1,prices.length-1));
+  const anomalies = sales.map(s=> sd>0 ? Math.abs((s.priceEth-m)/sd)>2.5 : false);
+  if(state.charts.m) state.charts.m.destroy();
+  state.charts.m = new Chart($("#mChart"),{
+    type:"line",
+    data:{labels:sales.map(s=>new Date(s.timestamp).toLocaleDateString(undefined,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})),
+      datasets:[{label:"Sale price (ETH)",data:prices,tension:.35,borderColor:"#00FF88",borderWidth:2,
+        pointRadius:sales.map((_,i)=>anomalies[i]?6:3.5),
+        pointBackgroundColor:sales.map((_,i)=>anomalies[i]?"#FF4D5E":"#00FF88"),
+        pointBorderColor:"transparent",fill:{target:"origin",above:"rgba(0,255,136,.06)"}}]},
+    options:chartOpts(`Price history — red points exceed |Z| > 2.5`)});
+}
+function renderCollectionChart(){
+  const all=[]; state.nfts.forEach(n=>(n.transactions||[]).forEach(t=>{if(t.txType==="SALE")all.push({...t,name:n.name});}));
+  all.sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+  const prices=all.map(a=>a.priceEth);
+  const m=prices.reduce((a,b)=>a+b,0)/(prices.length||1);
+  const sd=Math.sqrt(prices.reduce((a,x)=>a+(x-m)**2,0)/Math.max(1,prices.length-1));
+  if(state.charts.coll) state.charts.coll.destroy();
+  state.charts.coll = new Chart($("#collChart"),{
+    type:"scatter",
+    data:{datasets:[{label:"Sales",data:all.map((a,i)=>({x:i,y:a.priceEth,name:a.name})),
+      pointRadius:5,pointBackgroundColor:all.map(a=> sd>0&&Math.abs((a.priceEth-m)/sd)>2.5 ? "#FF4D5E":"rgba(0,255,136,.85)")},
+      {label:"Collection mean",type:"line",data:all.map((_,i)=>({x:i,y:m})),borderColor:"rgba(110,168,255,.6)",borderDash:[6,6],pointRadius:0,borderWidth:1.5}]},
+    options:{...chartOpts("CyberGuard Genesis — every sale, anomalies in red"),
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw.name??"mean"} — ${c.raw.y.toFixed(3)} ETH`}}}}});
+  $("#anaHint").textContent=`μ = ${m.toFixed(3)} ETH · σ = ${sd.toFixed(3)} · anomaly at |Z| > 2.5`;
+}
+function chartOpts(title){
+  return {responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:"#93A0B4",font:{family:"'JetBrains Mono'",size:11}}},
+      title:{display:true,text:title,color:"#5B6A80",font:{family:"'JetBrains Mono'",size:11},padding:{bottom:12}}},
+    scales:{x:{ticks:{color:"#5B6A80",font:{size:10,family:"'JetBrains Mono'"}},grid:{color:"rgba(140,160,190,.07)"}},
+            y:{ticks:{color:"#5B6A80",font:{size:10,family:"'JetBrains Mono'"}},grid:{color:"rgba(140,160,190,.07)"}}}};
+}
+
+/* ---------- modal interactions ---------- */
+$("#mClose").addEventListener("click",closeModal);
+$("#overlay").addEventListener("click",e=>{if(e.target.id==="overlay")closeModal();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();});
+function closeModal(){$("#overlay").classList.remove("open");document.body.style.overflow="";}
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".tabpane").forEach(x=>x.classList.remove("active"));
+  t.classList.add("active"); $("#pane-"+t.dataset.t).classList.add("active");
+}));
+
+/* ---------- wallet (simulated) ---------- */
+$("#walletBtn").addEventListener("click",()=>{
+  if(state.wallet){state.wallet=null;state.walletReal=false;state.walletFlagged=false;$("#walletBtn").textContent="Connect wallet";$("#walletBtn").classList.remove("flagged");hideWalletFlag();toast("Wallet disconnected");renderGrid();return;}
+  openWalletModal();
+});
+
+/* Proper connect dialog — MetaMask if available, or connect by address (no browser prompt) */
+function openWalletModal(){
+  let ov=document.getElementById("wcOverlay");
+  if(!ov){
+    ov=document.createElement("div");ov.id="wcOverlay";ov.className="wc-overlay";
+    ov.innerHTML=`<div class="wc-modal">
+      <div class="wc-head"><b>Connect a wallet</b><span class="wc-x" id="wcCancel">✕</span></div>
+      <button class="btn primary wc-full" id="wcMeta">🦊 Connect MetaMask</button>
+      <div class="wc-or" id="wcOr">— or connect by address (demo) —</div>
+      <input id="wcAddr" type="text" placeholder="0x… wallet address" spellcheck="false">
+      <button class="btn wc-full" id="wcAddrBtn">Connect this address</button>
+      <div class="wc-hint">Try a flagged wash trader → <a href="#" id="wcExample">0x2a9a…f5de</a></div>
+      <button class="btn sm wc-full" id="wcRandom">Use a random simulated wallet</button>
+    </div>`;
+    document.body.appendChild(ov);
+    ov.addEventListener("click",e=>{if(e.target.id==="wcOverlay")closeWalletModal();});
+    ov.querySelector("#wcCancel").onclick=closeWalletModal;
+    ov.querySelector("#wcMeta").onclick=async()=>{closeWalletModal();try{const a=await window.ethereum.request({method:"eth_requestAccounts"});if(a&&a[0])finishConnect(a[0],true);}catch(e){toast("MetaMask request declined","err");}};
+    ov.querySelector("#wcAddrBtn").onclick=()=>{const a=ov.querySelector("#wcAddr").value.trim();if(!/^0x[a-fA-F0-9]{40}$/.test(a)){toast("Enter a valid 0x… address","err");return;}closeWalletModal();finishConnect(a,false);};
+    ov.querySelector("#wcExample").onclick=e=>{e.preventDefault();ov.querySelector("#wcAddr").value="0x2a9a6bf65ab612e4bb3c5dc7478d45dc17ffd5de";};
+    ov.querySelector("#wcRandom").onclick=()=>{const hex="0123456789abcdef";closeWalletModal();finishConnect("0x"+[...Array(40)].map(()=>hex[Math.random()*16|0]).join(""),false);};
+  }
+  const hasMeta=!!window.ethereum;
+  ov.querySelector("#wcMeta").style.display=hasMeta?"block":"none";
+  ov.querySelector("#wcOr").style.display=hasMeta?"block":"none";
+  ov.classList.add("open");
+}
+function closeWalletModal(){const ov=document.getElementById("wcOverlay");if(ov)ov.classList.remove("open");}
+async function finishConnect(addr,real){
+  state.wallet=addr;state.walletReal=real;
+  $("#walletBtn").textContent=shortAddr(addr);
+  toast((real?"MetaMask":"Wallet")+" connected: "+shortAddr(addr));
+  renderGrid();
+  await screenWallet(addr);   // CONSEQUENCE: screen the connected wallet for wash trading
+}
+
+/* Screen a connected wallet for wash trading and enforce consequences */
+async function screenWallet(addr){
+  state.walletFlagged=false;
+  try{
+    const d=await api("/investigate/"+addr,{},45000);
+    if(d.riskLevel==="Medium"||d.riskLevel==="High"){
+      state.walletFlagged=true; state.walletInv=d;
+      $("#walletBtn").classList.add("flagged");
+      showWalletFlag(d);
+    }else{ $("#walletBtn").classList.remove("flagged"); hideWalletFlag(); }
+  }catch(e){ $("#walletBtn").classList.remove("flagged"); hideWalletFlag(); }
+}
+function showWalletFlag(d){
+  let bar=document.getElementById("walletFlag");
+  if(!bar){bar=document.createElement("div");bar.id="walletFlag";bar.className="wflag";document.body.appendChild(bar);}
+  bar.innerHTML=`<span><b>⚠ Wallet flagged for wash trading — risk ${d.riskScore}/100 (${d.riskLevel}).</b> ${esc((d.reasons||[]).join(" · "))}. Minting &amp; listing are disabled for this wallet.</span><span id="wfClose" title="dismiss">✕</span>`;
+  setTimeout(()=>bar.classList.add("show"),20);
+  document.getElementById("wfClose").onclick=()=>bar.classList.remove("show");
+}
+function hideWalletFlag(){const bar=document.getElementById("walletFlag");if(bar)bar.classList.remove("show");}
+
+/* ---------- buy ---------- */
+$("#mBuy").addEventListener("click",async()=>{
+  const n=state.current; if(!n)return;
+  if(!state.wallet){toast("Connect a wallet first","err");return;}
+  // Buyer protection: warn before purchasing an NFT flagged as risky
+  const lvl=n.risk?.riskLevel;
+  if(lvl==="Medium"||lvl==="High"){
+    const reasons=(n.flags||[]).map(f=>f.flagType.replaceAll("_"," ").toLowerCase()).join(", ")||"suspicious price / trading patterns";
+    if(!confirm(`⚠️ NFTGuard RISK WARNING\n\n${n.name} is flagged ${lvl} risk (score ${n.risk.unifiedScore}/100).\nDetected: ${reasons}.\n\nWash trading can artificially inflate the price you pay. Continue with the purchase?`)) return;
+  }
+  if(LIVE){
+    try{ const r=await api("/buy",{method:"POST",body:JSON.stringify({tokenId:n.tokenId,buyerAddress:state.wallet})},20000);
+      toast(`Purchased #${n.tokenId} — tx ${shortAddr(r.txHash)}${r.simulated?" (simulated)":" on Sepolia"}`);
+      await refreshAfterAction(n.tokenId);
+    }catch(e){toast("Buy failed: "+e.message,"err");}
+  }else{
+    n.transactions.push({txType:"SALE",senderAddress:n.ownerAddress,recipientAddress:state.wallet,priceEth:n.priceEth,timestamp:new Date().toISOString(),txHash:"0xsim…"});
+    n.ownerAddress=state.wallet; n.listed=false;
+    toast(`Simulated purchase of #${n.tokenId} recorded`); renderGrid(); openDetail(n.tokenId);
+  }
+});
+
+/* ---------- list / re-list (owner puts the NFT back up for sale) ---------- */
+$("#mList").addEventListener("click",async()=>{
+  const n=state.current; if(!n)return;
+  const price=parseFloat($("#mListPrice").value);
+  if(!Number.isFinite(price)||price<=0){toast("Enter a listing price greater than 0","err");return;}
+  if(state.walletFlagged){toast("⚠ This wallet is flagged for wash trading — listing is blocked","err");return;}
+  if(LIVE){
+    try{ await api("/list",{method:"POST",body:JSON.stringify({tokenId:n.tokenId,priceEth:price})},20000);
+      toast(`Listed #${n.tokenId} for sale at ${price} ETH`); await refreshAfterAction(n.tokenId);
+    }catch(e){toast("Listing failed: "+e.message,"err");}
+  }else{
+    n.listed=true; n.priceEth=price; toast(`Simulated listing of #${n.tokenId}`); renderGrid(); openDetail(n.tokenId);
+  }
+});
+
+/* ---------- re-verify ---------- */
+$("#mVerify").addEventListener("click",async()=>{
+  const n=state.current; if(!n)return;
+  if(LIVE){
+    try{ toast("Running verification pipeline…");
+      const r=await api("/risk/"+n.tokenId,{},30000);
+      toast(`Verification done — score ${r.unifiedScore} (${r.riskLevel})`);
+      await refreshAfterAction(n.tokenId);
+    }catch(e){toast("Verification failed: "+e.message,"err");}
+  }else{
+    toast("Demo mode — pipeline result already computed by seed data");
+  }
+});
+async function refreshAfterAction(id){
+  const [stats,nfts]=await Promise.all([api("/stats"),api("/nfts")]);
+  state.stats=stats; state.nfts=nfts; renderStats(); renderGrid(); renderCollectionChart(); openDetail(id);
+}
+
+/* ---------- mint ---------- */
+$("#mintBtn").addEventListener("click",async()=>{
+  const name=$("#mName").value.trim(), price=parseFloat($("#mPrice").value);
+  if(!name){toast("Give the NFT a name","err");return;}
+  if(!Number.isFinite(price)||price<=0){toast("Price must be a positive number greater than 0","err");return;}
+  if(!state.wallet){toast("Connect a wallet first","err");return;}
+  if(state.walletFlagged){toast("⚠ This wallet is flagged for wash trading — minting is blocked","err");return;}
+  if(LIVE){
+    try{ const r=await api("/mint",{method:"POST",body:JSON.stringify({name,walletAddress:state.wallet,priceEth:price})},30000);
+      toast(`Minted #${r.nft.tokenId} — tx ${shortAddr(r.txHash)}${r.simulated?" (simulated)":" on Sepolia"}`);
+      $("#mName").value="";$("#mPrice").value="";
+      await refreshAfterAction(r.nft.tokenId);
+    }catch(e){toast("Mint failed: "+e.message,"err");}
+  }else{
+    const id=Math.max(...state.nfts.map(n=>n.tokenId))+1;
+    state.nfts.push({tokenId:id,name,priceEth:price,listed:price>0,collectionName:"CyberGuard Genesis",
+      authenticityStatus:"Verified",ownerAddress:state.wallet,contractAddress:"0xSIMULATED",metadataHash:"0xnew…",
+      risk:{unifiedScore:0,riskLevel:"Low",breakdown:{authRisk:0,fraudRisk:0,priceRisk:0,weights:{authenticity:.4,fraud:.35,priceAnomaly:.25},contribution:{authenticity:0,fraud:0,priceAnomaly:0}}},
+      flags:[],transactions:[{txType:"MINT",senderAddress:"0x0000…0000",recipientAddress:state.wallet,priceEth:0,timestamp:new Date().toISOString(),txHash:"0xsim…"}]});
+    toast(`Simulated mint — token #${id} created`); renderGrid();
+  }
+});
+
+/* ---------- verification console (hero) ---------- */
+function startConsole(){
+  const feed=$("#consoleFeed");
+  const lines=[
+    `<span class="k">verify</span> #3 "Wash Cycle" · ERC-165 supportsInterface(0x80ac58cd) <span class="ok">→ true</span>`,
+    `<span class="k">sha256</span> ipfs://demo/3 <span class="ok">→ match on-chain anchor</span>`,
+    `<span class="k">rule-1</span> buyer–seller loop · pair 0x3a5b…1111 ↔ 0x3a5b…2222 × 6 <span class="bad">→ WASH TRADE</span>`,
+    `<span class="k">rule-4</span> +60% price hops within 40 min <span class="bad">→ RAPID ESCALATION</span>`,
+    `<span class="k">z-score</span> sale 5.24 ETH vs μ 0.86 σ 1.21 → |Z| 3.6 <span class="bad">→ ANOMALY</span>`,
+    `<span class="k">score</span> 0.40×0 + 0.35×55 + 0.25×38 = <span class="bad">29 + fraud flags → HIGH RISK</span>`,
+    `<span class="k">verify</span> #1 "Genesis Orb" · all layers <span class="ok">→ PASS · risk 0 (LOW)</span>`,
+  ];
+  let i=0;
+  const push=()=>{ feed.innerHTML=lines.slice(Math.max(0,i-4),i+1).join("\n"); i=(i+1)%lines.length; };
+  push(); setInterval(push, 2200);
+}
+
+boot();
+</script>
+
+<script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+
+        const CONFIG = {
+            effect: "pulse",
+            effectMode: 4,
+            particleSize: 200,
+            particleCount: 42000,
+            uploadedImage: null,
+            uploadedModel: null,
+            shape: "sphere",
+            interactionMode: "auto",
+            manualControlTarget: "camera",
+            canvasColor: "#05070C",
+            particleColorMode: "original",
+            customParticleColor: "#00ff66"
+        };
+        let uploadedImage = CONFIG.uploadedImage;
+        let uploadedModel = CONFIG.uploadedModel;
+        let particleSize = CONFIG.particleSize;
+        const PARTICLE_COUNT = CONFIG.particleCount;
+        let sceneData = null;
+        let currentEffect = CONFIG.effect;
+        let currentShape = CONFIG.shape;
+        let interactionMode = CONFIG.interactionMode;
+        let manualControlTarget = CONFIG.manualControlTarget;
+        let effectIntensity = 1;
+        let targetEffectIntensity = 1;
+        let explosionTriggered = false;
+        let explosionTime = 0;
+        const cameraControlState = {
+            target: null,
+            yaw: 0,
+            pitch: 0,
+            distance: 45,
+            minDistance: 20,
+            maxDistance: 100,
+            isLeftDragging: false,
+            isRightDragging: false,
+            previousX: 0,
+            previousY: 0
+        };
+        const mouseState = { isDragging: false, previousX: 0, previousY: 0 };
+        const vertexShader = "uniform float uTime; uniform float uMorph; uniform float uPointSize; uniform int uEffectMode; uniform float uEffectIntensity; uniform float uExplosionTime; uniform float uCanvasLightness; uniform float uParticleColorMode; uniform vec3 uCustomParticleColor; attribute vec3 targetPosition; attribute vec3 targetColor; attribute vec3 color; attribute vec3 randomOffset; varying vec3 vColor; varying float vDistance; vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; } vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; } vec3 permute(vec3 x) { return mod289(((x * 34.0) + 1.0) * x); } float snoise(vec2 v) { const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439); vec2 i = floor(v + dot(v, C.yy)); vec2 x0 = v - i + dot(i, C.xx); vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0); vec4 x12 = x0.xyxy + C.xxzz; x12.xy -= i1; i = mod289(i); vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0)); vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0); m = m * m; m = m * m; vec3 x = 2.0 * fract(p * C.www) - 1.0; vec3 h = abs(x) - 0.5; vec3 ox = floor(x + 0.5); vec3 a0 = x - ox; m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h); vec3 g; g.x = a0.x * x0.x + h.x * x0.y; g.yz = a0.yz * x12.xz + h.yz * x12.yw; return 130.0 * dot(m, g); } void main() { vec3 mixedBase = mix(color, targetColor, uMorph); vColor = mix(mixedBase, uCustomParticleColor, uParticleColorMode); vec3 pos = mix(position, targetPosition, uMorph); vec3 originalPos = pos; float effectMix = uEffectIntensity; if (uEffectMode == 0) { float noise = sin(uTime * 1.5 + position.x * 0.3) * cos(uTime * 1.5 + position.y * 0.3); pos += normalize(pos) * noise * (0.2 * (1.0 - uMorph)); pos.x += sin(uTime * 0.3 + position.z) * 0.1; pos.y += cos(uTime * 0.3 + position.x) * 0.1; } else if (uEffectMode == 1) { vec3 scatterDir = normalize(pos + randomOffset * 0.5); float scatterDist = length(pos) * 0.5 + randomOffset.x * 3.0; vec3 scattered = pos + scatterDir * scatterDist * effectMix * 2.5; float turb = snoise(pos.xy * 0.3 + uTime * 0.5); scattered += vec3(turb, turb * 0.5, turb * 0.3) * effectMix * 1.5; pos = mix(originalPos, scattered, effectMix); } else if (uEffectMode == 2) { float explodeProgress = min(uExplosionTime * 2.0, 1.0); float returnProgress = max(0.0, (uExplosionTime - 0.5) * 2.0); vec3 explodeDir = normalize(pos + randomOffset); float explodeDist = (5.0 + randomOffset.x * 8.0) * sin(explodeProgress * 3.14159); vec3 exploded = originalPos + explodeDir * explodeDist * effectMix; float spin = explodeProgress * 6.28318 * (0.5 + randomOffset.y); exploded.x += cos(spin) * explodeDist * 0.3; exploded.z += sin(spin) * explodeDist * 0.3; pos = mix(originalPos, exploded, effectMix * (1.0 - returnProgress * 0.7)); } else if (uEffectMode == 3) { float angle = atan(pos.z, pos.x); float radius = length(pos.xz); float height = pos.y; float spiralSpeed = uTime * 2.0 + height * 0.3; float newAngle = angle + spiralSpeed * effectMix; float vortexPull = (1.0 - abs(height) / 20.0) * effectMix; float newRadius = radius * (1.0 - vortexPull * 0.5) + sin(uTime * 3.0 + height) * effectMix; float lift = effectMix * 5.0 * (1.0 - radius / 20.0); pos.x = cos(newAngle) * newRadius; pos.z = sin(newAngle) * newRadius; pos.y = height + lift * sin(uTime + radius); } else if (uEffectMode == 4) { float pulsePhase = uTime * 2.5; float pulseFactor = 1.0 + sin(pulsePhase) * 0.4 * effectMix; float waveFactor = sin(pulsePhase + length(pos) * 0.3) * 0.3 * effectMix; vec3 pulsed = pos * pulseFactor; pulsed += normalize(pos) * waveFactor * 3.0; float colorPulse = sin(pulsePhase * 0.5) * 0.5 + 0.5; vColor = mix(vColor, vec3(1.0, 0.4, 0.8), colorPulse * effectMix * 0.3); pos = pulsed; } else if (uEffectMode == 5) { float waveX = sin(pos.x * 0.5 + uTime * 2.0) * effectMix * 3.0; float waveZ = cos(pos.z * 0.5 + uTime * 1.5) * effectMix * 2.0; float waveY = sin(pos.x * 0.3 + pos.z * 0.3 + uTime * 2.5) * effectMix * 4.0; waveY += sin(pos.x * 0.8 - uTime * 1.8) * effectMix * 1.5; waveY += cos(pos.z * 0.6 + uTime * 1.2) * effectMix * 1.0; pos.x += waveX * 0.3; pos.y += waveY; pos.z += waveZ * 0.3; } vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0); float dist = length(pos); vDistance = dist; float sizeMultiplier = 1.0; if (uEffectMode == 2 && effectMix > 0.1) { sizeMultiplier = 1.0 + sin(uExplosionTime * 10.0) * 0.3; } if (uEffectMode == 4) { sizeMultiplier = 1.0 + sin(uTime * 2.5) * 0.2 * effectMix; } gl_PointSize = (uPointSize / -mvPosition.z) * (1.2 + sin(uTime * 3.0 + dist * 0.15) * 0.5) * sizeMultiplier; gl_Position = projectionMatrix * mvPosition; }";
+        const fragmentShader = "uniform float uTime; uniform float uCanvasLightness; varying vec3 vColor; varying float vDistance; void main() { float dist = distance(gl_PointCoord, vec2(0.5)); if (dist > 0.5) discard; float strength = pow(1.0 - dist * 2.0, 1.6); vec3 finalColor = vColor * 2.0; float particleLightness = dot(vColor, vec3(0.299, 0.587, 0.114)); float lightParticle = smoothstep(0.55, 0.95, particleLightness); finalColor = mix(finalColor, vColor * 0.45, uCanvasLightness * lightParticle); float alpha = strength * (0.8 + sin(vDistance * 0.3 + uTime) * 0.2); alpha = mix(alpha, min(alpha * 1.35, 1.0), uCanvasLightness); gl_FragColor = vec4(finalColor, alpha); }";
+
+        function perceptualLuminanceFromHex(colorValue) {
+            const color = new THREE.Color(colorValue);
+            return 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
+        }
+
+        function resolvePointsBlending(canvasBgHex, mode, particleCustomHex) {
+            if (perceptualLuminanceFromHex(canvasBgHex) >= 0.58) return THREE.NormalBlending;
+            if (mode === "custom" && perceptualLuminanceFromHex(particleCustomHex) < 0.45) return THREE.NormalBlending;
+            return THREE.AdditiveBlending;
+        }
+
+        const textureDataCache = new Map();
+        function getTextureData(texture) {
+          const image = texture.image;
+          if (!image || !image.width || !image.height) return null;
+          const cacheKey = image.src || image.id || texture.uuid;
+          if (textureDataCache.has(cacheKey)) return textureDataCache.get(cacheKey);
+          const canvas = document.createElement('canvas');
+          canvas.width = image.width; canvas.height = image.height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return null;
+          ctx.drawImage(image, 0, 0);
+          const data = ctx.getImageData(0, 0, image.width, image.height);
+          textureDataCache.set(cacheKey, data);
+          return data;
+        }
+
+        function updateCameraFromState(camera) {
+            const cp = Math.cos(cameraControlState.pitch);
+            const sp = Math.sin(cameraControlState.pitch);
+            const cy = Math.cos(cameraControlState.yaw);
+            const sy = Math.sin(cameraControlState.yaw);
+            camera.position.set(
+                cameraControlState.target.x + cameraControlState.distance * sy * cp,
+                cameraControlState.target.y + cameraControlState.distance * sp,
+                cameraControlState.target.z + cameraControlState.distance * cy * cp
+            );
+            camera.lookAt(cameraControlState.target);
+        }
+
+        function initParticleCanvas() {
+            const container = document.getElementById("particle-container");
+            const width = window.innerWidth, height = window.innerHeight;
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 1000);
+            camera.position.z = 45;
+            cameraControlState.target = new THREE.Vector3(0, 0, 0);
+            updateCameraFromState(camera);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setClearColor(new THREE.Color(CONFIG.canvasColor), 1);
+            container.style.backgroundColor = CONFIG.canvasColor;
+            container.appendChild(renderer.domElement);
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(PARTICLE_COUNT * 3);
+            const targetPositions = new Float32Array(PARTICLE_COUNT * 3);
+            const colors = new Float32Array(PARTICLE_COUNT * 3);
+            const targetColors = new Float32Array(PARTICLE_COUNT * 3);
+            const randomOffsets = new Float32Array(PARTICLE_COUNT * 3);
+            const greenColor = new THREE.Color(0x00ff66);
+            const brightWhite = new THREE.Color(0xffffff);
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                const i3 = i * 3;
+                const t = (Math.random() - 0.5) * 5.0;
+                const angle = Math.random() * Math.PI * 2;
+                const radiusBase = 0.4 + Math.pow(Math.abs(t), 2.4);
+                const radius = radiusBase * (0.75 + Math.random() * 0.55);
+                let x = radius * Math.cos(angle) * 2.9;
+                let z = radius * Math.sin(angle) * 2.9;
+                let y = t * 7.5;
+                positions[i3] = x; positions[i3 + 1] = y; positions[i3 + 2] = z;
+                targetPositions[i3] = x; targetPositions[i3 + 1] = y; targetPositions[i3 + 2] = z;
+                randomOffsets[i3] = (Math.random() - 0.5) * 2;
+                randomOffsets[i3 + 1] = (Math.random() - 0.5) * 2;
+                randomOffsets[i3 + 2] = (Math.random() - 0.5) * 2;
+                const color = Math.random() > 0.7 ? greenColor : brightWhite;
+                colors[i3] = color.r; colors[i3 + 1] = color.g; colors[i3 + 2] = color.b;
+                targetColors[i3] = color.r; targetColors[i3 + 1] = color.g; targetColors[i3 + 2] = color.b;
+            }
+            geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute("targetPosition", new THREE.BufferAttribute(targetPositions, 3));
+            geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+            geometry.setAttribute("targetColor", new THREE.BufferAttribute(targetColors, 3));
+            geometry.setAttribute("randomOffset", new THREE.BufferAttribute(randomOffsets, 3));
+            const customParticleColor = new THREE.Color(CONFIG.customParticleColor);
+            const material = new THREE.ShaderMaterial({
+                vertexShader, fragmentShader, transparent: true,
+                uniforms: {
+                    uTime: { value: 0 },
+                    uMorph: { value: 0 },
+                    uPointSize: { value: particleSize },
+                    uEffectMode: { value: CONFIG.effectMode },
+                    uEffectIntensity: { value: 1 },
+                    uExplosionTime: { value: 0 },
+                    uCanvasLightness: { value: perceptualLuminanceFromHex(CONFIG.canvasColor) },
+                    uParticleColorMode: { value: CONFIG.particleColorMode === "custom" ? 1 : 0 },
+                    uCustomParticleColor: { value: new THREE.Vector3(customParticleColor.r, customParticleColor.g, customParticleColor.b) }
+                },
+                depthWrite: false,
+                blending: resolvePointsBlending(CONFIG.canvasColor, CONFIG.particleColorMode, CONFIG.customParticleColor)
+            });
+            const points = new THREE.Points(geometry, material);
+            scene.add(points);
+            sceneData = { scene, camera, renderer, points, geometry, material, originalPositions: positions.slice(), targetPositions, originalColors: colors.slice(), targetColors };
+            
+            if (uploadedModel) processModel(uploadedModel);
+            else if (uploadedImage && uploadedImage !== '3d-model-placeholder') processImage(uploadedImage);
+            else if (currentShape && currentShape !== "default") generateShape(currentShape);
+
+            let time = 0, morphFactor = 0;
+            const effectModes = { "default": 0, "scatter": 1, "explode": 2, "vortex": 3, "pulse": 4, "wave": 5 };
+            function animate() {
+                requestAnimationFrame(animate);
+                time += 0.008;
+                if (!sceneData) return;
+                const { renderer, scene, camera, points, material } = sceneData;
+                if (interactionMode === "manual") {
+                    if (manualControlTarget === "camera") {
+                        updateCameraFromState(camera);
+                    }
+                } else {
+                    let rotationSpeed = 0.0025;
+                    if (currentEffect === "vortex") rotationSpeed = 0.008 * (0.5 + effectIntensity);
+                    else if (currentEffect === "explode" && explosionTriggered) rotationSpeed = 0.001;
+                    points.rotation.y += rotationSpeed;
+                    points.rotation.z += 0.001;
+                    points.rotation.x = Math.sin(time * 0.15) * 0.12;
+                }
+                material.uniforms.uTime.value = time;
+                const targetMorph = (uploadedImage || uploadedModel) ? 1.0 : 0.0;
+                morphFactor += (targetMorph - morphFactor) * 0.05;
+                material.uniforms.uMorph.value = morphFactor;
+                effectIntensity += (targetEffectIntensity - effectIntensity) * 0.08;
+                material.uniforms.uEffectIntensity.value = effectIntensity;
+                material.uniforms.uEffectMode.value = effectModes[currentEffect] || 0;
+                if (explosionTriggered) { explosionTime += 0.016; if (explosionTime > 2.0) explosionTime = 0; }
+                material.uniforms.uExplosionTime.value = explosionTime;
+                renderer.render(scene, camera);
+            }
+            animate();
+            window.addEventListener("resize", function() {
+                if (!sceneData) return;
+                sceneData.camera.aspect = window.innerWidth / window.innerHeight;
+                sceneData.camera.updateProjectionMatrix();
+                sceneData.renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            renderer.domElement.addEventListener("mousedown", function(e) {
+                if (interactionMode === "manual" && manualControlTarget === "camera") {
+                    if (e.button === 0) {
+                        cameraControlState.isLeftDragging = true;
+                    } else if (e.button === 2) {
+                        cameraControlState.isRightDragging = true;
+                    }
+                    cameraControlState.previousX = e.clientX;
+                    cameraControlState.previousY = e.clientY;
+                }
+                if (interactionMode === "manual" && manualControlTarget === "object") {
+                    mouseState.isDragging = true;
+                    mouseState.previousX = e.clientX;
+                    mouseState.previousY = e.clientY;
+                }
+            });
+            window.addEventListener("mousemove", function(e) {
+                if (!sceneData) return;
+                if (interactionMode === "manual" && manualControlTarget === "camera") {
+                    const deltaX = e.clientX - cameraControlState.previousX;
+                    const deltaY = e.clientY - cameraControlState.previousY;
+                    if (cameraControlState.isLeftDragging) {
+                        cameraControlState.yaw -= deltaX * 0.005;
+                        cameraControlState.pitch -= deltaY * 0.005;
+                        const maxPitch = Math.PI * 0.499;
+                        if (cameraControlState.pitch > maxPitch) cameraControlState.pitch = maxPitch;
+                        if (cameraControlState.pitch < -maxPitch) cameraControlState.pitch = -maxPitch;
+                    } else if (cameraControlState.isRightDragging) {
+                        const panScale = cameraControlState.distance * 0.002;
+                        const forward = new THREE.Vector3();
+                        sceneData.camera.getWorldDirection(forward);
+                        const right = new THREE.Vector3().crossVectors(forward, sceneData.camera.up).normalize();
+                        const up = new THREE.Vector3().copy(sceneData.camera.up).normalize();
+                        cameraControlState.target.addScaledVector(right, -deltaX * panScale);
+                        cameraControlState.target.addScaledVector(up, deltaY * panScale);
+                    }
+                    cameraControlState.previousX = e.clientX;
+                    cameraControlState.previousY = e.clientY;
+                }
+                if (interactionMode === "manual" && manualControlTarget === "object" && mouseState.isDragging) {
+                    const deltaX = e.clientX - mouseState.previousX;
+                    const deltaY = e.clientY - mouseState.previousY;
+                    sceneData.points.rotation.y += deltaX * 0.005;
+                    sceneData.points.rotation.x += deltaY * 0.005;
+                    mouseState.previousX = e.clientX;
+                    mouseState.previousY = e.clientY;
+                }
+            });
+            window.addEventListener("mouseup", function() {
+                mouseState.isDragging = false;
+                cameraControlState.isLeftDragging = false;
+                cameraControlState.isRightDragging = false;
+            });
+            renderer.domElement.addEventListener("wheel", function(e) {
+                if (interactionMode === "manual" && manualControlTarget === "camera") {
+                    e.preventDefault();
+                    cameraControlState.distance += e.deltaY * 0.03;
+                    if (cameraControlState.distance < cameraControlState.minDistance) {
+                        cameraControlState.distance = cameraControlState.minDistance;
+                    }
+                    if (cameraControlState.distance > cameraControlState.maxDistance) {
+                        cameraControlState.distance = cameraControlState.maxDistance;
+                    }
+                }
+            }, { passive: false });
+            renderer.domElement.addEventListener("contextmenu", function(e) {
+                e.preventDefault();
+            });
+            window.addEventListener("keydown", function(e) {
+                if (e.code === "Space" && !e.repeat) {
+                    e.preventDefault();
+                    interactionMode = interactionMode === "auto" ? "manual" : "auto";
+                }
+            });
+        }
+        function processImage(imageUrl) {
+            if (!imageUrl || !sceneData) return;
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = imageUrl;
+            img.onload = function() {
+                const canvas = document.createElement("canvas");
+                const ctx = canvas.getContext("2d");
+                const resolution = 200;
+                const aspect = img.width / img.height;
+                let drawWidth = aspect > 1 ? resolution : resolution * aspect;
+                let drawHeight = aspect > 1 ? resolution / aspect : resolution;
+                canvas.width = resolution; canvas.height = resolution;
+                const offsetX = (resolution - drawWidth) / 2;
+                const offsetY = (resolution - drawHeight) / 2;
+                ctx.fillStyle = "black"; ctx.fillRect(0, 0, resolution, resolution);
+                ctx.drawImage(img, (resolution - drawWidth) / 2, (resolution - drawHeight) / 2, drawWidth, drawHeight);
+                const imgData = ctx.getImageData(0, 0, resolution, resolution).data;
+                const validPoints = [];
+                for (let y = 0; y < resolution; y++) {
+                    for (let x = 0; x < resolution; x++) {
+                        const idx = (y * resolution + x) * 4;
+                        const r = imgData[idx], g = imgData[idx + 1], b = imgData[idx + 2];
+                        if ((r + g + b) / 3 > 15) validPoints.push({ pos: [(x / resolution - 0.5) * 38, (0.5 - y / resolution) * 38, ((r + g + b) / 765 - 0.5) * 12], col: [r / 255, g / 255, b / 255] });
+                    }
+                }
+                if (validPoints.length === 0) {
+                    const sampleLeft = Math.max(0, Math.floor(offsetX));
+                    const sampleTop = Math.max(0, Math.floor(offsetY));
+                    const sampleRight = Math.min(resolution, Math.ceil(offsetX + drawWidth));
+                    const sampleBottom = Math.min(resolution, Math.ceil(offsetY + drawHeight));
+                    ctx.clearRect(0, 0, resolution, resolution);
+                    ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+                    const fallbackData = ctx.getImageData(0, 0, resolution, resolution).data;
+                    for (let y = sampleTop; y < sampleBottom; y++) {
+                        for (let x = sampleLeft; x < sampleRight; x++) {
+                            const idx = (y * resolution + x) * 4;
+                            const r = fallbackData[idx], g = fallbackData[idx + 1], b = fallbackData[idx + 2], a = fallbackData[idx + 3];
+                            if (a <= 8) continue;
+                            const brightness = (r + g + b) / 3;
+                            const depthSignal = Math.max(a / 255, brightness / 255);
+                            validPoints.push({
+                                pos: [(x / resolution - 0.5) * 38, (0.5 - y / resolution) * 38, (depthSignal - 0.5) * 12],
+                                col: [r / 255, g / 255, b / 255]
+                            });
+                        }
+                    }
+                }
+                if (validPoints.length > 0) {
+                    const { targetPositions, targetColors, geometry } = sceneData;
+                    for (let i = 0; i < PARTICLE_COUNT; i++) {
+                        const i3 = i * 3, point = validPoints[i % validPoints.length];
+                        targetPositions[i3] = point.pos[0] + (Math.random() - 0.5) * 0.4;
+                        targetPositions[i3 + 1] = point.pos[1] + (Math.random() - 0.5) * 0.4;
+                        targetPositions[i3 + 2] = point.pos[2] + (Math.random() - 0.5) * 1.5;
+                        targetColors[i3] = point.col[0]; targetColors[i3 + 1] = point.col[1]; targetColors[i3 + 2] = point.col[2];
+                    }
+                    geometry.attributes.targetPosition.needsUpdate = true;
+                    geometry.attributes.targetColor.needsUpdate = true;
+                }
+            };
+        }
+        function processModel(modelUrl) {
+            if (!modelUrl || !sceneData) return;
+            const loader = new GLTFLoader();
+            loader.load(modelUrl, (gltf) => {
+                const positions = [];
+                const colors = [];
+                gltf.scene.updateMatrixWorld(true);
+                gltf.scene.traverse((child) => {
+                    if (child.isMesh) {
+                        const mesh = child;
+                        const geo = mesh.geometry;
+                        const posAttr = geo.attributes.position;
+                        const uvAttr = geo.attributes.uv;
+                        const colorAttr = geo.attributes.color;
+                        const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+                        const texture = material?.map;
+                        const imageData = texture ? getTextureData(texture) : null;
+                        const meshColor = material?.color || new THREE.Color(0xffffff);
+                        for (let i = 0; i < posAttr.count; i++) {
+                            const v = new THREE.Vector3().fromBufferAttribute(posAttr, i);
+                            v.applyMatrix4(mesh.matrixWorld);
+                            positions.push(v.x, v.y, v.z);
+                            const col = new THREE.Color(1, 1, 1);
+                            if (imageData && uvAttr) {
+                                const u = ((uvAttr.getX(i) % 1) + 1) % 1;
+                                const v = ((uvAttr.getY(i) % 1) + 1) % 1;
+                                const x = Math.floor(u * (imageData.width - 1));
+                                const y = Math.floor((1 - v) * (imageData.height - 1));
+                                const idx = (y * imageData.width + x) * 4;
+                                col.setRGB(imageData.data[idx] / 255, imageData.data[idx + 1] / 255, imageData.data[idx + 2] / 255);
+                                col.multiply(meshColor);
+                            } else if (colorAttr) { col.fromBufferAttribute(colorAttr, i); }
+                            else { col.copy(meshColor); }
+                            colors.push(col.r, col.g, col.b);
+                        }
+                    }
+                });
+                if (positions.length > 0) {
+                    const { targetPositions, targetColors, geometry } = sceneData;
+                    const box = new THREE.Box3().setFromObject(gltf.scene);
+                    const center = box.getCenter(new THREE.Vector3());
+                    const size = box.getSize(new THREE.Vector3());
+                    const maxDim = Math.max(size.x, size.y, size.z);
+                    const scale = 30 / maxDim;
+                    for (let i = 0; i < PARTICLE_COUNT; i++) {
+                        const i3 = i * 3;
+                        const pIndex = (Math.floor(Math.random() * (positions.length / 3))) * 3;
+                        const jitter = 0.15;
+                        targetPositions[i3] = (positions[pIndex] - center.x) * scale + (Math.random() - 0.5) * jitter;
+                        targetPositions[i3 + 1] = (positions[pIndex + 1] - center.y) * scale + (Math.random() - 0.5) * jitter;
+                        targetPositions[i3 + 2] = (positions[pIndex + 2] - center.z) * scale + (Math.random() - 0.5) * jitter;
+                        targetColors[i3] = colors[pIndex];
+                        targetColors[i3 + 1] = colors[pIndex + 1];
+                        targetColors[i3 + 2] = colors[pIndex + 2];
+                    }
+                    geometry.attributes.targetPosition.needsUpdate = true;
+                    geometry.attributes.targetColor.needsUpdate = true;
+                }
+            });
+        }
+        function generateShape(shapeName) {
+            if (!sceneData) return;
+            const { targetPositions, targetColors, geometry } = sceneData;
+            const points = [];
+            const shapeGreen = new THREE.Color(0x00ff66);
+            const shapeWhite = new THREE.Color(0xffffff);
+            switch (shapeName) {
+                case "heart": for (let i = 0; i < PARTICLE_COUNT; i++) { const t = (i / PARTICLE_COUNT) * Math.PI * 2; const u = Math.random() * Math.PI * 2; const v = Math.random() * Math.PI; const scale = 18; const x = scale * (16 * Math.pow(Math.sin(t), 3)) / 16 * Math.sin(v) * Math.cos(u); const y = scale * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16; const z = scale * (16 * Math.pow(Math.sin(t), 3)) / 16 * Math.sin(v) * Math.sin(u) * 0.8; const spread = 3.0; const color = Math.random() > 0.7 ? shapeGreen : shapeWhite; points.push({ pos: [x + (Math.random() - 0.5) * spread, y + (Math.random() - 0.5) * spread, z + (Math.random() - 0.5) * spread], col: [color.r, color.g, color.b] }); } break;
+                case "butterfly": for (let i = 0; i < PARTICLE_COUNT; i++) { const t = (i / PARTICLE_COUNT) * Math.PI * 12; const scale = 5.5; const exp = Math.exp(Math.cos(t)) - 2 * Math.cos(4 * t) - Math.pow(Math.sin(t / 12), 5); const x = Math.sin(t) * exp * scale; const y = Math.cos(t) * exp * scale; const z = (Math.random() - 0.5) * 15; const spread = 2.5; const color = Math.random() > 0.7 ? shapeGreen : shapeWhite; points.push({ pos: [x + (Math.random() - 0.5) * spread, y + (Math.random() - 0.5) * spread, z], col: [color.r, color.g, color.b] }); } break;
+                case "rose": for (let i = 0; i < PARTICLE_COUNT; i++) { const t = (i / PARTICLE_COUNT) * Math.PI * 14; const k = 5; const r = Math.cos(k * t) * 15; const h = (Math.random() - 0.5) * 20; const x = r * Math.cos(t); const y = h; const z = r * Math.sin(t); const spread = 2.0; const color = Math.random() > 0.7 ? shapeGreen : shapeWhite; points.push({ pos: [x + (Math.random() - 0.5) * spread, y, z + (Math.random() - 0.5) * spread], col: [color.r, color.g, color.b] }); } break;
+                case "cube": const cubeSize = 18; for (let i = 0; i < PARTICLE_COUNT; i++) { const face = Math.floor(Math.random() * 6); let x, y, z; const a = (Math.random() - 0.5) * cubeSize; const b = (Math.random() - 0.5) * cubeSize; switch (face) { case 0: x = cubeSize / 2; y = a; z = b; break; case 1: x = -cubeSize / 2; y = a; z = b; break; case 2: x = a; y = cubeSize / 2; z = b; break; case 3: x = a; y = -cubeSize / 2; z = b; break; case 4: x = a; y = b; z = cubeSize / 2; break; case 5: x = a; y = b; z = -cubeSize / 2; break; } const spread = 2.0; const color = Math.random() > 0.7 ? shapeGreen : shapeWhite; points.push({ pos: [x + (Math.random() - 0.5) * spread, y + (Math.random() - 0.5) * spread, z + (Math.random() - 0.5) * spread], col: [color.r, color.g, color.b] }); } break;
+                case "pyramid": const pyrHeight = 25; const pyrBase = 20; for (let i = 0; i < PARTICLE_COUNT; i++) { const onBase = Math.random() < 0.3; let x, y, z; if (onBase) { x = (Math.random() - 0.5) * pyrBase; z = (Math.random() - 0.5) * pyrBase; y = -pyrHeight / 2; } else { const t = Math.random(); const baseX = (Math.random() - 0.5) * pyrBase * (1 - t); const baseZ = (Math.random() - 0.5) * pyrBase * (1 - t); x = baseX; y = -pyrHeight / 2 + t * pyrHeight; z = baseZ; } const spread = 2.0; const color = Math.random() > 0.7 ? shapeGreen : shapeWhite; points.push({ pos: [x + (Math.random() - 0.5) * spread, y + (Math.random() - 0.5) * spread, z + (Math.random() - 0.5) * spread], col: [color.r, color.g, color.b] }); } break;
+                case "spiral": for (let i = 0; i < PARTICLE_COUNT; i++) { const t = (i / PARTICLE_COUNT) * Math.PI * 10; const r = 10 + Math.sin(t * 3) * 4; const x = r * Math.cos(t); const y = (i / PARTICLE_COUNT - 0.5) * 40; const z = r * Math.sin(t); const spread = 2.5; const color = Math.random() > 0.7 ? shapeGreen : shapeWhite; points.push({ pos: [x + (Math.random() - 0.5) * spread, y + (Math.random() - 0.5) * spread, z + (Math.random() - 0.5) * spread], col: [color.r, color.g, color.b] }); } break;
+                case "star": for (let i = 0; i < PARTICLE_COUNT; i++) { const angle = Math.random() * Math.PI * 2; const starPoints = 5; const innerR = 8; const outerR = 18; const pointAngle = Math.floor(angle / (Math.PI * 2 / starPoints)) * (Math.PI * 2 / starPoints); const t = (angle - pointAngle) / (Math.PI / starPoints); let r; if (t < 1) { r = outerR - (outerR - innerR) * t; } else { r = innerR + (outerR - innerR) * (t - 1); } const x = r * Math.cos(angle); const z = r * Math.sin(angle); const y = (Math.random() - 0.5) * 15; const spread = 2.0; const color = Math.random() > 0.7 ? shapeGreen : shapeWhite; points.push({ pos: [x + (Math.random() - 0.5) * spread, y, z + (Math.random() - 0.5) * spread], col: [color.r, color.g, color.b] }); } break;
+                case "sphere": for (let i = 0; i < PARTICLE_COUNT; i++) { const theta = Math.random() * Math.PI * 2; const phi = Math.acos(2 * Math.random() - 1); const r = 16; const x = r * Math.sin(phi) * Math.cos(theta); const y = r * Math.sin(phi) * Math.sin(theta); const z = r * Math.cos(phi); const spread = 2.5; const color = Math.random() > 0.7 ? shapeGreen : shapeWhite; points.push({ pos: [x + (Math.random() - 0.5) * spread, y + (Math.random() - 0.5) * spread, z + (Math.random() - 0.5) * spread], col: [color.r, color.g, color.b] }); } break;
+                case "dna": for (let i = 0; i < PARTICLE_COUNT; i++) { const t = (i / PARTICLE_COUNT) * Math.PI * 8; const y = (i / PARTICLE_COUNT - 0.5) * 45; const r = 10; const strand = i % 3; let x, z; if (strand === 0) { x = r * Math.cos(t); z = r * Math.sin(t); } else if (strand === 1) { x = r * Math.cos(t + Math.PI); z = r * Math.sin(t + Math.PI); } else { const barPos = Math.random(); x = r * Math.cos(t) * (1 - barPos) + r * Math.cos(t + Math.PI) * barPos; z = r * Math.sin(t) * (1 - barPos) + r * Math.sin(t + Math.PI) * barPos; } const spread = 2.0; const color = Math.random() > 0.7 ? shapeGreen : shapeWhite; points.push({ pos: [x + (Math.random() - 0.5) * spread, y + (Math.random() - 0.5) * spread, z + (Math.random() - 0.5) * spread], col: [color.r, color.g, color.b] }); } break;
+                case "infinity": const infScale = 25; for (let i = 0; i < PARTICLE_COUNT; i++) { const t = (i / PARTICLE_COUNT) * Math.PI * 6; const denom = 1 + Math.sin(t) * Math.sin(t); let x = infScale * Math.cos(t) / denom; let y = infScale * Math.sin(t) * Math.cos(t) / denom; const verticalSpread = (Math.random() - 0.5) * 20; const z = (Math.random() - 0.5) * 15 + Math.sin(t * 2) * 5; const thickness = 4.0; const offsetX = (Math.random() - 0.5) * thickness; const offsetY = (Math.random() - 0.5) * thickness + verticalSpread * 0.3; const offsetZ = (Math.random() - 0.5) * thickness; const color = Math.random() > 0.7 ? shapeGreen : shapeWhite; points.push({ pos: [x + offsetX, y + offsetY, z + offsetZ], col: [color.r, color.g, color.b] }); } break;
+            }
+            if (points.length > 0) {
+                for (let i = 0; i < PARTICLE_COUNT; i++) { const i3 = i * 3; const point = points[i % points.length]; targetPositions[i3] = point.pos[0]; targetPositions[i3 + 1] = point.pos[1]; targetPositions[i3 + 2] = point.pos[2]; targetColors[i3] = point.col[0]; targetColors[i3 + 1] = point.col[1]; targetColors[i3 + 2] = point.col[2]; }
+                geometry.attributes.targetPosition.needsUpdate = true;
+                geometry.attributes.targetColor.needsUpdate = true;
+                uploadedImage = "shape";
+            }
+        }
+        initParticleCanvas();
+    </script>
+</body>
+</html>
