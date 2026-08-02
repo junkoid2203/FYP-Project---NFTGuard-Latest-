@@ -253,6 +253,36 @@ footer{margin-top:28px;color:var(--faint);font-size:11.5px;font-family:'JetBrain
 <body>
 <div class="shell">
 
+<!-- ============ ADMIN LOGIN GATE (prototype) ============ -->
+<div id="adminGate" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:radial-gradient(1200px 600px at 50% -10%,rgba(0,255,136,.06),transparent),#080b10;font-family:'Inter',system-ui,sans-serif">
+  <div style="width:360px;max-width:90vw;background:#111820;border:1px solid #1e2a35;border-radius:18px;padding:36px 32px;box-shadow:0 24px 70px rgba(0,0,0,.55)">
+    <div style="display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;color:#e7edf3;letter-spacing:.2px">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 2L4 5.5V11c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5.5L12 2z" stroke="#00FF88" stroke-width="1.6" fill="rgba(0,255,136,.08)"/><path d="M8.5 12l2.4 2.4 4.6-4.8" stroke="#00FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      NFT<span style="color:#00FF88">Guard</span>
+    </div>
+    <h2 style="margin:20px 0 6px;font-size:17px;color:#e7edf3;font-family:'Space Grotesk',sans-serif">Admin access</h2>
+    <p style="color:#7d8b99;font-size:13px;line-height:1.5;margin:0 0 20px">The Risk Analytics dashboard is restricted to administrators. Enter the admin password to continue.</p>
+    <input id="agPass" type="password" placeholder="Admin password" autocomplete="off"
+      style="width:100%;box-sizing:border-box;background:#0b1016;border:1px solid #26323d;border-radius:10px;padding:12px 14px;color:#e7edf3;font-size:14px;outline:none;font-family:'Inter',sans-serif">
+    <div id="agErr" style="color:#ff5c6c;font-size:12.5px;min-height:17px;margin:8px 2px 4px"></div>
+    <button id="agBtn" style="width:100%;background:#00FF88;color:#04120b;border:0;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">Unlock dashboard</button>
+    <a href="index.html" style="display:block;text-align:center;margin-top:16px;color:#7d8b99;font-size:12.5px;text-decoration:none">← Back to marketplace</a>
+  </div>
+</div>
+<script>
+(function(){
+  /* Prototype gate — change this password to whatever you like */
+  var ADMIN_PW = "nftguard2026";
+  var gate=document.getElementById("adminGate"), pw=document.getElementById("agPass"), err=document.getElementById("agErr");
+  function unlock(){ sessionStorage.setItem("ng_admin","1"); gate.style.display="none"; if(typeof window.__ngBoot==="function") window.__ngBoot(); }
+  function tryLogin(){ if(pw.value===ADMIN_PW){ err.textContent=""; unlock(); } else { err.textContent="Incorrect password."; pw.value=""; pw.focus(); } }
+  document.getElementById("agBtn").addEventListener("click",tryLogin);
+  pw.addEventListener("keydown",function(e){ if(e.key==="Enter") tryLogin(); });
+  if(sessionStorage.getItem("ng_admin")==="1"){ gate.style.display="none"; }
+  else { setTimeout(function(){ pw.focus(); },50); }
+})();
+</script>
+
 <aside>
   <a class="logo" href="index.html">
     <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L4 5.5V11c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5.5L12 2z" stroke="#00FF88" stroke-width="1.6" fill="rgba(0,255,136,.08)"/><path d="M8.5 12l2.4 2.4 4.6-4.8" stroke="#00FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -266,7 +296,6 @@ footer{margin-top:28px;color:var(--faint);font-size:11.5px;font-family:'JetBrain
   <button class="side-link" data-view="price"><span class="num">3</span> Price Transparency</button>
   <button class="side-link" data-view="fraud"><span class="num">4</span> Fraud Detection</button>
   <button class="side-link" data-view="risk"><span class="num">5</span> Risk Analytics</button>
-  <button class="side-link" data-view="ml"><span class="num">◆</span> ML Detection</button>
   <div class="side-label">Site</div>
   <a class="side-link" href="index.html"><span class="num">↗</span> Landing page</a>
   <div class="foot">
@@ -496,42 +525,6 @@ footer{margin-top:28px;color:var(--faint);font-size:11.5px;font-family:'JetBrain
     </div>
   </div>
 
-  <!-- ============ VIEW: ML DETECTION (real on-chain data) ============ -->
-  <div class="view" id="view-ml">
-    <div class="grid">
-      <div class="panel c12">
-        <h3>Real on-chain dataset <small id="mlSource">loading…</small></h3>
-        <div class="stat-cards" id="mlDataset"></div>
-      </div>
-      <div class="panel c12">
-        <h3>Model performance <small>wash-trading classifier · trained on economic features only</small></h3>
-        <div class="kpis" id="mlMetrics"></div>
-      </div>
-      <div class="panel c6">
-        <h3>Feature importance <small>what drives the detection</small></h3>
-        <div class="chart"><canvas id="chMlFeat"></canvas></div>
-      </div>
-      <div class="panel c6">
-        <h3>Sales volume over time <small>real weekly sales</small></h3>
-        <div class="toolrow"><span class="lbl">Period</span>
-          <div class="seg" id="mlTimePeriod">
-            <button data-d="30">1M</button><button data-d="90">3M</button><button data-d="180">6M</button><button data-d="365">1Y</button><button data-d="0" class="on">All</button>
-          </div>
-        </div>
-        <div class="chart"><canvas id="chMlTime"></canvas></div>
-      </div>
-      <div class="panel c12">
-        <h3>Detected wash trades <small>real transactions — click to verify on Etherscan</small></h3>
-        <div style="overflow-x:auto">
-        <table>
-          <thead><tr><th>Collection</th><th>Token</th><th>Seller → Buyer</th><th>Price</th><th>Pattern</th><th>Verify</th></tr></thead>
-          <tbody id="mlFlagged"></tbody>
-        </table>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <footer>
     <span>© 2026 NFTGuard · Data-Driven NFT Fraud Detection &amp; Risk Analytics</span>
     <span id="ftContract">contract: —</span>
@@ -730,8 +723,7 @@ const TITLES={overview:["Overview","risk summary across all modules"],
   sim:["Transaction Simulation","simulated wallets · mint · list · buy on Sepolia testnet"],
   price:["Price Transparency Analysis","statistics · Z-score anomaly detection"],
   fraud:["Fraud Detection","4 heuristic rules · weighted penalties"],
-  risk:["Risk Analytics & Visualization","unified score = 0.40·Auth + 0.35·Fraud + 0.25·Price"],
-  ml:["ML Detection — Real On-Chain Data","wash-trading model trained on live Ethereum sales"]};
+  risk:["Risk Analytics & Visualization","unified score = 0.40·Auth + 0.35·Fraud + 0.25·Price"]};
 document.querySelectorAll(".side-link[data-view]").forEach(b=>b.addEventListener("click",()=>switchView(b.dataset.view)));
 function switchView(v,force=false){
   if(S.view===v&&!force)return;
@@ -740,7 +732,7 @@ function switchView(v,force=false){
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
   $("#view-"+v).classList.add("active");
   $("#viewTitle").textContent=TITLES[v][0];$("#viewSub").textContent=TITLES[v][1];
-  ({overview:renderOverview,auth:renderAuth,sim:renderSim,price:renderPrice,fraud:renderFraud,risk:renderRisk,ml:renderML})[v]();
+  ({overview:renderOverview,auth:renderAuth,sim:renderSim,price:renderPrice,fraud:renderFraud,risk:renderRisk})[v]();
 }
 function gotoRisk(id){$("#riskSel").value=id;switchView("risk",true);}
 
@@ -803,64 +795,6 @@ async function runInvestigate(){
       </div>`;
   }catch(e){
     $("#wiResult").innerHTML=`<div class="empty">Investigation failed: ${esc(e.message)}</div>`;
-  }
-}
-
-/* ================= ML DETECTION (real on-chain data) ================= */
-let mlLoaded=false;
-function renderMlTime(days){
-  let pts=S.mlTime||[];
-  if(days>0&&pts.length){
-    const last=new Date(pts[pts.length-1][0]).getTime(), cutoff=last-days*864e5;
-    pts=pts.filter(p=>new Date(p[0]).getTime()>=cutoff);
-  }
-  chart("mltime",$("#chMlTime"),{type:"line",
-    data:{labels:pts.map(t=>t[0]),datasets:[{label:"sales / week",data:pts.map(t=>t[1]),borderColor:C.chain,backgroundColor:"rgba(110,168,255,.12)",tension:.3,fill:true,pointRadius:0}]},
-    options:base({})});
-}
-async function renderML(){
-  if(mlLoaded)return;
-  const shortA=a=>a?a.slice(0,6)+"…"+a.slice(-4):"—";
-  try{
-    const res=await fetch("ml_results.json",{cache:"no-store"});
-    if(!res.ok)throw new Error("no file");
-    const d=await res.json();
-    mlLoaded=true;
-    $("#mlSource").textContent=d.source;
-    const ds=d.dataset,m=d.metrics;
-    $("#mlDataset").innerHTML=[
-      [Number(ds.n_sales).toLocaleString(),"real sales analyzed"],
-      [ds.collections.join(" · "),"collections"],
-      [ds.date_from+" → "+ds.date_to,"date range"],
-      [Number(m.n_wash).toLocaleString(),"wash trades labeled"]
-    ].map(([v,k])=>`<div class="scard"><div class="v">${v}</div><div class="k">${k}</div></div>`).join("");
-    const cards=[
-      ["Accuracy",(m.accuracy*100).toFixed(1)+"%","overall",C.guard],
-      ["ROC-AUC",m.roc_auc.toFixed(3),"class separation",C.chain],
-      ["CV ROC-AUC",(m.cv_auc??m.roc_auc).toFixed(3),"5-fold · overfit check",C.guard],
-      ["Precision",(m.precision*100).toFixed(0)+"%","of flags correct",C.amber],
-      ["Recall",(m.recall*100).toFixed(0)+"%","of wash caught",C.amber]
-    ];
-    $("#mlMetrics").innerHTML=cards.map(([l,n,dd,c])=>`<div class="kpi" style="--kc:${c}"><div class="n" style="color:${c}">${n}</div><div class="l">${l}</div><div class="d">${dd}</div></div>`).join("");
-    chart("mlfeat",$("#chMlFeat"),{type:"bar",
-      data:{labels:d.feature_importance.map(f=>f[0]),datasets:[{label:"importance",data:d.feature_importance.map(f=>f[1]),backgroundColor:C.guard+"B3",borderRadius:4,maxBarThickness:34}]},
-      options:base({})});
-    S.mlTime=d.sales_over_time; renderMlTime(0);
-    $("#mlTimePeriod").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
-      $("#mlTimePeriod").querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");
-      renderMlTime(+b.dataset.d);});
-    $("#mlFlagged").innerHTML=d.flagged.map(f=>{
-      const pat=f.is_self_transfer?"self-transfer":`loop ×${f.pair_trade_count}`;
-      return `<tr>
-        <td>${esc(f.collection)}</td>
-        <td class="mono">#${esc(f.tokenId)}</td>
-        <td class="mono" style="font-size:11px">${shortA(f.seller)} → ${shortA(f.buyer)}</td>
-        <td class="mono">${f.price_eth} ETH</td>
-        <td><span class="mono" style="color:var(--alert)">${pat}</span></td>
-        <td><a href="https://etherscan.io/tx/${esc(f.txhash)}" target="_blank" rel="noopener" style="color:var(--chain)">verify ↗</a></td>
-      </tr>`;}).join("");
-  }catch(e){
-    $("#mlDataset").innerHTML=`<div class="empty">ML results not generated yet — run <span class="mono">ml/export_for_dashboard.py</span>.</div>`;
   }
 }
 
@@ -1196,7 +1130,8 @@ function renderStack(){
     options:base({x:{stacked:true,ticks:{maxRotation:38,minRotation:38}},y:{stacked:true,max:100,beginAtZero:true}})});
 }
 
-boot();
+window.__ngBoot=boot;
+if(sessionStorage.getItem("ng_admin")==="1") boot();
 </script>
 </body>
 </html>

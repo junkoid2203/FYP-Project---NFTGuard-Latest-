@@ -273,6 +273,95 @@ footer code{font-family:'JetBrains Mono'}
   *{animation:none!important;transition:none!important}
 }
 </style>
+<style>
+/* ==================================================================
+   OpenSea-style shell — additive overrides (layout + chatbot + feed).
+   Keeps every element ID the app logic relies on; only re-skins.
+================================================================== */
+:root{ --sidebar:238px; }
+body{background:#070A0F}
+#particle-container{opacity:.15}
+.veil{background:radial-gradient(1000px 560px at 72% -6%,rgba(0,255,136,.05),transparent),linear-gradient(180deg,rgba(5,7,12,.55),var(--void))}
+.page{margin-left:var(--sidebar)}
+
+/* ---- left sidebar ---- */
+.sidebar{position:fixed;top:0;left:0;bottom:0;width:var(--sidebar);z-index:60;display:flex;flex-direction:column;
+  background:#0A0F16;border-right:1px solid var(--line);padding:18px 14px}
+.sidebar .brand{display:flex;align-items:center;gap:10px;font-family:'Space Grotesk';font-weight:700;font-size:18px;padding:4px 8px 14px}
+.sidebar .brand b{color:var(--guard)}
+.sb-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:14px 10px 6px}
+.sb-link{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;color:var(--dim);text-decoration:none;
+  font-size:14px;font-weight:500;cursor:pointer;transition:.15s;font-family:'Inter'}
+.sb-link:hover{background:rgba(255,255,255,.045);color:var(--ink)}
+.sb-link.active{background:var(--guard-dim);color:var(--guard)}
+.sb-link svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none}
+.sb-spacer{flex:1}
+.sb-admin{border-top:1px solid var(--line);margin-top:8px;padding-top:8px}
+
+/* ---- topbar (restyled <nav>) ---- */
+nav{gap:14px;padding:12px 24px;background:rgba(7,10,15,.82)}
+nav .topsearch{flex:1;max-width:540px;display:flex;align-items:center;gap:9px;background:var(--panel-solid);
+  border:1px solid var(--line-strong);border-radius:11px;padding:9px 13px}
+nav .topsearch input{background:none;border:none;outline:none;color:var(--ink);font-size:14px;width:100%;font-family:'Inter'}
+nav .topsearch svg{width:16px;height:16px;stroke:var(--faint);fill:none;flex:none}
+nav .mode-pill{margin-left:auto}
+
+/* ---- slimmer hero ---- */
+.hero{min-height:auto;padding:32px 4vw 4px;max-width:1180px}
+.hero h1{font-size:clamp(28px,4.2vw,50px)}
+.hero p.sub{font-size:15px}
+.console{margin-top:24px}
+section{padding:56px 4vw 20px}
+
+/* ---- activity feed ---- */
+.act-wrap{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
+.act-table{width:100%;border-collapse:collapse;font-size:13px}
+.act-table th{text-align:left;color:var(--faint);font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+  padding:12px 16px;border-bottom:1px solid var(--line);background:var(--panel-solid)}
+.act-table td{padding:11px 16px;border-bottom:1px dashed var(--line);color:var(--dim);white-space:nowrap}
+.act-table tr:hover td{background:rgba(255,255,255,.02)}
+.act-item{display:flex;align-items:center;gap:10px}
+.act-thumb{width:34px;height:34px;border-radius:8px;object-fit:cover;background:#0A0F18;flex:none;display:inline-block}
+.act-ev{font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;border:1px solid var(--line-strong);color:var(--dim)}
+.act-ev.SALE{color:var(--guard);border-color:rgba(0,255,136,.35)}
+.act-ev.MINT{color:var(--chain);border-color:rgba(110,168,255,.35)}
+.act-ev.LIST{color:var(--amber);border-color:rgba(255,176,32,.35)}
+.act-mono{font-family:'JetBrains Mono';font-size:12px}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--guard);box-shadow:0 0 8px var(--guard);
+  animation:blink 1.5s infinite;display:inline-block;vertical-align:middle;margin-left:8px}
+
+/* ---- AI chatbot ---- */
+#cbBtn{position:fixed;right:22px;bottom:22px;z-index:210;width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;
+  background:var(--guard);box-shadow:0 8px 26px rgba(0,255,136,.35);display:grid;place-items:center;transition:transform .15s}
+#cbBtn:hover{transform:scale(1.06)}
+#cbBtn svg{width:26px;height:26px}
+#cbPanel{position:fixed;right:22px;bottom:90px;z-index:210;width:366px;max-width:92vw;height:530px;max-height:74vh;
+  display:none;flex-direction:column;background:var(--panel-solid);border:1px solid var(--line-strong);border-radius:16px;
+  overflow:hidden;box-shadow:0 22px 64px rgba(0,0,0,.55)}
+#cbPanel.open{display:flex}
+.cb-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);background:#0A0F16}
+.cb-head .t{font-family:'Space Grotesk';font-weight:600;font-size:14px}
+.cb-head .s{font-size:11px;color:var(--faint)}
+.cb-head .x{margin-left:auto;background:none;border:none;color:var(--dim);font-size:22px;cursor:pointer;line-height:1}
+.cb-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:11px}
+.cb-msg{max-width:83%;padding:10px 13px;border-radius:13px;font-size:13.5px;line-height:1.5;white-space:pre-wrap}
+.cb-msg.bot{align-self:flex-start;background:var(--raised);border:1px solid var(--line);border-bottom-left-radius:4px}
+.cb-msg.me{align-self:flex-end;background:var(--guard-dim);border:1px solid rgba(0,255,136,.3);color:var(--ink);border-bottom-right-radius:4px}
+.cb-typing{align-self:flex-start;color:var(--faint);font-size:12px;font-style:italic}
+.cb-suggest{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 8px}
+.cb-chip{font-size:11.5px;color:var(--dim);border:1px solid var(--line-strong);border-radius:99px;padding:5px 10px;cursor:pointer;background:none;font-family:'Inter'}
+.cb-chip:hover{border-color:var(--guard);color:var(--guard)}
+.cb-input{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+.cb-input input{flex:1;background:var(--void);border:1px solid var(--line-strong);border-radius:10px;padding:10px 12px;color:var(--ink);font-size:13.5px;outline:none;font-family:'Inter'}
+.cb-input input:focus{border-color:var(--guard)}
+.cb-input button{background:var(--guard);border:none;border-radius:10px;padding:0 15px;color:#03160C;font-weight:700;cursor:pointer;font-family:'Space Grotesk'}
+
+@media(max-width:900px){
+  :root{--sidebar:0px}
+  .sidebar{display:none}
+  .page{margin-left:0}
+}
+</style>
 </head>
 <body>
 
@@ -280,21 +369,30 @@ footer code{font-family:'JetBrains Mono'}
 <div class="veil" aria-hidden="true"></div>
 
 <div class="page">
-<nav>
-  <div class="logo">
-    <svg class="shield" viewBox="0 0 24 24" fill="none"><path d="M12 2L4 5.5V11c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5.5L12 2z" stroke="#00FF88" stroke-width="1.6" fill="rgba(0,255,136,.08)"/><path d="M8.5 12l2.4 2.4 4.6-4.8" stroke="#00FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+
+<aside class="sidebar">
+  <div class="brand">
+    <svg class="shield" width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2L4 5.5V11c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5.5L12 2z" stroke="#00FF88" stroke-width="1.6" fill="rgba(0,255,136,.08)"/><path d="M8.5 12l2.4 2.4 4.6-4.8" stroke="#00FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     NFT<b>Guard</b>
   </div>
-  <div class="links">
-    <a href="#market">Marketplace</a>
-    <a href="dashboard.html">Dashboard</a>
-    <a href="#analytics">Price analytics</a>
-    <a href="#mint">Mint</a>
+  <div class="sb-label">Marketplace</div>
+  <a class="sb-link active" href="#market"><svg viewBox="0 0 24 24" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg> Discover</a>
+  <a class="sb-link" href="#activity"><svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg> Activity</a>
+  <a class="sb-link" href="#analytics"><svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg> Price analytics</a>
+  <a class="sb-link" href="#mint"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Create / Mint</a>
+  <div class="sb-spacer"></div>
+  <div class="sb-admin">
+    <a class="sb-link" href="dashboard.html"><svg viewBox="0 0 24 24" stroke-width="1.7"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg> Admin dashboard</a>
   </div>
-  <div class="wallet">
-    <span class="mode-pill" id="modePill">connecting…</span>
-    <button class="btn" id="walletBtn">Connect wallet</button>
+</aside>
+
+<nav>
+  <div class="topsearch">
+    <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+    <input id="topSearch" type="search" placeholder="Search NFTs, collections…" aria-label="Search">
   </div>
+  <span class="mode-pill" id="modePill">connecting…</span>
+  <button class="btn" id="walletBtn">Connect wallet</button>
 </nav>
 
 <header class="hero">
@@ -305,7 +403,7 @@ footer code{font-family:'JetBrains Mono'}
      then distils it all into a single 0–100 risk score before you buy.</p>
   <div class="cta">
     <a href="#market"><button class="btn primary">Browse marketplace</button></a>
-    <a href="dashboard.html"><button class="btn">Open risk dashboard</button></a>
+    <a href="#activity"><button class="btn">View live activity</button></a>
   </div>
   <div class="console" role="log" aria-label="live verification feed">
     <div class="bar"><i></i> nftguard · verification engine</div>
@@ -829,15 +927,16 @@ $("#mintBtn").addEventListener("click",async()=>{
 /* ---------- verification console (hero) ---------- */
 function startConsole(){
   const feed=$("#consoleFeed");
-  const lines=[
-    `<span class="k">verify</span> #3 "Wash Cycle" · ERC-165 supportsInterface(0x80ac58cd) <span class="ok">→ true</span>`,
-    `<span class="k">sha256</span> ipfs://demo/3 <span class="ok">→ match on-chain anchor</span>`,
-    `<span class="k">rule-1</span> buyer–seller loop · pair 0x3a5b…1111 ↔ 0x3a5b…2222 × 6 <span class="bad">→ WASH TRADE</span>`,
-    `<span class="k">rule-4</span> +60% price hops within 40 min <span class="bad">→ RAPID ESCALATION</span>`,
-    `<span class="k">z-score</span> sale 5.24 ETH vs μ 0.86 σ 1.21 → |Z| 3.6 <span class="bad">→ ANOMALY</span>`,
-    `<span class="k">score</span> 0.40×0 + 0.35×55 + 0.25×38 = <span class="bad">29 + fraud flags → HIGH RISK</span>`,
-    `<span class="k">verify</span> #1 "Genesis Orb" · all layers <span class="ok">→ PASS · risk 0 (LOW)</span>`,
-  ];
+  const nfts=(state.nfts||[]).filter(n=>n.risk);
+  if(!nfts.length){ feed.innerHTML=`<span class="k">nftguard</span> awaiting live data…`; return; }
+  // Build the feed from REAL detections on the loaded NFTs (no hardcoded demo data).
+  const lines=[];
+  nfts.forEach(n=>{
+    const r=n.risk, hi=r.riskLevel!=="Low";
+    lines.push(`<span class="k">verify</span> #${n.tokenId} "${esc(n.name)}" · authenticity <span class="${n.authenticityStatus==='Verified'?'ok':'bad'}">→ ${esc(n.authenticityStatus)}</span>`);
+    if(hi) lines.push(`<span class="k">fraud</span> #${n.tokenId} · self-transfer / wash-trading pattern <span class="bad">→ FLAGGED</span>`);
+    lines.push(`<span class="k">score</span> #${n.tokenId} = <span class="${hi?'bad':'ok'}">${r.unifiedScore}/100 → ${String(r.riskLevel).toUpperCase()} RISK</span>`);
+  });
   let i=0;
   const push=()=>{ feed.innerHTML=lines.slice(Math.max(0,i-4),i+1).join("\n"); i=(i+1)%lines.length; };
   push(); setInterval(push, 2200);

@@ -29,6 +29,7 @@ const { analyzeCollection } = require("../services/priceAnalyzer");
 const { computeUnifiedRisk } = require("../services/riskScoreEngine");
 const { investigateWallet } = require("../services/walletInvestigator");
 const { analyzeGraph } = require("../services/graphAnalyzer");
+const { handleChat } = require("../services/chatAssistant");
 
 const wrap = fn => (req, res) => fn(req, res).catch(err => {
   console.error(err);
@@ -200,6 +201,64 @@ router.get("/investigate/:address", wrap(async (req, res) => {
   const addr = String(req.params.address || "").trim();
   if (!/^0x[a-fA-F0-9]{40}$/.test(addr)) return res.status(400).json({ error: "Invalid wallet address (expected 0x + 40 hex characters)" });
   res.json(await investigateWallet(addr));
+}));
+
+// ---------------------------------------------------------------- activity feed (recent tx across all tokens)
+router.get("/activity", wrap(async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 40, 100);
+  const txs = await Transaction.find().sort({ timestamp: -1 }).limit(limit).lean();
+  const ids = [...new Set(txs.map(t => t.tokenId))];
+  const nfts = await Nft.find({ tokenId: { $in: ids } }).lean();
+  const scores = await RiskScore.find({ tokenId: { $in: ids } }).lean();
+  const infoBy = Object.fromEntries(nfts.map(n => [n.tokenId, n]));
+  const riskBy = Object.fromEntries(scores.map(s => [s.tokenId, s]));
+  res.json(txs.map(t => {
+    const n = infoBy[t.tokenId] || {};
+    const r = riskBy[t.tokenId];
+    return {
+      tokenId: t.tokenId,
+      name: n.name || `Token #${t.tokenId}`,
+      image: n.image || "",
+      collection: n.collectionName || t.collectionName || "—",
+      event: t.txType,
+      from: t.senderAddress,
+      to: t.recipientAddress,
+      priceEth: t.priceEth,
+      timestamp: t.timestamp,
+      txHash: t.txHash,
+      riskLevel: r ? r.riskLevel : null,
+    };
+  }));
+}));
+
+// ---------------------------------------------------------------- AI chat assistant
+router.post("/chat", wrap(async (req, res) => {
+  const messages = (req.body && req.body.messages) || [];
+  // Best-effort live snapshot for the assistant — wrapped so it never blocks chat
+  let context = {};
+  try {
+    const [nfts, scores, totalFlags] = await Promise.all([
+      Nft.find().sort({ tokenId: 1 }).lean(),
+      RiskScore.find().lean(),
+      FraudFlag.countDocuments(),
+    ]);
+    const byTok = Object.fromEntries(scores.map(s => [s.tokenId, s]));
+    const nftCtx = nfts.map(n => ({
+      id: n.tokenId, name: n.name, collection: n.collectionName,
+      status: n.authenticityStatus,
+      risk: byTok[n.tokenId] ? byTok[n.tokenId].riskLevel : "—",
+      score: byTok[n.tokenId] ? byTok[n.tokenId].unifiedScore : null,
+    }));
+    context = {
+      totalNfts: nfts.length,
+      highRisk: nftCtx.filter(n => n.risk === "High").length,
+      totalFlags,
+      nfts: nftCtx,
+    };
+  } catch (e) {
+    console.warn("[chat] context build failed:", e.message);
+  }
+  res.json(await handleChat(messages, context));
 }));
 
 module.exports = router;
