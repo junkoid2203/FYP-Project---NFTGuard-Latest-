@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title  NFTGuardMarketplace
- * @author Tan Weng Liang — BMCS3413 Project II (NFTGuard)
+ * @author Tan Weng Liang & Koid Cheng Chun — BMCS3413 Project II (NFTGuard)
  *
  * @notice ERC-721 marketplace prototype deployed on the Ethereum Sepolia testnet.
  *         Designed to support the NFTGuard verification pipeline described in the
@@ -71,7 +71,7 @@ contract NFTGuardMarketplace is ERC721URIStorage, Ownable, ReentrancyGuard {
     constructor() ERC721("NFTGuard Collection", "NFTG") Ownable(msg.sender) {}
 
     // ---------------------------------------------------------------------
-    // Minting  (FR 2.2)
+    // Minting
     // ---------------------------------------------------------------------
 
     /**

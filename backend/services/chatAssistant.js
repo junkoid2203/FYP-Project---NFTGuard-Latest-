@@ -8,23 +8,21 @@
  *    instead of throwing. The chat widget therefore always gets a reply.
  */
 
-const MODEL = process.env.CHAT_MODEL || "claude-opus-5";
+const axios = require("axios");
 
-let _client = null;
-let _tried = false;
+// Chatbot LLM: Google Gemini (free tier). Falls back to a built-in scripted
+// helper when GEMINI_API_KEY is missing or the API call fails, so it never breaks.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
 
-function getClient() {
-  if (_tried) return _client;
-  _tried = true;
-  if (!process.env.ANTHROPIC_API_KEY) return null; // no key -> scripted fallback
-  try {
-    const Anthropic = require("@anthropic-ai/sdk");
-    _client = new Anthropic(); // reads ANTHROPIC_API_KEY from env
-  } catch (e) {
-    console.warn("[chat] @anthropic-ai/sdk unavailable, using fallback:", e.message);
-    _client = null;
-  }
-  return _client;
+async function callGemini(system, messages) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${process.env.GEMINI_API_KEY}`;
+  const { data } = await axios.post(url, {
+    system_instruction: { parts: [{ text: system }] },
+    contents: messages.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
+    generationConfig: { maxOutputTokens: 1024, temperature: 0.7 },
+  }, { timeout: 30000 });
+  const parts = ((((data.candidates || [])[0] || {}).content) || {}).parts || [];
+  return parts.map(p => p.text || "").join("").trim();
 }
 
 function buildSystemPrompt(ctx) {
@@ -99,25 +97,13 @@ async function handleChat(messages, context) {
     return { reply: "Hi! I'm the NFTGuard assistant. Ask me about an NFT's risk score, how wash-trading or authenticity checks work, or anything on the marketplace.", mode: "fallback" };
   }
 
-  const client = getClient();
-  if (!client) return { reply: scriptedReply(clean, context), mode: "fallback" };
-
+  if (!process.env.GEMINI_API_KEY) return { reply: scriptedReply(clean, context), mode: "fallback" };
   try {
-    const resp = await client.messages.create({
-      model: MODEL,
-      max_tokens: 1024,
-      thinking: { type: "disabled" }, // snappy chat; no tools so this is safe
-      system: buildSystemPrompt(context),
-      messages: clean,
-    });
-    const text = (resp.content || [])
-      .filter(b => b.type === "text")
-      .map(b => b.text)
-      .join("")
-      .trim();
-    return { reply: text || scriptedReply(clean, context), mode: "llm" };
+    const text = await callGemini(buildSystemPrompt(context), clean);
+    return { reply: text || scriptedReply(clean, context), mode: "gemini" };
   } catch (e) {
-    console.warn("[chat] LLM error, falling back:", e.message);
+    const detail = e.response && e.response.data ? JSON.stringify(e.response.data).slice(0, 220) : e.message;
+    console.warn("[chat] gemini error, falling back:", detail);
     return { reply: scriptedReply(clean, context), mode: "fallback" };
   }
 }

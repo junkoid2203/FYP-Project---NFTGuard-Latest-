@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
 <script type="importmap">
     {
       "imports": {
@@ -102,9 +103,16 @@ section{max-width:1240px;margin:0 auto;padding:84px 4vw 20px}
 
 /* ---------- NFT grid ---------- */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:18px}
-.card{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:var(--r);
+.card{position:relative;background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:var(--r);
   overflow:hidden;cursor:pointer;transition:transform .18s,border-color .18s}
 .card:hover{transform:translateY(-3px);border-color:var(--line-strong)}
+.card .buybar{position:absolute;left:0;right:0;bottom:0;transform:translateY(101%);transition:transform .18s ease;
+  background:var(--guard);color:#03160C;font-family:'Space Grotesk';font-weight:700;font-size:14px;
+  display:flex;align-items:center;justify-content:space-between;padding:12px 15px;cursor:pointer;z-index:3}
+.card:hover .buybar{transform:translateY(0)}
+.card .buybar:hover{filter:brightness(1.08)}
+.card .buybar .p{font-family:'JetBrains Mono';font-weight:600}
+@media(hover:none){.card .buybar{position:static;transform:none;border-radius:0 0 var(--r) var(--r)}}
 .card .art{position:relative;aspect-ratio:1/1;background:#0A0F18}
 .card .art svg{width:100%;height:100%;display:block}
 .card .art img{width:100%;height:100%;object-fit:cover;display:block}
@@ -380,6 +388,7 @@ section{padding:56px 4vw 20px}
   <a class="sb-link" href="#activity"><svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg> Activity</a>
   <a class="sb-link" href="#analytics"><svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg> Price analytics</a>
   <a class="sb-link" href="#mint"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Create / Mint</a>
+  <a class="sb-link" id="sbProfile" href="#profile" style="display:none"><svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> Profile</a>
   <div class="sb-spacer"></div>
   <div class="sb-admin">
     <a class="sb-link" href="dashboard.html"><svg viewBox="0 0 24 24" stroke-width="1.7"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg> Admin dashboard</a>
@@ -393,10 +402,30 @@ section{padding:56px 4vw 20px}
   </div>
   <span class="mode-pill" id="modePill">connecting…</span>
   <button class="btn" id="walletBtn">Connect wallet</button>
+  <button class="btn icon" id="userBtn" title="Register / Login" aria-label="Account"><svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></button>
 </nav>
 
+<section id="profile">
+  <div class="prof-head">
+    <div class="prof-avatar" id="profAvatar">?</div>
+    <div>
+      <h2 class="prof-name" id="profName">—</h2>
+      <div class="prof-addr" id="profAddr">No wallet connected</div>
+    </div>
+    <button class="btn" id="profLogout" style="margin-left:auto;background:#FF4D5E;border-color:#FF4D5E;color:#fff">Log out</button>
+  </div>
+  <div class="prof-stats" id="profStats"></div>
+  <div class="sec-head" style="margin-top:12px;margin-bottom:16px"><h2 style="font-size:22px">My items</h2><span class="hint" id="profItemsHint"></span></div>
+  <div class="grid" id="profItems"></div>
+  <div class="sec-head" style="margin-top:38px;margin-bottom:14px"><h2 style="font-size:22px">My activity</h2><span class="hint">Mints, sales and transfers involving your wallet</span></div>
+  <div class="act-wrap"><div style="overflow-x:auto"><table class="act-table">
+    <thead><tr><th>Event</th><th>Item</th><th>Price</th><th>Counterparty</th><th>Time</th></tr></thead>
+    <tbody id="profActivity"><tr><td colspan="5" style="padding:20px;text-align:center;color:var(--faint)">Connect a wallet to see your activity.</td></tr></tbody>
+  </table></div></div>
+</section>
+
 <header class="hero">
-  <div class="eyebrow">ERC-721 · Sepolia Testnet · Heuristic Fraud Detection</div>
+  <div class="eyebrow">ERC-721 · Sepolia Testnet · Heuristic + Graph Fraud Detection</div>
   <h1>Trade NFTs with the <span class="g">risk made visible.</span></h1>
   <p class="sub">NFTGuard verifies smart-contract compliance, anchors metadata with on-chain SHA-256 hashes,
      and scans every transaction history for wash trading, self-transfers and abnormal price spikes —
@@ -426,20 +455,45 @@ section{padding:56px 4vw 20px}
   </div>
   <div class="filters">
     <input id="fSearch" type="search" placeholder="Search by name…" aria-label="Search NFTs">
+    <select id="fColl" aria-label="Filter by collection"><option value="">All collections</option></select>
     <select id="fRisk" aria-label="Filter by risk level">
       <option value="">All risk levels</option><option>Low</option><option>Medium</option><option>High</option>
     </select>
     <select id="fStatus" aria-label="Filter by authenticity">
       <option value="">All authenticity</option><option>Verified</option><option>Tampered</option><option>Duplicate</option><option>NonCompliant</option><option>Unverified</option>
     </select>
+    <select id="fSort" aria-label="Sort by">
+      <option value="recent">Recently added</option>
+      <option value="price-asc">Price: low → high</option>
+      <option value="price-desc">Price: high → low</option>
+      <option value="name">Name: A → Z</option>
+      <option value="risk-desc">Risk: high → low</option>
+      <option value="risk-asc">Risk: low → high</option>
+    </select>
   </div>
   <div class="grid" id="nftGrid"></div>
+</section>
+
+<section id="activity">
+  <div class="sec-head">
+    <h2>Activity <span class="live-dot" title="live feed"></span></h2>
+    <span class="hint">Live marketplace events · auto-refreshing every 20s</span>
+  </div>
+  <div class="act-wrap">
+    <div style="overflow-x:auto"><table class="act-table">
+      <thead><tr><th>Event</th><th>Item</th><th>Price</th><th>From</th><th>To</th><th>Time</th></tr></thead>
+      <tbody id="actFeed"><tr><td colspan="6" style="padding:22px;text-align:center;color:var(--faint)">Loading activity…</td></tr></tbody>
+    </table></div>
+  </div>
 </section>
 
 <section id="analytics">
   <div class="sec-head">
     <h2>Collection price transparency</h2>
-    <span class="hint" id="anaHint">Z-score anomaly threshold |Z| &gt; 2.5</span>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <select id="collSel" aria-label="Choose collection" style="background:var(--panel-solid);border:1px solid var(--line-strong);color:var(--ink);border-radius:10px;padding:8px 12px;font-size:13.5px;font-family:'Inter'"></select>
+      <span class="hint" id="anaHint">Z-score anomaly threshold |Z| &gt; 2.5</span>
+    </div>
   </div>
   <div class="mint-panel" style="max-width:100%;padding:22px">
     <div class="chart-box" style="height:300px"><canvas id="collChart"></canvas></div>
@@ -449,12 +503,15 @@ section{padding:56px 4vw 20px}
 <section id="mint">
   <div class="sec-head"><h2>Mint a test NFT</h2></div>
   <div class="mint-panel">
-    <h3>Simulated minting</h3>
-    <p>Creates an ERC-721 on the Sepolia testnet when the backend is chain-connected; otherwise the mint is
-       simulated locally. The metadata SHA-256 hash is anchored at mint time for later integrity checks.</p>
+    <h3>Mint a test NFT</h3>
+    <p><b>Simulated</b> records it in the marketplace instantly (no wallet needed). <b>On-chain</b> mints a <b>real ERC-721 token on the Sepolia testnet</b> — your MetaMask signs it and pays the (free test) gas, and you get an Etherscan link.</p>
     <div class="field"><label for="mName">Name</label><input id="mName" placeholder="e.g. Quantum Relic #9"></div>
     <div class="field"><label for="mPrice">List price (ETH)</label><input id="mPrice" type="number" step="0.01" min="0" placeholder="0.50"></div>
-    <button class="btn primary" id="mintBtn">Mint NFT</button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn primary" id="mintBtn">Mint (simulated)</button>
+      <button class="btn" id="mintChainBtn">🦊 Mint on-chain (Sepolia)</button>
+    </div>
+    <div id="mintResult" style="margin-top:16px"></div>
   </div>
 </section>
 
@@ -490,9 +547,11 @@ section{padding:56px 4vw 20px}
             <input id="mListPrice" type="number" min="0" step="0.01" placeholder="price ETH" style="width:120px;display:none">
             <button class="btn primary" id="mList" style="display:none">List for sale</button>
             <button class="btn" id="mVerify">Re-run verification</button>
+            <button class="btn" id="mOffer">Make offer</button>
           </div>
         </div>
         <details class="os-sec" open><summary>Traits</summary><div class="os-traits" id="mTraits"></div></details>
+        <details class="os-sec" id="mOffersSec"><summary>Offers</summary><div id="mOffers"><div class="noflag">Expand to load offers…</div></div></details>
         <div class="tabs" role="tablist">
           <button class="tab active" data-t="risk">Risk breakdown</button>
           <button class="tab" data-t="auth">Authenticity</button>
@@ -508,6 +567,285 @@ section{padding:56px 4vw 20px}
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ============ user accounts (register / login) + profile ============ -->
+<style>
+.btn.icon{padding:9px 11px;display:inline-grid;place-items:center}
+.btn.icon svg{width:18px;height:18px;stroke:currentColor;fill:none}
+#userBtn.primary{font-family:'JetBrains Mono';font-size:12px}
+.auth-overlay{position:fixed;inset:0;z-index:250;background:rgba(4,8,14,.72);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:16px}
+.auth-overlay.open{display:flex}
+.auth-modal{width:372px;max-width:94vw;background:var(--panel-solid);border:1px solid var(--line-strong);border-radius:16px;padding:24px}
+.auth-head{display:flex;justify-content:space-between;align-items:center;font-family:'Space Grotesk';font-size:19px;font-weight:700}
+.auth-x{cursor:pointer;color:var(--dim);font-size:18px}.auth-x:hover{color:var(--ink)}
+.auth-sub{color:var(--dim);font-size:13px;margin:6px 0 18px}
+.auth-err{color:var(--alert);font-size:12.5px;min-height:16px;margin:2px 2px 8px}
+.auth-switch{text-align:center;color:var(--dim);font-size:13px;margin-top:14px}
+.auth-switch a{color:var(--guard);text-decoration:none}
+#profile{display:none}
+body.profile-mode .page>header,body.profile-mode .page>.stats,body.profile-mode .page>section:not(#profile){display:none}
+body.profile-mode #profile{display:block}
+.prof-head{display:flex;align-items:center;gap:18px;margin-bottom:26px;flex-wrap:wrap}
+.prof-avatar{width:74px;height:74px;border-radius:50%;flex:none;background:linear-gradient(135deg,var(--guard),var(--chain));display:grid;place-items:center;font-family:'Space Grotesk';font-weight:700;font-size:30px;color:#03160C}
+.prof-name{font-family:'Space Grotesk';font-size:27px;font-weight:700}
+.prof-addr{color:var(--faint);font-family:'JetBrains Mono';font-size:12.5px;margin-top:4px;word-break:break-all}
+.prof-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:8px}
+.prof-stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.prof-stat .n{font-family:'Space Grotesk';font-weight:700;font-size:26px}
+.prof-stat .l{color:var(--dim);font-size:11.5px;margin-top:4px;text-transform:uppercase;letter-spacing:.05em}
+</style>
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-modal">
+    <div class="auth-head"><span id="authTitle">Log in</span><span class="auth-x" id="authClose">✕</span></div>
+    <p class="auth-sub" id="authSub">Welcome back to NFTGuard.</p>
+    <div class="field"><label for="authUser">Username</label><input id="authUser" type="text" autocomplete="off" spellcheck="false"></div>
+    <div class="field" id="authEmailWrap" style="display:none"><label for="authEmail">Email (optional)</label><input id="authEmail" type="email" autocomplete="off"></div>
+    <div class="field"><label for="authPass">Password</label><input id="authPass" type="password"></div>
+    <div class="field" id="authConfirmWrap" style="display:none"><label for="authConfirm">Confirm password</label><input id="authConfirm" type="password"></div>
+    <div class="auth-err" id="authErr"></div>
+    <button class="btn primary wc-full" id="authSubmit">Log in</button>
+    <div class="auth-switch" id="authSwitch">New here? <a href="#" id="authToggle">Create an account</a></div>
+  </div>
+</div>
+<script>
+/* ---- User accounts (localStorage) + Profile view — independent of main app script ---- */
+(function(){
+  var $=function(s){ return document.querySelector(s); };
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];}); }
+  function shortA(a){ a=String(a||""); return a.length>13?a.slice(0,6)+"…"+a.slice(-4):a; }
+  function ago(ts){ var s=Math.max(1,Math.floor((Date.now()-new Date(ts).getTime())/1000));
+    if(s<60)return s+"s ago"; var m=Math.floor(s/60); if(m<60)return m+"m ago";
+    var h=Math.floor(m/60); if(h<24)return h+"h ago"; return Math.floor(h/24)+"d ago"; }
+  var USERS_KEY="ng_users", CUR_KEY="ng_currentUser";
+  function users(){ try{ return JSON.parse(localStorage.getItem(USERS_KEY)||"{}"); }catch(e){ return {}; } }
+  function saveUsers(u){ localStorage.setItem(USERS_KEY,JSON.stringify(u)); }
+  function hash(s){ var h=5381; for(var i=0;i<s.length;i++){ h=(((h<<5)+h)^s.charCodeAt(i))>>>0; } return h.toString(16); }
+  function current(){ return localStorage.getItem(CUR_KEY); }
+
+  var ov=$("#authOverlay"), mode="login";
+  function renderMode(){
+    var reg=mode==="register";
+    $("#authTitle").textContent=reg?"Create account":"Log in";
+    $("#authSub").textContent=reg?"Join NFTGuard to track the items and activity of your wallet.":"Welcome back to NFTGuard.";
+    $("#authConfirmWrap").style.display=reg?"block":"none";
+    $("#authEmailWrap").style.display=reg?"block":"none";
+    $("#authSubmit").textContent=reg?"Create account":"Log in";
+    $("#authSwitch").innerHTML=reg?'Have an account? <a href="#" id="authToggle">Log in</a>':'New here? <a href="#" id="authToggle">Create an account</a>';
+    $("#authToggle").addEventListener("click",function(e){ e.preventDefault(); openAuth(reg?"login":"register"); });
+  }
+  function openAuth(m){ mode=m||"login"; renderMode(); $("#authErr").textContent=""; ov.classList.add("open"); setTimeout(function(){ $("#authUser").focus(); },60); }
+  function closeAuth(){ ov.classList.remove("open"); }
+  function submit(){
+    var u=$("#authUser").value.trim(), p=$("#authPass").value, err=$("#authErr"), db=users();
+    if(!u||!p){ err.textContent="Enter a username and password."; return; }
+    if(mode==="register"){
+      if(u.length<3){ err.textContent="Username must be at least 3 characters."; return; }
+      if(p.length<4){ err.textContent="Password must be at least 4 characters."; return; }
+      if($("#authConfirm").value!==p){ err.textContent="Passwords do not match."; return; }
+      if(db[u.toLowerCase()]){ err.textContent="That username is already taken."; return; }
+      db[u.toLowerCase()]={ name:u, pass:hash(p), email:$("#authEmail").value.trim(), created:Date.now() };
+      saveUsers(db); setLoggedIn(u); closeAuth();
+    }else{
+      var rec=db[u.toLowerCase()];
+      if(!rec||rec.pass!==hash(p)){ err.textContent="Incorrect username or password."; return; }
+      setLoggedIn(rec.name); closeAuth();
+    }
+  }
+  function setLoggedIn(name){ localStorage.setItem(CUR_KEY,name); updateUI(); showProfile(); }
+  function logout(){ localStorage.removeItem(CUR_KEY); document.body.classList.remove("profile-mode"); updateUI(); }
+
+  function updateUI(){
+    var name=current(), ub=$("#userBtn"), sp=$("#sbProfile");
+    if(name){
+      ub.textContent=name.length>10?name.slice(0,9)+"…":name; ub.title="Signed in as "+name; ub.classList.add("primary"); ub.classList.remove("icon");
+      ub.onclick=showProfile; sp.style.display="flex";
+    }else{
+      ub.innerHTML='<svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>';
+      ub.title="Register / Login"; ub.classList.remove("primary"); ub.classList.add("icon");
+      ub.onclick=function(){ openAuth("login"); }; sp.style.display="none";
+      document.body.classList.remove("profile-mode");
+    }
+  }
+  function showProfile(){ if(!current()){ openAuth("login"); return; }
+    document.body.classList.add("profile-mode");
+    document.querySelectorAll(".sb-link").forEach(function(x){ x.classList.remove("active"); }); $("#sbProfile").classList.add("active");
+    window.scrollTo(0,0); renderProfile(); }
+
+  async function renderProfile(){
+    var name=current(); if(!name) return;
+    $("#profName").textContent=name; $("#profAvatar").textContent=name.slice(0,1).toUpperCase();
+    var wallet=window.__ngWallet||null;
+    $("#profAddr").textContent=wallet?wallet:"No wallet connected — connect a wallet to see the items you own";
+    var items=[], acts=[];
+    if(wallet){
+      try{ var nfts=await (await fetch("/api/nfts")).json(); items=nfts.filter(function(n){ return n.ownerAddress&&n.ownerAddress.toLowerCase()===wallet.toLowerCase(); }); }catch(e){}
+      try{ var av=await (await fetch("/api/activity?limit=100")).json(); acts=av.filter(function(t){ return (t.from&&t.from.toLowerCase()===wallet.toLowerCase())||(t.to&&t.to.toLowerCase()===wallet.toLowerCase()); }); }catch(e){}
+    }
+    var portfolio=items.reduce(function(s,n){ return s+(n.priceEth||0); },0), balance=portfolio, balLabel="Portfolio value";
+    if(wallet&&window.__ngWalletReal&&window.ethereum){
+      try{ var wei=await window.ethereum.request({method:"eth_getBalance",params:[wallet,"latest"]}); balance=parseInt(wei,16)/1e18; balLabel="Wallet balance"; }catch(e){}
+    }
+    $("#profStats").innerHTML=[
+      [items.length,"Items owned"],
+      [balance.toFixed(3)+" ETH",balLabel],
+      [acts.length,"Activity events"]
+    ].map(function(x){ return '<div class="prof-stat"><div class="n">'+esc(x[0])+'</div><div class="l">'+esc(x[1])+'</div></div>'; }).join("");
+    $("#profItemsHint").textContent=wallet?(items.length+" owned by "+shortA(wallet)):"";
+    $("#profItems").innerHTML= !wallet ? '<div class="noflag" style="grid-column:1/-1">Connect a wallet (top-right) to see the NFTs you own — then mint one from the Create tab.</div>'
+      : (items.length? items.map(function(n){
+          var lvl=n.risk?n.risk.riskLevel:"Low";
+          var img=n.image?'<img src="'+esc(n.image)+'" alt="" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.remove()">':'';
+          return '<article class="card"><div class="art" style="aspect-ratio:1/1;position:relative">'+img+'<span class="badge '+esc(n.authenticityStatus)+'">'+esc(n.authenticityStatus)+'</span></div>'+
+            '<div class="meta"><div class="row1"><span class="name">'+esc(n.name)+'</span><span class="tid">#'+n.tokenId+'</span></div>'+
+            '<div class="row2"><span class="price">'+(n.listed?esc(n.priceEth)+' <small>ETH</small>':'<small>not listed</small>')+'</span><span class="lvl '+lvl+'">'+lvl+'</span></div></div></article>';
+        }).join("") : '<div class="noflag" style="grid-column:1/-1">No items yet. Mint an NFT from the Create tab and it will show up here.</div>');
+    $("#profActivity").innerHTML= (wallet&&acts.length)? acts.map(function(t){
+        var other=(t.from&&t.from.toLowerCase()===wallet.toLowerCase())?t.to:t.from;
+        return '<tr><td><span class="act-ev '+esc(t.event)+'">'+esc(t.event)+'</span></td><td style="color:var(--ink)">'+esc(t.name)+'</td><td class="act-mono">'+(t.priceEth?esc(t.priceEth)+' ETH':'—')+'</td><td class="act-mono">'+esc(shortA(other))+'</td><td style="color:var(--faint)">'+esc(ago(t.timestamp))+'</td></tr>';
+      }).join("") : '<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--faint)">'+(wallet?"No activity for this wallet yet — mint or buy something.":"Connect a wallet to see your activity.")+'</td></tr>';
+  }
+
+  /* wiring */
+  $("#authClose").addEventListener("click",closeAuth);
+  ov.addEventListener("click",function(e){ if(e.target===ov) closeAuth(); });
+  $("#authSubmit").addEventListener("click",submit);
+  ov.addEventListener("keydown",function(e){ if(e.key==="Enter") submit(); });
+  $("#profLogout").addEventListener("click",logout);
+  $("#sbProfile").addEventListener("click",function(e){ e.preventDefault(); showProfile(); });
+  document.querySelectorAll(".sb-link:not(#sbProfile)").forEach(function(a){ a.addEventListener("click",function(){ document.body.classList.remove("profile-mode"); }); });
+  window.addEventListener("ng:wallet",function(){ if(current()) renderProfile(); });
+  updateUI();
+})();
+</script>
+
+<!-- ============ AI chatbot assistant ============ -->
+<button id="cbBtn" aria-label="Open NFTGuard assistant" title="NFTGuard Assistant">
+  <svg viewBox="0 0 24 24" fill="none" stroke="#03160C" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-8.5 8.5 8.5 8.5 0 01-3.8-.9L3 21l1.9-5.7A8.38 8.38 0 013.5 11.5 8.5 8.5 0 0112 3a8.38 8.38 0 018.5 8.5z"/><circle cx="8.5" cy="11.5" r=".6"/><circle cx="12" cy="11.5" r=".6"/><circle cx="15.5" cy="11.5" r=".6"/></svg>
+</button>
+<div id="cbPanel" role="dialog" aria-label="NFTGuard assistant">
+  <div class="cb-head">
+    <div><div class="t">NFTGuard Assistant</div><div class="s" id="cbStatus">AI · ask about risk &amp; fraud</div></div>
+    <button class="x" id="cbClose" aria-label="Close">×</button>
+  </div>
+  <div class="cb-msgs" id="cbMsgs"></div>
+  <div class="cb-suggest" id="cbSuggest"></div>
+  <div class="cb-input">
+    <input id="cbInput" type="text" placeholder="Ask about NFT risk, wash trading…" autocomplete="off">
+    <button id="cbSend">Send</button>
+  </div>
+</div>
+
+<script>
+/* ---- Activity feed + AI chatbot + search sync (independent of main app script) ---- */
+(function(){
+  var $ = function(s){ return document.querySelector(s); };
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];}); }
+  function shortA(a){ a=String(a||""); return a.length>13?a.slice(0,6)+"…"+a.slice(-4):a; }
+  function ago(ts){ var s=Math.max(1,Math.floor((Date.now()-new Date(ts).getTime())/1000));
+    if(s<60)return s+"s ago"; var m=Math.floor(s/60); if(m<60)return m+"m ago";
+    var h=Math.floor(m/60); if(h<24)return h+"h ago"; return Math.floor(h/24)+"d ago"; }
+
+  /* ---- live activity feed ---- */
+  async function loadActivity(){
+    var tb=$("#actFeed"); if(!tb) return;
+    try{
+      var r=await fetch("/api/activity?limit=40"); if(!r.ok) throw 0;
+      var rows=await r.json();
+      if(!rows.length){ tb.innerHTML='<tr><td colspan="6" style="padding:22px;text-align:center;color:var(--faint)">No activity yet.</td></tr>'; return; }
+      tb.innerHTML=rows.map(function(t){
+        var img=t.image?'<img class="act-thumb" src="'+esc(t.image)+'" alt="" onerror="this.style.visibility=\'hidden\'">':'<span class="act-thumb"></span>';
+        var price=t.priceEth?esc(t.priceEth)+' <span style="color:var(--faint)">ETH</span>':'<span style="color:var(--faint)">—</span>';
+        return '<tr><td><span class="act-ev '+esc(t.event)+'">'+esc(t.event)+'</span></td>'+
+          '<td><div class="act-item">'+img+'<div><div style="color:var(--ink);font-weight:500">'+esc(t.name)+'</div><div style="font-size:11px;color:var(--faint)">'+esc(t.collection)+'</div></div></div></td>'+
+          '<td class="act-mono">'+price+'</td>'+
+          '<td class="act-mono">'+esc(shortA(t.from))+'</td>'+
+          '<td class="act-mono">'+esc(shortA(t.to))+'</td>'+
+          '<td style="color:var(--faint)">'+esc(ago(t.timestamp))+'</td></tr>';
+      }).join("");
+    }catch(e){ tb.innerHTML='<tr><td colspan="6" style="padding:22px;text-align:center;color:var(--faint)">Activity feed unavailable.</td></tr>'; }
+  }
+  loadActivity(); setInterval(loadActivity, 20000);
+
+  /* ---- topbar search -> existing marketplace filter ---- */
+  var ts=$("#topSearch"), fs=$("#fSearch");
+  if(ts&&fs){ ts.addEventListener("input",function(){ fs.value=ts.value; fs.dispatchEvent(new Event("input",{bubbles:true})); }); }
+
+  /* ---- sidebar active state ---- */
+  document.querySelectorAll(".sb-link[href^='#']").forEach(function(a){
+    a.addEventListener("click",function(){ document.querySelectorAll(".sb-link").forEach(function(x){x.classList.remove("active");}); a.classList.add("active"); });
+  });
+
+  /* ---- AI chatbot ---- */
+  var panel=$("#cbPanel"), msgs=$("#cbMsgs"), input=$("#cbInput");
+  var history=[], busy=false, greeted=false;
+  function addMsg(role,text){ var d=document.createElement("div"); d.className="cb-msg "+(role==="user"?"me":"bot"); d.textContent=text; msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight; }
+  function renderSuggest(list){ var s=$("#cbSuggest"); if(!s)return;
+    s.innerHTML=list.map(function(q){return '<button class="cb-chip">'+esc(q)+'</button>';}).join("");
+    s.querySelectorAll(".cb-chip").forEach(function(b){ b.addEventListener("click",function(){ send(b.textContent); }); }); }
+  function openPanel(){ panel.classList.add("open");
+    if(!greeted){ greeted=true;
+      addMsg("bot","Hi! I'm the NFTGuard assistant. Ask me how risk scores or wash-trading detection work, which NFTs are riskiest, or anything about the marketplace.");
+      renderSuggest(["How is the risk score calculated?","Which NFT is riskiest?","What is wash trading?"]); }
+    setTimeout(function(){ input.focus(); },60); }
+  function closePanel(){ panel.classList.remove("open"); }
+  async function send(text){
+    text=(text||input.value||"").trim(); if(!text||busy) return;
+    input.value=""; $("#cbSuggest").innerHTML=""; addMsg("user",text); history.push({role:"user",content:text});
+    busy=true; var typing=document.createElement("div"); typing.className="cb-typing"; typing.textContent="typing…"; msgs.appendChild(typing); msgs.scrollTop=msgs.scrollHeight;
+    try{
+      var r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:history.slice(-12)})});
+      var d=await r.json(); typing.remove();
+      var reply=(d&&d.reply)||"Sorry, I couldn't respond just now.";
+      addMsg("bot",reply); history.push({role:"assistant",content:reply});
+    }catch(e){ typing.remove(); addMsg("bot","I'm having trouble reaching the assistant right now — please try again in a moment."); }
+    busy=false;
+  }
+  $("#cbBtn").addEventListener("click",function(){ panel.classList.contains("open")?closePanel():openPanel(); });
+  $("#cbClose").addEventListener("click",closePanel);
+  $("#cbSend").addEventListener("click",function(){ send(); });
+  input.addEventListener("keydown",function(e){ if(e.key==="Enter") send(); });
+})();
+</script>
+
+<!-- ============ checkout modal ============ -->
+<style>
+.co-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+@media(max-width:640px){.co-grid{grid-template-columns:1fr}}
+.co-item{display:flex;gap:12px;align-items:center;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.co-thumb{width:56px;height:56px;border-radius:10px;overflow:hidden;flex:none;background:#0A0F18}
+.co-thumb svg,.co-thumb img{width:100%;height:100%;display:block;object-fit:cover}
+.co-nm{font-family:'Space Grotesk';font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.co-sub{color:var(--faint);font-size:12px;margin-top:2px}
+.co-eth{font-family:'JetBrains Mono';font-weight:600}
+.co-usd{color:var(--faint);font-size:12px}
+.co-total{display:flex;justify-content:space-between;align-items:flex-start;padding-top:16px;font-family:'Space Grotesk';font-weight:700;font-size:17px}
+.co-label{color:var(--faint);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.co-pay{display:flex;align-items:center;gap:10px;border:1px solid var(--line-strong);border-radius:12px;padding:12px 14px}
+.co-dot{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--guard),var(--chain));flex:none}
+.co-badge{margin-left:auto;font-size:11px;color:var(--guard);background:var(--guard-dim);padding:3px 9px;border-radius:20px}
+.co-warn{margin-top:14px;background:var(--alert-dim);border:1px solid rgba(255,77,94,.35);color:#ffb4bb;border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.5}
+.co-insuff{margin-top:14px;color:var(--alert);font-size:13px;display:flex;align-items:center;gap:8px}
+.co-fine{color:var(--faint);font-size:11px;margin-top:12px;line-height:1.5}
+</style>
+<div class="overlay" id="checkoutOverlay" style="z-index:90" aria-modal="true" role="dialog">
+  <div class="modal" style="max-width:720px;width:100%">
+    <div class="m-head"><h3>Checkout</h3><button class="x" id="coClose" aria-label="Close">×</button></div>
+    <div id="coBody" style="padding:22px"></div>
+  </div>
+</div>
+
+<!-- ============ make-offer modal ============ -->
+<style>
+.offer-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px dashed var(--line)}
+.offer-row:last-child{border-bottom:none}
+.btn.sm{padding:6px 12px;font-size:12.5px}
+</style>
+<div class="overlay" id="offerOverlay" style="z-index:90" aria-modal="true" role="dialog">
+  <div class="modal" style="max-width:460px;width:100%">
+    <div class="m-head"><h3>Make an offer</h3><button class="x" id="ofClose" aria-label="Close">×</button></div>
+    <div id="ofBody" style="padding:22px"></div>
   </div>
 </div>
 
@@ -630,14 +968,33 @@ function renderStats(){
 
 /* ---------- marketplace grid ---------- */
 function renderGrid(){
-  const q=($("#fSearch").value||"").toLowerCase(), rl=$("#fRisk").value, st=$("#fStatus").value;
-  const list=state.nfts.filter(n=>
+  const sel=$("#fColl");
+  if(sel && !sel.dataset.filled){
+    const cols=[...new Set(state.nfts.map(n=>n.collectionName).filter(Boolean))].sort();
+    sel.insertAdjacentHTML("beforeend",cols.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join(""));
+    sel.dataset.filled="1";
+  }
+  const q=($("#fSearch").value||"").toLowerCase(), rl=$("#fRisk").value, st=$("#fStatus").value,
+        cl=($("#fColl").value||""), sort=($("#fSort")?$("#fSort").value:"recent");
+  let list=state.nfts.filter(n=>
     (!q||n.name.toLowerCase().includes(q)) &&
     (!rl||(n.risk&&n.risk.riskLevel===rl)) &&
-    (!st||n.authenticityStatus===st));
+    (!st||n.authenticityStatus===st) &&
+    (!cl||n.collectionName===cl));
+  const sc=n=>n.risk?n.risk.unifiedScore:0, pr=n=>(n.listed&&n.priceEth)?n.priceEth:null;
+  const sorters={
+    "price-asc":(a,b)=>(pr(a)??Infinity)-(pr(b)??Infinity),
+    "price-desc":(a,b)=>(pr(b)??-Infinity)-(pr(a)??-Infinity),
+    "name":(a,b)=>a.name.localeCompare(b.name),
+    "risk-desc":(a,b)=>sc(b)-sc(a),
+    "risk-asc":(a,b)=>sc(a)-sc(b),
+    "recent":(a,b)=>b.tokenId-a.tokenId,
+  };
+  if(sorters[sort]) list=[...list].sort(sorters[sort]);
   $("#nftGrid").innerHTML = list.map(n=>{
     const score=n.risk?n.risk.unifiedScore:null, lvl=n.risk?n.risk.riskLevel:"–";
     const rc=lvlColor(lvl);
+    const owned=n.ownerAddress&&state.wallet&&n.ownerAddress.toLowerCase()===state.wallet.toLowerCase();
     return `<article class="card" data-id="${n.tokenId}" tabindex="0" aria-label="${esc(n.name)}, risk ${score??"unknown"}">
       <div class="art">${n.image?`<img src="${esc(n.image)}" alt="${esc(n.name)}" loading="lazy" onerror="this.remove()">`:tokenArt(n.tokenId)}
         <span class="badge ${esc(n.authenticityStatus)}">${esc(n.authenticityStatus)}</span>
@@ -649,14 +1006,20 @@ function renderGrid(){
           <span class="price">${n.ownerAddress&&state.wallet&&n.ownerAddress.toLowerCase()===state.wallet.toLowerCase()?'<small style="color:var(--guard)">✓ You own this</small>':(n.listed?`${n.priceEth} <small>ETH</small>`:`<small>owned by ${shortAddr(n.ownerAddress)}</small>`)}</span>
           <span class="lvl ${lvl}">${lvl} risk</span>
         </div>
-      </div></article>`;
+      </div>
+      ${(n.listed && !owned)?`<div class="buybar" data-buy="${n.tokenId}"><span>Buy now</span><span class="p">${n.priceEth} ETH</span></div>`:""}</article>`;
   }).join("") || `<div class="noflag" style="grid-column:1/-1">No NFTs match the current filters.</div>`;
   document.querySelectorAll(".card").forEach(c=>{
     c.addEventListener("click",()=>openDetail(+c.dataset.id));
     c.addEventListener("keydown",e=>{if(e.key==="Enter")openDetail(+c.dataset.id);});
   });
+  document.querySelectorAll(".buybar[data-buy]").forEach(b=>b.addEventListener("click",e=>{
+    e.stopPropagation();
+    const n=state.nfts.find(x=>x.tokenId==b.dataset.buy);
+    if(n){ state.current=n; openCheckout(n); }
+  }));
 }
-["fSearch","fRisk","fStatus"].forEach(id=>$("#"+id).addEventListener("input",renderGrid));
+["fSearch","fRisk","fStatus","fColl","fSort"].forEach(id=>$("#"+id).addEventListener("input",renderGrid));
 
 /* ---------- detail modal ---------- */
 async function openDetail(id){
@@ -749,20 +1112,36 @@ function renderPriceChart(n){
     options:chartOpts(`Price history — red points exceed |Z| > 2.5`)});
 }
 function renderCollectionChart(){
-  const all=[]; state.nfts.forEach(n=>(n.transactions||[]).forEach(t=>{if(t.txType==="SALE")all.push({...t,name:n.name});}));
-  all.sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
-  const prices=all.map(a=>a.priceEth);
-  const m=prices.reduce((a,b)=>a+b,0)/(prices.length||1);
-  const sd=Math.sqrt(prices.reduce((a,x)=>a+(x-m)**2,0)/Math.max(1,prices.length-1));
+  const sel=$("#collSel"); if(!sel) return;
+  if(!sel.dataset.filled){
+    const cols=[...new Set(state.nfts.map(n=>n.collectionName).filter(Boolean))].sort();
+    sel.innerHTML=cols.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+    sel.dataset.filled="1";
+    sel.addEventListener("change",()=>drawPriceChart(sel.value));
+  }
+  const col=sel.value||(state.nfts[0]&&state.nfts[0].collectionName);
+  if(col) drawPriceChart(col);
+}
+async function drawPriceChart(collection){
+  let d;
+  try{ d=LIVE ? await api("/price/"+encodeURIComponent(collection),{},8000) : null; }
+  catch(e){ $("#anaHint").textContent="Could not load price data: "+e.message; return; }
+  const pts=(d&&d.points)||[];
   if(state.charts.coll) state.charts.coll.destroy();
-  state.charts.coll = new Chart($("#collChart"),{
+  if(!pts.length){ $("#anaHint").textContent=`No recorded sales for ${collection} yet.`;
+    state.charts.coll=new Chart($("#collChart"),{type:"scatter",data:{datasets:[]},options:chartOpts(collection)}); return; }
+  const m=d.stats.avgPrice, sd=d.stats.stdDev;
+  state.charts.coll=new Chart($("#collChart"),{
     type:"scatter",
-    data:{datasets:[{label:"Sales",data:all.map((a,i)=>({x:i,y:a.priceEth,name:a.name})),
-      pointRadius:5,pointBackgroundColor:all.map(a=> sd>0&&Math.abs((a.priceEth-m)/sd)>2.5 ? "#FF4D5E":"rgba(0,255,136,.85)")},
-      {label:"Collection mean",type:"line",data:all.map((_,i)=>({x:i,y:m})),borderColor:"rgba(110,168,255,.6)",borderDash:[6,6],pointRadius:0,borderWidth:1.5}]},
-    options:{...chartOpts("CyberGuard Genesis — every sale, anomalies in red"),
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw.name??"mean"} — ${c.raw.y.toFixed(3)} ETH`}}}}});
-  $("#anaHint").textContent=`μ = ${m.toFixed(3)} ETH · σ = ${sd.toFixed(3)} · anomaly at |Z| > 2.5`;
+    data:{datasets:[
+      {label:"Sales",data:pts.map((p,i)=>({x:i,y:p.priceEth,tokenId:p.tokenId,z:p.zScore,anom:p.anomaly})),
+        pointRadius:pts.map(p=>p.anomaly?7:5),
+        pointBackgroundColor:pts.map(p=>p.anomaly?"#FF4D5E":"rgba(0,255,136,.85)"),pointBorderColor:"transparent"},
+      {label:"mean",type:"line",data:pts.map((_,i)=>({x:i,y:m})),borderColor:"rgba(110,168,255,.6)",borderDash:[6,6],pointRadius:0,borderWidth:1.5}]},
+    options:{...chartOpts(collection+" — every sale, anomalies in red"),
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.tokenId!=null?`#${c.raw.tokenId} — ${c.raw.y.toFixed(3)} ETH · Z ${c.raw.z}${c.raw.anom?" ⚠ anomaly":""}`:`mean ${m.toFixed(3)} ETH`}}}}});
+  const anoms=pts.filter(p=>p.anomaly).length;
+  $("#anaHint").textContent=`${d.stats.sampleSize} sales · μ ${m.toFixed(3)} ETH · σ ${sd.toFixed(3)} · ${anoms} anomal${anoms===1?"y":"ies"} at |Z| > ${d.zThreshold}`;
 }
 function chartOpts(title){
   return {responsive:true,maintainAspectRatio:false,
@@ -785,7 +1164,7 @@ document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
 
 /* ---------- wallet (simulated) ---------- */
 $("#walletBtn").addEventListener("click",()=>{
-  if(state.wallet){state.wallet=null;state.walletReal=false;state.walletFlagged=false;$("#walletBtn").textContent="Connect wallet";$("#walletBtn").classList.remove("flagged");hideWalletFlag();toast("Wallet disconnected");renderGrid();return;}
+  if(state.wallet){state.wallet=null;state.walletReal=false;state.walletFlagged=false;$("#walletBtn").textContent="Connect wallet";$("#walletBtn").classList.remove("flagged");hideWalletFlag();window.__ngWallet=null;window.__ngWalletReal=false;window.dispatchEvent(new Event("ng:wallet"));toast("Wallet disconnected");renderGrid();return;}
   openWalletModal();
 });
 
@@ -806,7 +1185,14 @@ function openWalletModal(){
     document.body.appendChild(ov);
     ov.addEventListener("click",e=>{if(e.target.id==="wcOverlay")closeWalletModal();});
     ov.querySelector("#wcCancel").onclick=closeWalletModal;
-    ov.querySelector("#wcMeta").onclick=async()=>{closeWalletModal();try{const a=await window.ethereum.request({method:"eth_requestAccounts"});if(a&&a[0])finishConnect(a[0],true);}catch(e){toast("MetaMask request declined","err");}};
+    ov.querySelector("#wcMeta").onclick=async()=>{closeWalletModal();try{
+        // Force MetaMask to show the account/permission dialog EVERY time (re-login),
+        // instead of silently reconnecting like eth_requestAccounts does after the first grant.
+        try{ await window.ethereum.request({method:"wallet_requestPermissions",params:[{eth_accounts:{}}]}); }
+        catch(pe){ if(pe&&pe.code===4001){ toast("MetaMask connection declined","err"); return; } }
+        const a=await window.ethereum.request({method:"eth_accounts"});
+        if(a&&a[0]) finishConnect(a[0],true); else toast("No MetaMask account selected","err");
+      }catch(e){toast("MetaMask request declined","err");}};
     ov.querySelector("#wcAddrBtn").onclick=()=>{const a=ov.querySelector("#wcAddr").value.trim();if(!/^0x[a-fA-F0-9]{40}$/.test(a)){toast("Enter a valid 0x… address","err");return;}closeWalletModal();finishConnect(a,false);};
     ov.querySelector("#wcExample").onclick=e=>{e.preventDefault();ov.querySelector("#wcAddr").value="0x2a9a6bf65ab612e4bb3c5dc7478d45dc17ffd5de";};
     ov.querySelector("#wcRandom").onclick=()=>{const hex="0123456789abcdef";closeWalletModal();finishConnect("0x"+[...Array(40)].map(()=>hex[Math.random()*16|0]).join(""),false);};
@@ -820,6 +1206,7 @@ function closeWalletModal(){const ov=document.getElementById("wcOverlay");if(ov)
 async function finishConnect(addr,real){
   state.wallet=addr;state.walletReal=real;
   $("#walletBtn").textContent=shortAddr(addr);
+  window.__ngWallet=addr;window.__ngWalletReal=real;window.dispatchEvent(new Event("ng:wallet"));
   toast((real?"MetaMask":"Wallet")+" connected: "+shortAddr(addr));
   renderGrid();
   await screenWallet(addr);   // CONSEQUENCE: screen the connected wallet for wash trading
@@ -847,26 +1234,128 @@ function showWalletFlag(d){
 function hideWalletFlag(){const bar=document.getElementById("walletFlag");if(bar)bar.classList.remove("show");}
 
 /* ---------- buy ---------- */
-$("#mBuy").addEventListener("click",async()=>{
-  const n=state.current; if(!n)return;
-  if(!state.wallet){toast("Connect a wallet first","err");return;}
-  // Buyer protection: warn before purchasing an NFT flagged as risky
-  const lvl=n.risk?.riskLevel;
-  if(lvl==="Medium"||lvl==="High"){
-    const reasons=(n.flags||[]).map(f=>f.flagType.replaceAll("_"," ").toLowerCase()).join(", ")||"suspicious price / trading patterns";
-    if(!confirm(`⚠️ NFTGuard RISK WARNING\n\n${n.name} is flagged ${lvl} risk (score ${n.risk.unifiedScore}/100).\nDetected: ${reasons}.\n\nWash trading can artificially inflate the price you pay. Continue with the purchase?`)) return;
+const ETH_USD = 1880; // demo ETH -> USD rate for checkout display
+$("#mBuy").addEventListener("click",()=>{ const n=state.current; if(n) openCheckout(n); });
+
+function openCheckout(n){
+  if(!state.wallet){ toast("Connect a wallet first","err"); openWalletModal(); return; }
+  const price=n.priceEth||0, usd=(price*ETH_USD).toLocaleString(undefined,{maximumFractionDigits:2});
+  const lvl=n.risk&&n.risk.riskLevel, risky=lvl==="Medium"||lvl==="High";
+  const reasons=(n.flags||[]).map(f=>f.flagType.replaceAll("_"," ").toLowerCase()).slice(0,3).join(", ")||"suspicious price / trading patterns";
+  const img=n.image?`<img src="${esc(n.image)}" alt="" onerror="this.remove()">`:tokenArt(n.tokenId,120);
+  $("#coBody").innerHTML=`
+    <div class="co-grid">
+      <div>
+        <div class="co-item">
+          <div class="co-thumb">${img}</div>
+          <div style="flex:1;min-width:0">
+            <div class="co-nm">${esc(n.name)}</div>
+            <div class="co-sub">${esc(n.collectionName)} ${n.authenticityStatus==="Verified"?'<span style="color:var(--chain)">✓</span>':""}</div>
+          </div>
+          <div style="text-align:right"><div class="co-eth">${price} ETH</div><div class="co-usd">$${usd}</div></div>
+        </div>
+        <div class="co-total"><span>Total</span><div style="text-align:right"><div class="co-eth">${price} ETH</div><div class="co-usd">$${usd}</div></div></div>
+      </div>
+      <div>
+        <div class="co-label">Payment</div>
+        <div class="co-pay"><span class="co-dot"></span><span class="mono">${esc(shortAddr(state.wallet))}</span><span class="co-badge">Connected</span></div>
+        ${["Tampered","Duplicate","NonCompliant"].includes(n.authenticityStatus)?`<div class="co-warn">⚠ Authenticity: <b>${esc(n.authenticityStatus)}</b> — ${n.authenticityStatus==="Tampered"?"metadata doesn't match its on-chain hash (possible fake)":n.authenticityStatus==="Duplicate"?"image matches another NFT (likely copy-mint)":"contract failed the ERC-721 standard check"}. NFTGuard advises against buying.</div>`:""}
+        ${risky?`<div class="co-warn">⚠ <b>${lvl} risk</b> (score ${n.risk.unifiedScore}/100)${reasons?`: ${esc(reasons)}`:""}. Trading patterns look suspicious — buy with caution.</div>`:""}
+        <div id="coStatus"></div>
+        <button class="btn primary wc-full" id="coConfirm" style="margin-top:14px">Complete purchase</button>
+        <div class="co-fine">Simulated purchase — records a SALE transaction and transfers ownership to your wallet.</div>
+      </div>
+    </div>`;
+  $("#coConfirm").onclick=confirmPurchase;
+  // real-wallet balance check (mirrors the "not enough funds" state)
+  if(state.walletReal && window.ethereum){
+    window.ethereum.request({method:"eth_getBalance",params:[state.wallet,"latest"]}).then(wei=>{
+      const bal=parseInt(wei,16)/1e18;
+      if(bal<price){ $("#coStatus").innerHTML=`<div class="co-insuff">⊖ Not enough funds in selected wallet (${bal.toFixed(4)} ETH)</div>`;
+        const b=$("#coConfirm"); if(b){ b.disabled=true; b.textContent="Insufficient funds"; } }
+    }).catch(()=>{});
   }
-  if(LIVE){
-    try{ const r=await api("/buy",{method:"POST",body:JSON.stringify({tokenId:n.tokenId,buyerAddress:state.wallet})},20000);
-      toast(`Purchased #${n.tokenId} — tx ${shortAddr(r.txHash)}${r.simulated?" (simulated)":" on Sepolia"}`);
-      await refreshAfterAction(n.tokenId);
-    }catch(e){toast("Buy failed: "+e.message,"err");}
-  }else{
+  $("#checkoutOverlay").classList.add("open"); document.body.style.overflow="hidden";
+}
+async function confirmPurchase(){
+  const n=state.current; if(!n) return;
+  const btn=$("#coConfirm"); btn.disabled=true; btn.textContent="Processing…";
+  if(!LIVE){
+    n.transactions=n.transactions||[];
     n.transactions.push({txType:"SALE",senderAddress:n.ownerAddress,recipientAddress:state.wallet,priceEth:n.priceEth,timestamp:new Date().toISOString(),txHash:"0xsim…"});
     n.ownerAddress=state.wallet; n.listed=false;
-    toast(`Simulated purchase of #${n.tokenId} recorded`); renderGrid(); openDetail(n.tokenId);
+    toast(`Simulated purchase of ${n.name} recorded`); closeCheckout(); renderGrid(); openDetail(n.tokenId); return;
   }
-});
+  try{
+    const r=await api("/buy",{method:"POST",body:JSON.stringify({tokenId:n.tokenId,buyerAddress:state.wallet})},20000);
+    toast(`Purchased ${n.name} — tx ${shortAddr(r.txHash)}${r.simulated?" (simulated)":" on Sepolia"}`);
+    closeCheckout(); await refreshAfterAction(n.tokenId);
+  }catch(e){ toast("Purchase failed: "+e.message,"err"); btn.disabled=false; btn.textContent="Complete purchase"; }
+}
+function closeCheckout(){ $("#checkoutOverlay").classList.remove("open"); if(!$("#overlay").classList.contains("open")) document.body.style.overflow=""; }
+$("#coClose").addEventListener("click",closeCheckout);
+$("#checkoutOverlay").addEventListener("click",e=>{ if(e.target.id==="checkoutOverlay") closeCheckout(); });
+
+/* ---------- offers (make an offer on any NFT, listed or not) ---------- */
+$("#mOffer").addEventListener("click",()=>{ const n=state.current; if(n) openOfferModal(n); });
+$("#mOffersSec").addEventListener("toggle",function(){ if(this.open && state.current) loadOffers(state.current.tokenId); });
+function openOfferModal(n){
+  if(!state.wallet){ toast("Connect a wallet first","err"); openWalletModal(); return; }
+  if(n.ownerAddress && state.wallet && n.ownerAddress.toLowerCase()===state.wallet.toLowerCase()){ toast("You already own this NFT","err"); return; }
+  const img=n.image?`<img src="${esc(n.image)}" alt="" onerror="this.remove()">`:tokenArt(n.tokenId,120);
+  $("#ofBody").innerHTML=`
+    <div class="co-item" style="border:none;padding:0;margin-bottom:18px">
+      <div class="co-thumb">${img}</div>
+      <div style="flex:1;min-width:0"><div class="co-nm">${esc(n.name)}</div><div class="co-sub">${esc(n.collectionName)}</div></div>
+      <div style="text-align:right"><div class="co-sub">Listed</div><div class="co-eth">${n.listed?n.priceEth+" ETH":"—"}</div></div>
+    </div>
+    <div class="field"><label for="ofPrice">Your offer (ETH)</label><input id="ofPrice" type="number" min="0" step="0.01" placeholder="e.g. ${n.priceEth||0.5}"></div>
+    <div id="ofErr" class="auth-err"></div>
+    <button class="btn primary wc-full" id="ofSubmit">Submit offer</button>
+    <div class="co-fine">Offers work whether or not the NFT is listed. The owner can accept from the item's Offers section.</div>`;
+  $("#ofSubmit").onclick=submitOffer;
+  $("#offerOverlay").classList.add("open");
+  setTimeout(()=>{ const p=$("#ofPrice"); if(p) p.focus(); },50);
+}
+function closeOfferModal(){ $("#offerOverlay").classList.remove("open"); }
+async function submitOffer(){
+  const n=state.current; if(!n) return;
+  const price=parseFloat($("#ofPrice").value);
+  if(!Number.isFinite(price)||price<=0){ $("#ofErr").textContent="Enter an offer amount greater than 0."; return; }
+  const btn=$("#ofSubmit"); btn.disabled=true; btn.textContent="Submitting…";
+  try{
+    await api("/offers",{method:"POST",body:JSON.stringify({tokenId:n.tokenId,fromAddress:state.wallet,priceEth:price})},15000);
+    toast(`Offer of ${price} ETH placed on ${n.name}`); closeOfferModal();
+    if($("#mOffersSec")) $("#mOffersSec").open=true; loadOffers(n.tokenId);
+  }catch(e){ $("#ofErr").textContent=e.message; btn.disabled=false; btn.textContent="Submit offer"; }
+}
+async function loadOffers(tokenId){
+  const box=$("#mOffers"); if(!box) return;
+  box.innerHTML=`<div class="noflag">Loading offers…</div>`;
+  let offers=[];
+  try{ offers=await api("/offers/"+tokenId,{},8000); }catch(e){ box.innerHTML=`<div class="noflag">Could not load offers.</div>`; return; }
+  const n=state.current;
+  const isOwner=n && n.ownerAddress && state.wallet && n.ownerAddress.toLowerCase()===state.wallet.toLowerCase();
+  const active=offers.filter(o=>o.status==="Active");
+  if(!active.length){ box.innerHTML=`<div class="noflag">No offers yet — be the first to make one.</div>`; return; }
+  box.innerHTML=active.map(o=>`
+    <div class="offer-row">
+      <div><b style="font-family:'JetBrains Mono';font-weight:600">${o.priceEth} ETH</b> <span class="co-sub">from ${esc(shortAddr(o.fromAddress))}</span></div>
+      ${isOwner?`<button class="btn primary sm" data-acc="${o._id}">Accept</button>`:`<span class="co-sub">${new Date(o.createdAt).toLocaleDateString()}</span>`}
+    </div>`).join("");
+  box.querySelectorAll("[data-acc]").forEach(b=>b.addEventListener("click",()=>acceptOffer(b.dataset.acc)));
+}
+async function acceptOffer(offerId){
+  try{
+    const r=await api("/offers/"+offerId+"/accept",{method:"POST"},20000);
+    toast(`Offer accepted — ownership transferred (tx ${shortAddr(r.txHash)})`);
+    const id=state.current&&state.current.tokenId;
+    await refreshAfterAction(id);
+    if($("#mOffersSec")) $("#mOffersSec").open=true; loadOffers(id);
+  }catch(e){ toast("Accept failed: "+e.message,"err"); }
+}
+$("#ofClose").addEventListener("click",closeOfferModal);
+$("#offerOverlay").addEventListener("click",e=>{ if(e.target.id==="offerOverlay") closeOfferModal(); });
 
 /* ---------- list / re-list (owner puts the NFT back up for sale) ---------- */
 $("#mList").addEventListener("click",async()=>{
@@ -923,6 +1412,56 @@ $("#mintBtn").addEventListener("click",async()=>{
     toast(`Simulated mint — token #${id} created`); renderGrid();
   }
 });
+
+/* ---------- on-chain mint via MetaMask (real Sepolia token) ---------- */
+const NFTGUARD_CONTRACT="0x8a4A907794816E6bE76993de230e134Ea95e61F4";
+const MINT_ABI=[
+  "function mintNFT(string uri, bytes32 _metadataHash) returns (uint256)",
+  "event Minted(uint256 indexed tokenId, address indexed creator, string tokenURI, bytes32 metadataHash, uint256 timestamp)"
+];
+$("#mintChainBtn").addEventListener("click",mintOnChain);
+async function mintOnChain(){
+  const res=$("#mintResult");
+  if(!window.ethereum){ res.innerHTML=`<div class="noflag" style="color:var(--alert)">MetaMask not detected — install the MetaMask extension to mint on-chain.</div>`; return; }
+  if(typeof window.ethers==="undefined"){ res.innerHTML=`<div class="noflag" style="color:var(--alert)">Blockchain library still loading — try again in a moment.</div>`; return; }
+  const name=$("#mName").value.trim(), price=parseFloat($("#mPrice").value)||0;
+  if(!name){ toast("Give the NFT a name","err"); return; }
+  const btn=$("#mintChainBtn"); const orig=btn.textContent; btn.disabled=true;
+  try{
+    const provider=new window.ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts",[]);
+    let net=await provider.getNetwork();
+    if(net.chainId!==11155111n){
+      btn.textContent="Switch to Sepolia…";
+      try{ await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0xaa36a7"}]}); }
+      catch(sw){ res.innerHTML=`<div class="noflag" style="color:var(--alert)">Please switch MetaMask to the <b>Sepolia</b> test network, then try again.</div>`; btn.disabled=false; btn.textContent=orig; return; }
+    }
+    const signer=await provider.getSigner();
+    const addr=await signer.getAddress();
+    const metadata=JSON.stringify({name, image:"", attributes:[{trait_type:"Minted via",value:"NFTGuard"}]});
+    const metaHash=window.ethers.keccak256(window.ethers.toUtf8Bytes(metadata));
+    const uri="ipfs://nftguard/"+Date.now();
+    const contract=new window.ethers.Contract(NFTGUARD_CONTRACT, MINT_ABI, signer);
+    btn.textContent="Confirm in MetaMask…";
+    res.innerHTML=`<div class="noflag">Awaiting your signature in MetaMask…</div>`;
+    const tx=await contract.mintNFT(uri, metaHash);
+    btn.textContent="Minting on Sepolia…";
+    res.innerHTML=`<div class="noflag">Transaction sent — waiting for Sepolia to confirm…<br><a href="https://sepolia.etherscan.io/tx/${tx.hash}" target="_blank" rel="noopener" style="color:var(--chain)">View pending tx ↗</a></div>`;
+    const receipt=await tx.wait();
+    let onChainId=null;
+    for(const log of receipt.logs){ try{ const p=contract.interface.parseLog(log); if(p&&p.name==="Minted") onChainId=Number(p.args.tokenId); }catch(_){} }
+    try{ await api("/record-mint",{method:"POST",body:JSON.stringify({name, priceEth:price, walletAddress:addr, onChainTokenId:onChainId, txHash:receipt.hash, metadataHash:metaHash, tokenURI:uri})},20000); }catch(_){}
+    res.innerHTML=`<div style="border:1px solid rgba(0,255,136,.35);background:var(--guard-dim);border-radius:12px;padding:14px 16px;font-size:14px">
+      <b style="color:var(--guard)">✓ Minted on-chain!</b> Real ERC-721 token <b>#${onChainId}</b> on Sepolia, owned by <span class="mono">${esc(shortAddr(addr))}</span>.
+      <div style="margin-top:8px"><a href="https://sepolia.etherscan.io/tx/${esc(receipt.hash)}" target="_blank" rel="noopener" style="color:var(--chain)">View transaction on Etherscan ↗</a></div></div>`;
+    toast(`✓ Real on-chain mint — token #${onChainId}`);
+    $("#mName").value=""; $("#mPrice").value="";
+    try{ const [stats,nfts]=await Promise.all([api("/stats"),api("/nfts")]); state.stats=stats; state.nfts=nfts; renderStats(); renderGrid(); }catch(_){}
+  }catch(e){
+    const msg=(e&&(e.shortMessage||e.reason||e.message))||"unknown error";
+    res.innerHTML=`<div class="noflag" style="color:var(--alert)">On-chain mint failed: ${esc(msg)}</div>`;
+  }finally{ btn.disabled=false; btn.textContent=orig; }
+}
 
 /* ---------- verification console (hero) ---------- */
 function startConsole(){
@@ -1208,7 +1747,9 @@ boot();
                 e.preventDefault();
             });
             window.addEventListener("keydown", function(e) {
-                if (e.code === "Space" && !e.repeat) {
+                var tgt = e.target || {};
+                var typing = /^(INPUT|TEXTAREA|SELECT)$/.test(tgt.tagName) || tgt.isContentEditable;
+                if (e.code === "Space" && !e.repeat && !typing) {
                     e.preventDefault();
                     interactionMode = interactionMode === "auto" ? "manual" : "auto";
                 }

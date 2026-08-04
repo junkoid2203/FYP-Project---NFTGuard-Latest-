@@ -21,6 +21,8 @@ const Nft = require("../models/Nft");
 const Transaction = require("../models/Transaction");
 const RiskScore = require("../models/RiskScore");
 const FraudFlag = require("../models/FraudFlag");
+const Offer = require("../models/Offer");
+const Blacklist = require("../models/Blacklist");
 
 const blockchain = require("../services/blockchain");
 const { verifyNft, sha256OfMetadata } = require("../services/authVerifier");
@@ -28,7 +30,7 @@ const { runFraudAnalysis } = require("../services/fraudDetector");
 const { analyzeCollection } = require("../services/priceAnalyzer");
 const { computeUnifiedRisk } = require("../services/riskScoreEngine");
 const { investigateWallet } = require("../services/walletInvestigator");
-const { analyzeGraph } = require("../services/graphAnalyzer");
+const { analyzeGraph, analyzeMarketGraph } = require("../services/graphAnalyzer");
 const { handleChat } = require("../services/chatAssistant");
 
 const wrap = fn => (req, res) => fn(req, res).catch(err => {
@@ -120,7 +122,12 @@ router.post("/mint", wrap(async (req, res) => {
     priceEth: 0, txHash: chain.txHash, simulated: chain.simulated,
   });
 
-  res.json({ ok: true, nft, txHash: chain.txHash, simulated: chain.simulated });
+  // Auto-run the verification + risk pipeline so a fresh mint gets a real
+  // authenticity status (a clean mint -> "Verified") and a risk score right away.
+  try { await computeUnifiedRisk(tokenId); } catch (e) { console.warn("[mint] risk pipeline:", e.message); }
+  const fresh = await Nft.findOne({ tokenId }).lean();
+
+  res.json({ ok: true, nft: fresh || nft, txHash: chain.txHash, simulated: chain.simulated });
 }));
 
 // ---------------------------------------------------------------- list (FR 2.3)
@@ -200,6 +207,11 @@ router.get("/graph", wrap(async (req, res) => {
 router.get("/investigate/:address", wrap(async (req, res) => {
   const addr = String(req.params.address || "").trim();
   if (!/^0x[a-fA-F0-9]{40}$/.test(addr)) return res.status(400).json({ error: "Invalid wallet address (expected 0x + 40 hex characters)" });
+  // blacklisted wallets are blocked instantly (no need to hit the chain)
+  const banned = await Blacklist.findOne({ address: addr.toLowerCase() }).lean();
+  if (banned) return res.json({ address: addr, blacklisted: true, riskScore: 100, riskLevel: "High",
+    totalTransfers: 0, roundTrips: 0, topCounterparties: [],
+    reasons: ["Wallet is blacklisted by the marketplace" + (banned.reason ? ": " + banned.reason : "")] });
   res.json(await investigateWallet(addr));
 }));
 
@@ -259,6 +271,98 @@ router.post("/chat", wrap(async (req, res) => {
     console.warn("[chat] context build failed:", e.message);
   }
   res.json(await handleChat(messages, context));
+}));
+
+// ---------------------------------------------------------------- offers (make offer on any NFT, listed or not)
+router.get("/offers/:tokenId", wrap(async (req, res) => {
+  const offers = await Offer.find({ tokenId: Number(req.params.tokenId) })
+    .sort({ status: 1, priceEth: -1, createdAt: -1 }).lean();
+  res.json(offers);
+}));
+
+router.post("/offers", wrap(async (req, res) => {
+  const { tokenId, fromAddress, priceEth } = req.body || {};
+  if (!tokenId || !fromAddress || !(Number(priceEth) > 0))
+    return res.status(400).json({ error: "tokenId, fromAddress and priceEth (> 0) are required" });
+  const nft = await Nft.findOne({ tokenId: Number(tokenId) });
+  if (!nft) return res.status(404).json({ error: "NFT not found" });
+  if (nft.ownerAddress && nft.ownerAddress.toLowerCase() === String(fromAddress).toLowerCase())
+    return res.status(400).json({ error: "You already own this NFT" });
+  const offer = await Offer.create({ tokenId: Number(tokenId), fromAddress, priceEth: Number(priceEth), status: "Active" });
+  res.json({ ok: true, offer });
+}));
+
+router.post("/offers/:offerId/accept", wrap(async (req, res) => {
+  const offer = await Offer.findById(req.params.offerId).catch(() => null);
+  if (!offer || offer.status !== "Active") return res.status(404).json({ error: "Offer not found or no longer active" });
+  const nft = await Nft.findOne({ tokenId: offer.tokenId });
+  if (!nft) return res.status(404).json({ error: "NFT not found" });
+
+  const seller = nft.ownerAddress;
+  const chain = await blockchain.buyOnChain(offer.tokenId, offer.priceEth);
+  nft.ownerAddress = offer.fromAddress;
+  nft.listed = false;
+  await nft.save();
+
+  await Transaction.create({
+    tokenId: offer.tokenId, collectionName: nft.collectionName, txType: "SALE",
+    senderAddress: seller, recipientAddress: offer.fromAddress,
+    priceEth: offer.priceEth, txHash: chain.txHash, simulated: chain.simulated,
+  });
+  offer.status = "Accepted";
+  await offer.save();
+  await Offer.updateMany({ tokenId: offer.tokenId, status: "Active", _id: { $ne: offer._id } }, { status: "Rejected" });
+
+  res.json({ ok: true, txHash: chain.txHash, simulated: chain.simulated });
+}));
+
+// ---------------------------------------------------------------- record an on-chain mint (signed by the user's MetaMask on the frontend)
+router.post("/record-mint", wrap(async (req, res) => {
+  const { name, image = "", priceEth = 0, walletAddress, onChainTokenId, txHash, metadataHash = "", tokenURI = "" } = req.body || {};
+  if (!name || !walletAddress || !txHash) return res.status(400).json({ error: "name, walletAddress and txHash are required" });
+
+  const last = await Nft.findOne().sort({ tokenId: -1 }).lean();
+  const tokenId = (last ? last.tokenId : 0) + 1; // app-internal id (real on-chain id kept in traits)
+
+  const nft = await Nft.create({
+    tokenId, name, image, tokenURI,
+    contractAddress: process.env.CONTRACT_ADDRESS || "",
+    metadataHash, offChainMetadataHash: metadataHash,
+    collectionName: "NFTGuard Collection",
+    creatorAddress: walletAddress, ownerAddress: walletAddress,
+    listed: Number(priceEth) > 0, priceEth: Number(priceEth) || 0,
+    erc721Compliant: true, authenticityStatus: "Verified",
+    traits: { "On-chain token": "#" + (onChainTokenId != null ? onChainTokenId : "?"), Network: "Sepolia", Tx: txHash },
+  });
+  await Transaction.create({
+    tokenId, collectionName: "NFTGuard Collection", txType: "MINT",
+    senderAddress: "0x0000000000000000000000000000000000000000", recipientAddress: walletAddress,
+    priceEth: 0, txHash, simulated: false,
+  });
+  try { await computeUnifiedRisk(tokenId); } catch (e) { console.warn("[record-mint] risk:", e.message); }
+  const fresh = await Nft.findOne({ tokenId }).lean();
+  res.json({ ok: true, nft: fresh || nft });
+}));
+
+// ---------------------------------------------------------------- marketplace wash-ring graph (this marketplace's own data)
+router.get("/wash-graph", wrap(async (req, res) => {
+  res.json(await analyzeMarketGraph());
+}));
+
+// ---------------------------------------------------------------- wallet blacklist (admin ban / un-ban)
+router.get("/blacklist", wrap(async (req, res) => {
+  res.json(await Blacklist.find().sort({ createdAt: -1 }).lean());
+}));
+router.post("/blacklist", wrap(async (req, res) => {
+  const { address, reason = "", washScore = null } = req.body || {};
+  const a = String(address || "").trim().toLowerCase();
+  if (!a) return res.status(400).json({ error: "address is required" });
+  const entry = await Blacklist.findOneAndUpdate({ address: a }, { address: a, reason, washScore }, { upsert: true, new: true });
+  res.json({ ok: true, entry });
+}));
+router.delete("/blacklist/:address", wrap(async (req, res) => {
+  await Blacklist.deleteOne({ address: String(req.params.address || "").trim().toLowerCase() });
+  res.json({ ok: true });
 }));
 
 module.exports = router;

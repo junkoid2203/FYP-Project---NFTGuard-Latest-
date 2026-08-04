@@ -125,4 +125,67 @@ function analyzeGraph() {
   };
 }
 
-module.exports = { analyzeGraph };
+/**
+ * analyzeMarketGraph — same Tarjan-SCC wash-ring detection, but on THIS
+ * marketplace's own transactions (MongoDB) instead of the external CSV.
+ * Returns the top ring's actual wallets + edges so the dashboard can draw it.
+ */
+async function analyzeMarketGraph() {
+  const Transaction = require("../models/Transaction");
+  const rows = await Transaction.find({ txType: "SALE" }).lean();
+
+  const adj = new Map(), weight = new Map(), nodesSet = new Set(), tradeCount = {};
+  for (const r of rows) {
+    const s = (r.senderAddress || "").toLowerCase(), b = (r.recipientAddress || "").toLowerCase();
+    if (!s || !b) continue;
+    nodesSet.add(s); nodesSet.add(b);
+    if (!adj.has(s)) adj.set(s, new Set());
+    adj.get(s).add(b);
+    const k = s + ">" + b; weight.set(k, (weight.get(k) || 0) + 1);
+    tradeCount[s] = (tradeCount[s] || 0) + 1; tradeCount[b] = (tradeCount[b] || 0) + 1;
+  }
+  const adjArr = new Map(); for (const [k, set] of adj) adjArr.set(k, [...set]);
+  const nodes = [...nodesSet];
+
+  const sccs = tarjanSCC(adjArr, nodes).filter(c => c.length > 1).sort((a, b) => b.length - a.length);
+
+  const ringStats = comp => {
+    const set = new Set(comp); let e = 0, t = 0, recipE = 0;
+    for (const s of comp) for (const b of (adjArr.get(s) || [])) if (set.has(b)) {
+      e++; t += weight.get(s + ">" + b) || 0;
+      if ((adjArr.get(b) || []).includes(s)) recipE++;
+    }
+    const reciprocity = e ? recipE / e : 0;
+    const intensity = e ? t / e : 0;
+    const washScore = Math.round(Math.min(100,
+      60 * reciprocity + 40 * Math.min(1, Math.max(0, intensity - 1)) + (comp.length <= 4 ? 20 : 0)));
+    return { wallets: comp, size: comp.length, edges: e, trades: t, reciprocity: Number(reciprocity.toFixed(2)), washScore };
+  };
+  const rings = sccs.map(ringStats).sort((a, b) => b.size - a.size || b.washScore - a.washScore);
+
+  const top = rings[0];
+  let gNodes = [], gEdges = [];
+  if (top) {
+    const set = new Set(top.wallets);
+    gNodes = top.wallets.map(w => {
+      let recip = 0;
+      top.wallets.forEach(o => { if (o !== w && (adjArr.get(w) || []).includes(o) && (adjArr.get(o) || []).includes(w)) recip++; });
+      const ws = Math.min(100, Math.round(30 + recip * 18 + (tradeCount[w] || 0) * 4));
+      return { address: w, trades: tradeCount[w] || 0, washScore: ws };
+    });
+    for (const [k, wt] of weight) {
+      const [f, t2] = k.split(">");
+      if (set.has(f) && set.has(t2)) gEdges.push({ from: f, to: t2, trades: wt });
+    }
+  }
+
+  return {
+    totalSales: rows.length,
+    wallets: nodes.length,
+    ringCount: rings.length,
+    topRings: rings.slice(0, 6).map(r => ({ size: r.size, trades: r.trades, reciprocity: r.reciprocity, washScore: r.washScore })),
+    graph: { nodes: gNodes, edges: gEdges, washScore: top ? top.washScore : 0 },
+  };
+}
+
+module.exports = { analyzeGraph, analyzeMarketGraph };
