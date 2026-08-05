@@ -34,9 +34,9 @@
     "phashMaxDistance": 0.15
   },
   "riskWeights": {
-    "authenticity": 0.3,
-    "fraud": 0.5,
-    "priceAnomaly": 0.2
+    "authenticity": 0.4,
+    "fraud": 0.35,
+    "priceAnomaly": 0.25
   },
   "riskLevels": {
     "mediumFrom": 40,

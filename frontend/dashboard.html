@@ -499,13 +499,11 @@ footer{margin-top:28px;color:var(--faint);font-size:11.5px;font-family:'JetBrain
         </div>
         <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start">
           <div id="mgGraph" style="position:relative;flex:1;min-width:260px;height:280px;background:#0b1018;border-radius:12px"></div>
-          <div id="mgPanel" style="width:200px;min-width:180px"></div>
+          <div id="mgPanel" style="width:210px;min-width:190px;background:#0f1520;border:1px solid var(--line);border-radius:12px;padding:14px;min-height:210px"></div>
         </div>
       </div>
       <div class="panel c5">
-        <h3>Graph vs. pairwise rule</h3>
-        <div id="grCompare"></div>
-        <h3 style="margin-top:16px">Detected rings <small>ranked by wash score</small></h3>
+        <h3>Detected rings <small>ranked by wash score · your marketplace</small></h3>
         <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Wallets</th><th>Trades</th><th>Recip.</th><th>Wash</th></tr></thead><tbody id="grRings"></tbody></table></div>
       </div>
       <div class="panel c12">
@@ -750,31 +748,6 @@ function switchView(v,force=false){
 }
 function gotoRisk(id){$("#riskSel").value=id;switchView("risk",true);}
 
-/* ================= WASH-RING GRAPH (live, Tarjan SCC) ================= */
-let grLoaded=false;
-async function renderGraph(){
-  if(grLoaded)return;
-  try{
-    const d=await api("/graph",{},30000);
-    grLoaded=true;
-    $("#grSource").textContent=`${Number(d.totalSales).toLocaleString()} real sales · ${Number(d.wallets).toLocaleString()} wallets · ${Number(d.edges).toLocaleString()} trade-edges`;
-    const cards=[
-      ["Wash rings",d.rings,"connected clusters",C.alert],
-      ["Ring wallets",d.ringWallets,"caught in cycles",C.alert],
-      ["Self-transfers",d.selfLoops,"sold to self",C.amber],
-      ["Multi-hop rings",d.multiHopRings,"beyond pairwise",C.guard]
-    ];
-    $("#grKpis").innerHTML=cards.map(([l,n,dd,c])=>`<div class="kpi" style="--kc:${c}"><div class="n" style="color:${c}">${n}</div><div class="l">${l}</div><div class="d">${dd}</div></div>`).join("");
-    const pct=d.graphWallets?Math.round(100*d.heuristicWallets/d.graphWallets):0;
-    $("#grCompare").innerHTML=`<div class="break-bars">
-      <div class="bb"><div class="t"><span>Old pairwise rule</span><b>${d.heuristicWallets} wallets</b></div><div class="bar"><i style="width:${pct}%;background:var(--faint)"></i></div></div>
-      <div class="bb"><div class="t"><span>Graph structure</span><b style="color:${C.guard}">${d.graphWallets} wallets</b></div><div class="bar"><i style="width:100%;background:${C.guard}"></i></div></div>
-    </div>
-    <p style="margin-top:10px;color:var(--dim);font-size:12.5px"><b style="color:${C.guard}">+${d.extraCaughtByGraph} wallets</b> the pairwise rule missed — including a <b>${d.largestRing.wallets}-wallet ring</b> (${d.largestRing.trades} trades cycling among them).</p>`;
-    $("#grRings").innerHTML=d.topRings.map((r,i)=>`<tr><td class="mono">${i+1}</td><td class="mono">${r.wallets}</td><td class="mono">${r.trades}</td><td class="mono">${r.reciprocity}</td><td class="mono" style="color:${r.washScore>=60?C.alert:(r.washScore>=30?C.amber:'var(--faint)')}">${r.washScore}</td></tr>`).join("");
-  }catch(e){ $("#grKpis").innerHTML=`<div class="empty">Graph analysis failed: ${esc(e.message)}</div>`; }
-}
-
 /* ============ interactive marketplace wash-ring + click-to-ban ============ */
 let mgLoaded=false, mgData=null, mgBanned={};
 async function renderMarketGraph(){
@@ -782,9 +755,24 @@ async function renderMarketGraph(){
   try{
     mgData=await api("/wash-graph",{},20000);
     mgLoaded=true;
+    mgFillPanels();
     await mgLoadBlacklist();
     mgDraw();
   }catch(e){ if($("#mgGraph")) $("#mgGraph").innerHTML=`<div class="empty" style="padding:20px">Graph failed: ${esc(e.message)}</div>`; }
+}
+function mgFillPanels(){
+  if(!mgData) return;
+  if($("#grSource")) $("#grSource").textContent=`${mgData.totalSales} marketplace sales · ${mgData.wallets} wallets · ${mgData.ringCount} ring(s)`;
+  if($("#grKpis")){
+    const cards=[
+      ["Wash rings", mgData.ringCount, "detected clusters", C.alert],
+      ["Ring wallets", mgData.graph.nodes.length, "in the top ring", C.alert],
+      ["Top wash score", mgData.graph.washScore, "0-100", mgData.graph.washScore>=70?C.alert:C.amber],
+      ["Marketplace sales", mgData.totalSales, "analysed", C.chain]
+    ];
+    $("#grKpis").innerHTML=cards.map(c=>`<div class="kpi" style="--kc:${c[3]}"><div class="n" style="color:${c[3]}">${c[1]}</div><div class="l">${c[0]}</div><div class="d">${c[2]}</div></div>`).join("");
+  }
+  if($("#grRings")) $("#grRings").innerHTML=(mgData.topRings||[]).map((r,i)=>`<tr><td class="mono">${i+1}</td><td class="mono">${r.size}</td><td class="mono">${r.trades}</td><td class="mono">${r.reciprocity}</td><td class="mono" style="color:${r.washScore>=60?C.alert:(r.washScore>=30?C.amber:'var(--faint)')}">${r.washScore}</td></tr>`).join("");
 }
 async function mgLoadBlacklist(){
   try{ const bl=await api("/blacklist",{},8000); mgBanned={}; bl.forEach(b=>mgBanned[(b.address||"").toLowerCase()]=true); mgRenderBlacklist(bl); }catch(e){}
@@ -800,7 +788,7 @@ function mgDraw(){
   function ep(a,b){ const dx=b.x-a.x,dy=b.y-a.y,dd=Math.hypot(dx,dy)||1; const x1=a.x+dx/dd*a.r,y1=a.y+dy/dd*a.r,x2=b.x-dx/dd*(b.r+6),y2=b.y-dy/dd*(b.r+6); const mx=(x1+x2)/2,my=(y1+y2)/2,nx=-(y2-y1),ny=(x2-x1),nl=Math.hypot(nx,ny)||1; return 'M'+x1+' '+y1+' Q'+(mx+nx/nl*14)+' '+(my+ny/nl*14)+' '+x2+' '+y2; }
   let s='<svg viewBox="0 0 300 280" width="100%" height="100%" style="display:block"><defs><marker id="mgar" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0 0L6 3L0 6z" fill="var(--faint)"/></marker></defs>';
   edges.forEach(e=>{ const a=idx[e.from],b=idx[e.to]; if(a&&b&&a!==b) s+='<path d="'+ep(a,b)+'" fill="none" stroke="var(--faint)" stroke-width="1.3" stroke-opacity="0.55" marker-end="url(#mgar)"/>'; });
-  nodes.forEach((n,i)=>{ const banned=mgBanned[n.address.toLowerCase()]; s+='<g class="mg-node" data-i="'+i+'" style="cursor:pointer"><circle cx="'+n.x+'" cy="'+n.y+'" r="'+n.r+'" fill="'+(banned?'#6b7280':mgCol(n.washScore))+'" stroke="#0b1018" stroke-width="2"/><text x="'+n.x+'" y="'+(n.y+n.r+12)+'" text-anchor="middle" style="font-family:\'JetBrains Mono\';font-size:10px;fill:var(--dim)">'+n.address.slice(0,6)+'</text></g>'; });
+  nodes.forEach((n,i)=>{ const banned=mgBanned[n.address.toLowerCase()]; s+='<g class="mg-node" data-i="'+i+'" style="cursor:pointer"><circle cx="'+n.x+'" cy="'+n.y+'" r="'+n.r+'" fill="'+(banned?'#6b7280':mgCol(n.washScore))+'" stroke="#0b1018" stroke-width="2"/><text x="'+n.x+'" y="'+(n.y+n.r+12)+'" text-anchor="middle" style="font-family:\'JetBrains Mono\';font-size:10px;fill:var(--dim)">'+esc(shortAddr(n.address))+'</text></g>'; });
   s+='</svg>';
   g.innerHTML=s;
   Array.prototype.forEach.call(g.querySelectorAll('.mg-node'),el=>{ const i=+el.getAttribute('data-i'); el.addEventListener('click',()=>mgSelect(i)); });
@@ -830,43 +818,6 @@ function mgRenderBlacklist(bl){
   const el=$("#mgBlacklist"); if(!el) return;
   el.innerHTML = (bl&&bl.length) ? bl.map(b=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line)"><span class="mono" style="font-size:11.5px;color:var(--ink)">${esc(b.address)}</span><span style="display:flex;gap:10px;align-items:center"><span style="font-size:11px;color:var(--faint)">${esc(b.reason||"")}</span><button class="btn sm" data-unban="${esc(b.address)}">Un-ban</button></span></div>`).join("") : `<div class="empty" style="padding:14px">No wallets banned yet — click a wallet in the ring above.</div>`;
   el.querySelectorAll("[data-unban]").forEach(btn=>btn.addEventListener("click",async()=>{ try{ await api("/blacklist/"+btn.dataset.unban,{method:"DELETE"},8000); await mgLoadBlacklist(); mgDraw(); }catch(e){} }));
-}
-
-/* ================= WALLET INVESTIGATOR (live, any address) ================= */
-let wiWired=false;
-function renderWallet(){
-  if(wiWired)return; wiWired=true;
-  $("#wiRun").addEventListener("click",runInvestigate);
-  $("#wiAddr").addEventListener("keydown",e=>{if(e.key==="Enter")runInvestigate();});
-  $("#wiSample").addEventListener("click",()=>{$("#wiAddr").value="0x29469395eaf6f95920e59f858042f0e28d98a20b";runInvestigate();});
-}
-async function runInvestigate(){
-  const addr=$("#wiAddr").value.trim();
-  if(!/^0x[a-fA-F0-9]{40}$/.test(addr)){toast("Enter a valid 0x… wallet address","err");return;}
-  const sh=a=>a?a.slice(0,6)+"…"+a.slice(-4):"—";
-  $("#wiResult").innerHTML=`<div class="empty">Pulling on-chain transfers & analysing…</div>`;
-  try{
-    const d=await api("/investigate/"+addr,{},45000);
-    const rc=lvlColor(d.riskLevel);
-    $("#wiResult").innerHTML=`
-      <div class="kpis" style="margin-top:14px">
-        <div class="kpi" style="--kc:${rc}"><div class="n" style="color:${rc}">${d.riskScore}</div><div class="l">Wallet risk</div><div class="d">${d.riskLevel}</div></div>
-        <div class="kpi"><div class="n">${d.totalTransfers}</div><div class="l">NFT transfers</div><div class="d">${d.incoming} in · ${d.outgoing} out</div></div>
-        <div class="kpi"><div class="n" style="color:var(--alert)">${d.selfTransfers}</div><div class="l">Self-transfers</div><div class="d">sold to itself</div></div>
-        <div class="kpi"><div class="n" style="color:var(--amber)">${d.roundTrips}</div><div class="l">Round-trips</div><div class="d">sold then re-bought</div></div>
-      </div>
-      <div class="panel c12" style="margin-top:14px"><b style="color:${rc}">Verdict:</b> ${d.reasons&&d.reasons.length?esc(d.reasons.join(" · ")):"No obvious wash-trading patterns detected in recent history."}</div>
-      <div class="grid" style="margin-top:14px">
-        <div class="panel c5"><h3>Top counterparties</h3><div style="overflow-x:auto"><table><thead><tr><th>Wallet</th><th>Trades</th></tr></thead><tbody>
-          ${(d.topCounterparties||[]).map(c=>`<tr><td class="mono">${sh(c.wallet)}</td><td class="mono">${c.trades}${c.trades>=3?' <span style="color:var(--alert)">⚠ loop</span>':''}</td></tr>`).join("")||'<tr><td colspan="2">none</td></tr>'}
-        </tbody></table></div></div>
-        <div class="panel c7"><h3>Recent NFT transfers <small>click ↗ to verify on Etherscan</small></h3><div style="overflow-x:auto"><table><thead><tr><th>Dir</th><th>Collection</th><th>Token</th><th>Counterparty</th><th></th></tr></thead><tbody>
-          ${(d.sample||[]).map(t=>`<tr><td class="mono">${t.direction}</td><td>${esc(t.collection||"")}</td><td class="mono">${esc(String(t.tokenId||"").slice(0,8))}</td><td class="mono">${sh(t.direction==="OUT"?t.to:t.from)}</td><td><a href="https://etherscan.io/tx/${esc(t.hash)}" target="_blank" rel="noopener" style="color:var(--chain)">↗</a></td></tr>`).join("")}
-        </tbody></table></div></div>
-      </div>`;
-  }catch(e){
-    $("#wiResult").innerHTML=`<div class="empty">Investigation failed: ${esc(e.message)}</div>`;
-  }
 }
 
 /* ================= OVERVIEW ================= */
@@ -1106,7 +1057,7 @@ $("#pricePeriod").addEventListener("click",e=>{const b=e.target.closest("button"
 function renderFraud(){
   [1,2,3,4].forEach(i=>{const r=$("#rule"+i);r.className="rule idle";r.querySelector(".st").textContent="IDLE";r.querySelector(".ev").textContent="";});
   $("#fraudScoreOut").textContent="";$("#fraudFormula").style.display="none";
-  renderFlagFeed();renderFreqChart();renderGraph();renderMarketGraph();
+  renderFlagFeed();renderFreqChart();renderMarketGraph();
 }
 function renderFlagFeed(){
   const all=[];S.nfts.forEach(n=>(n.flags||[]).forEach(f=>all.push({...f,tokenId:n.tokenId,name:n.name})));

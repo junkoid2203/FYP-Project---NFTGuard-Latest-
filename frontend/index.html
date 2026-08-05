@@ -1069,6 +1069,7 @@ async function openDetail(id){
   // price tab
   renderPriceChart(n); renderTxTable(n);
   $("#mBuy").style.display = (n.listed && !ownedByMe) ? "" : "none";
+  $("#mOffer").style.display = ownedByMe ? "none" : "";
   $("#mList").style.display = ownedByMe ? "" : "none";
   $("#mList").textContent = n.listed ? "Update price" : "List for sale";
   $("#mListPrice").style.display = ownedByMe ? "" : "none";

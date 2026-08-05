@@ -188,4 +188,4 @@ async function analyzeMarketGraph() {
   };
 }
 
-module.exports = { analyzeGraph, analyzeMarketGraph };
+module.exports = { analyzeMarketGraph };

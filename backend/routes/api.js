@@ -30,7 +30,7 @@ const { runFraudAnalysis } = require("../services/fraudDetector");
 const { analyzeCollection } = require("../services/priceAnalyzer");
 const { computeUnifiedRisk } = require("../services/riskScoreEngine");
 const { investigateWallet } = require("../services/walletInvestigator");
-const { analyzeGraph, analyzeMarketGraph } = require("../services/graphAnalyzer");
+const { analyzeMarketGraph } = require("../services/graphAnalyzer");
 const { handleChat } = require("../services/chatAssistant");
 
 const wrap = fn => (req, res) => fn(req, res).catch(err => {
@@ -199,9 +199,6 @@ router.get("/risk/:tokenId", wrap(async (req, res) => {
 }));
 
 // ---------------------------------------------------------------- graph wash-trading analysis (live)
-router.get("/graph", wrap(async (req, res) => {
-  res.json(analyzeGraph());
-}));
 
 // ---------------------------------------------------------------- wallet investigator (live, any address)
 router.get("/investigate/:address", wrap(async (req, res) => {

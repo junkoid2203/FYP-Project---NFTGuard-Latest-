@@ -63,7 +63,7 @@ const POOL = [
 const rndWallet = () => POOL[Math.floor(Math.random() * POOL.length)];
 const randHex = () => "0x" + [...Array(40)].map(() => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
 
-const W = { authenticity: 0.3, fraud: 0.5, priceAnomaly: 0.2 };
+const W = { authenticity: 0.4, fraud: 0.35, priceAnomaly: 0.25 };
 function riskDoc(tokenId, authRisk, fraudRisk, priceRisk) {
   const contribution = {
     authenticity: +(authRisk * W.authenticity).toFixed(1),
@@ -97,11 +97,13 @@ const SPEC = [
 
 function riskFor(status, opts) {
   const wash = !!opts.wash;
-  const fraud = wash ? 90 : 15;
-  if (status === "Tampered")     return { auth: 100, fraud, price: 0 };
-  if (status === "NonCompliant") return { auth: 100, fraud, price: 0 };
-  if (status === "Duplicate")    return { auth: 55,  fraud, price: 0 };
-  return { auth: 0, fraud, price: 0 }; // Verified
+  // authRisk is BINARY in the real engine: 0 if Verified, 100 if it fails any authenticity layer
+  const auth = status === "Verified" ? 0 : 100;
+  // fraudRisk = sum of triggered rule penalties (wash loop 45 + rapid escalation 30 = 75); else no rule fires
+  const fraud = wash ? 75 : 0;
+  // priceRisk = base 40 + 15 for one Z-score anomaly (wash NFTs escalate price); else 0
+  const price = wash ? 55 : 0;
+  return { auth, fraud, price };
 }
 function flagsFor(tokenId, status, opts, dupOf) {
   const out = [];
@@ -248,7 +250,7 @@ async function main() {
         timestamp: daysAgo(14 - i * 1.5), simulated: true });
       p *= 1.3;
     });
-    riskDocs.push(riskDoc(tokenId, 40, 100, 70));
+    riskDocs.push(riskDoc(tokenId, 0, 75, 55)); // Verified ring NFT: risk from wash trading, not authenticity
     flagDocs.push({ tokenId, flagType: "BUYER_SELLER_LOOP", penaltyScore: 45,
       description: "This NFT was cycled through a ring of wallets — wash-trading pattern" });
   }
