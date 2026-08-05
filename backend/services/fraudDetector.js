@@ -52,12 +52,13 @@ function maxWindowCount(times, windowMs) {
 async function detectAbnormalFrequency(txs, collectionName, tokenId) {
   const { windowMinutes, baselineMultiplier, minCount, penalty } = thresholds.abnormalFrequency;
   const windowMs = windowMinutes * 60 * 1000;
+  const isTrade = t => t.txType === "SALE" || t.txType === "TRANSFER"; // listings/mints are not trades
 
-  const mine = maxWindowCount(txs.map(t => new Date(t.timestamp).getTime()), windowMs);
+  const mine = maxWindowCount(txs.filter(isTrade).map(t => new Date(t.timestamp).getTime()), windowMs);
   if (mine < minCount) return null;
 
-  // collection baseline: mean densest-window count across the other tokens
-  const collTxs = await Transaction.find({ collectionName }).select("tokenId timestamp").lean();
+  // collection baseline: mean densest-window count across the other tokens (trades only)
+  const collTxs = await Transaction.find({ collectionName, txType: { $in: ["SALE", "TRANSFER"] } }).select("tokenId timestamp").lean();
   const byToken = {};
   for (const t of collTxs) (byToken[t.tokenId] = byToken[t.tokenId] || []).push(new Date(t.timestamp).getTime());
   const others = Object.entries(byToken).filter(([id]) => Number(id) !== tokenId)
@@ -75,9 +76,15 @@ async function detectAbnormalFrequency(txs, collectionName, tokenId) {
   return null;
 }
 
-/** Rule 3 — Self-Transfer (identical sender/recipient wallet) */
+/** Rule 3 — Self-Transfer (identical sender/recipient wallet).
+ * Only an actual ownership move (SALE / TRANSFER) can be a wash "self-transfer".
+ * A LIST / DELIST records owner -> owner by design (no ownership change), and a
+ * MINT records 0x0 -> owner, so neither must ever be counted here — otherwise
+ * simply re-pricing your own listing would keep inflating the fraud score. */
 function detectSelfTransfer(txs) {
-  const hits = txs.filter(t => String(t.senderAddress).toLowerCase() === String(t.recipientAddress).toLowerCase());
+  const hits = txs.filter(t =>
+    (t.txType === "SALE" || t.txType === "TRANSFER") &&
+    String(t.senderAddress).toLowerCase() === String(t.recipientAddress).toLowerCase());
   if (!hits.length) return null;
   const { penalty, perExtra = 0 } = thresholds.selfTransfer;
   return {

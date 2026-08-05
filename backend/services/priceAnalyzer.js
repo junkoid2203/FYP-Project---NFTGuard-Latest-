@@ -92,6 +92,10 @@ async function priceRiskForToken(tokenId) {
   const mine = points.filter(p => p.tokenId === tokenId);
   const anomalies = mine.filter(p => p.anomaly);
 
+  // Clear any prior PRICE_ANOMALY flag first, so re-running analysis never stacks
+  // duplicates and a token that is no longer anomalous correctly loses its flag.
+  await FraudFlag.deleteMany({ tokenId, flagType: "PRICE_ANOMALY" });
+
   let risk = 0;
   if (anomalies.length) {
     const { basePenalty, perAnomaly, perExcessZ } = thresholds.priceAnomaly;

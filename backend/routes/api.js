@@ -93,7 +93,7 @@ router.get("/nfts/:tokenId", wrap(async (req, res) => {
 
 // ---------------------------------------------------------------- mint (FR 2.2)
 router.post("/mint", wrap(async (req, res) => {
-  const { name, description = "", image = "", collectionName = "NFTGuard Collection", walletAddress, priceEth = 0 } = req.body;
+  const { name, description = "", image = "", collectionName = "NFTGuard Collection", walletAddress, demoFlaw = "" } = req.body;
   if (!name || !walletAddress) return res.status(400).json({ error: "name and walletAddress are required" });
 
   const last = await Nft.findOne().sort({ tokenId: -1 }).lean();
@@ -106,13 +106,24 @@ router.post("/mint", wrap(async (req, res) => {
   const chain = await blockchain.mintOnChain(tokenURI, metaHash);
   if (chain.tokenId) tokenId = chain.tokenId; // trust on-chain id when real
 
+  // Demo/testing hooks — a CLEAN mint is authentic by construction (off-chain hash
+  // equals the on-chain anchor, compliant contract), so it will always verify as
+  // "Verified". To exercise the authenticity engine, a tester can request a flaw:
+  //   tampered      -> off-chain metadata hash won't match the on-chain anchor  (=> Tampered)
+  //   noncompliant  -> contract fails the ERC-721 interface check               (=> NonCompliant)
+  const flaw = String(demoFlaw || "").toLowerCase();
+  const offChainMetadataHash = flaw === "tampered"
+    ? sha256OfMetadata({ ...metadata, __tampered: Date.now() })
+    : metaHash;
+  const erc721Compliant = flaw !== "noncompliant";
+
   const nft = await Nft.create({
     tokenId, name, description, image, tokenURI,
     contractAddress: process.env.CONTRACT_ADDRESS || "0xSIMULATED",
-    metadataHash: metaHash, offChainMetadataHash: metaHash,
+    metadataHash: metaHash, offChainMetadataHash,
     collectionName, creatorAddress: walletAddress, ownerAddress: walletAddress,
-    listed: priceEth > 0, priceEth,
-    erc721Compliant: true,
+    listed: false, priceEth: 0,            // minting no longer lists — owner lists it afterwards
+    erc721Compliant,
   });
 
   await Transaction.create({
@@ -285,8 +296,35 @@ router.post("/offers", wrap(async (req, res) => {
   if (!nft) return res.status(404).json({ error: "NFT not found" });
   if (nft.ownerAddress && nft.ownerAddress.toLowerCase() === String(fromAddress).toLowerCase())
     return res.status(400).json({ error: "You already own this NFT" });
+  // An offer is a bid to negotiate a LOWER price. Paying the asking price is what
+  // "Buy now" is for, so an offer at/above the listing makes no sense — reject it.
+  if (nft.listed && nft.priceEth > 0 && Number(priceEth) >= nft.priceEth)
+    return res.status(400).json({ error: `Offer must be below the listed price (${nft.priceEth} ETH). To pay the asking price, use Buy now.` });
   const offer = await Offer.create({ tokenId: Number(tokenId), fromAddress, priceEth: Number(priceEth), status: "Active" });
   res.json({ ok: true, offer });
+}));
+
+// ---------------------------------------------------------------- cancel a listing (owner un-lists)
+router.post("/unlist", wrap(async (req, res) => {
+  const { tokenId } = req.body || {};
+  const nft = await Nft.findOne({ tokenId: Number(tokenId) });
+  if (!nft) return res.status(404).json({ error: "NFT not found" });
+  nft.listed = false;
+  await nft.save();
+  res.json({ ok: true });
+}));
+
+// ---------------------------------------------------------------- offers received on a wallet's own NFTs (bell + profile)
+router.get("/offers-received/:address", wrap(async (req, res) => {
+  const addr = String(req.params.address || "").trim().toLowerCase();
+  if (!addr) return res.json([]);
+  const all = await Nft.find().select("tokenId name image priceEth listed ownerAddress").lean();
+  const owned = all.filter(n => (n.ownerAddress || "").toLowerCase() === addr);
+  const byTok = Object.fromEntries(owned.map(n => [n.tokenId, n]));
+  const ids = owned.map(n => n.tokenId);
+  if (!ids.length) return res.json([]);
+  const offers = await Offer.find({ tokenId: { $in: ids }, status: "Active" }).sort({ createdAt: -1 }).lean();
+  res.json(offers.map(o => ({ ...o, nft: byTok[o.tokenId] || null })));
 }));
 
 router.post("/offers/:offerId/accept", wrap(async (req, res) => {
