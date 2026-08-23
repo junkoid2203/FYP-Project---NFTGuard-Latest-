@@ -20,3 +20,6 @@ Thumbs.db
 .claude/
 .vscode/
 .idea/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
