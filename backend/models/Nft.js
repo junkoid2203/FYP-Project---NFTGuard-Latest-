@@ -24,6 +24,12 @@ const nftSchema = new mongoose.Schema(
     listed: { type: Boolean, default: false },
     priceEth: { type: Number, default: 0 },
     traits: { type: Object, default: {} },
+    // --- imported real mainnet tokens (see services/onChainImporter.js) ---
+    external: { type: Boolean, default: false },     // true = third-party contract
+    externalContract: { type: String, default: "" },
+    externalTokenId: { type: String, default: "" },
+    externalChain: { type: String, default: "" },     // which EVM chain it was found on
+    chainCompliance: { type: Object, default: null }, // real ERC-165 result observed on that chain
   },
   { timestamps: true }
 );

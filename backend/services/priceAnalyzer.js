@@ -10,6 +10,7 @@
 const Transaction = require("../models/Transaction");
 const PriceStats = require("../models/PriceStats");
 const FraudFlag = require("../models/FraudFlag");
+const Nft = require("../models/Nft");
 const thresholds = require("../config/thresholds.json");
 
 function mean(xs) { return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0; }
@@ -30,6 +31,18 @@ function mad(xs) {
   if (xs.length < 2) return 0;
   const med = median(xs);
   return median(xs.map(x => Math.abs(x - med)));
+}
+
+/**
+ * Robust modified Z-score (median + MAD, Iglewicz-Hoaglin) — resistant to outliers,
+ * so a single extreme price no longer inflates the spread and hides itself.
+ * Falls back to the classic mean/stdDev Z-score when MAD is 0 (many identical prices).
+ * Shared by sale-history analysis and live listing-price analysis.
+ */
+function zScoreOf(price, stats) {
+  if (stats.mad > 0) return 0.6745 * (price - stats.medianPrice) / stats.mad;
+  if (stats.stdDev > 0) return (price - stats.avgPrice) / stats.stdDev;
+  return 0;
 }
 
 /** Recompute + persist collection-level PRICE_STATS (steps 5-6, Fig 4.9). */
@@ -60,13 +73,8 @@ async function analyzeCollection(collectionName) {
   const zLimit = thresholds.priceAnomaly.zScoreThreshold;
   const sales = await Transaction.find({ collectionName, txType: "SALE" }).sort({ timestamp: 1 }).lean();
 
-  // Robust modified Z-score (median + MAD, Iglewicz-Hoaglin) — resistant to outliers,
-  // so a single extreme sale no longer inflates the spread and hides itself.
-  // Falls back to the classic mean/stdDev Z-score when MAD is 0 (many identical prices).
   const points = sales.map(t => {
-    const z = stats.mad > 0
-      ? 0.6745 * (t.priceEth - stats.medianPrice) / stats.mad
-      : (stats.stdDev > 0 ? (t.priceEth - stats.avgPrice) / stats.stdDev : 0);
+    const z = zScoreOf(t.priceEth, stats);
     return {
       tokenId: t.tokenId,
       priceEth: t.priceEth,
@@ -92,9 +100,9 @@ async function priceRiskForToken(tokenId) {
   const mine = points.filter(p => p.tokenId === tokenId);
   const anomalies = mine.filter(p => p.anomaly);
 
-  // Clear any prior PRICE_ANOMALY flag first, so re-running analysis never stacks
-  // duplicates and a token that is no longer anomalous correctly loses its flag.
-  await FraudFlag.deleteMany({ tokenId, flagType: "PRICE_ANOMALY" });
+  // Clear any prior price flags first, so re-running analysis never stacks duplicates
+  // and a token that is no longer anomalous correctly loses its flag.
+  await FraudFlag.deleteMany({ tokenId, flagType: { $in: ["PRICE_ANOMALY", "LISTING_PRICE_ANOMALY"] } });
 
   let risk = 0;
   if (anomalies.length) {
@@ -111,6 +119,45 @@ async function priceRiskForToken(tokenId) {
     });
   }
 
+  // ---- LIVE LISTING price anomaly (proactive) ----------------------------------
+  // A completed sale only flags fraud *after* a victim has already paid. The asking
+  // price of a live listing can be judged immediately, so an NFT listed far outside
+  // its collection's normal range raises risk the moment it is listed or re-priced.
+  const { listingPenalty, perExcessZ, minSamplesForListing, underpriceFactor } = thresholds.priceAnomaly;
+  const nft = await Nft.findOne({ tokenId }).select("listed priceEth").lean();
+  let listing = null;
+  if (nft && nft.listed && nft.priceEth > 0 && stats.sampleSize >= (minSamplesForListing ?? 3)) {
+    const z = zScoreOf(nft.priceEth, stats);
+    const med = stats.medianPrice;
+    // Over-pricing: the Z-score handles it (upside is unbounded).
+    const overpriced = Math.abs(z) > zThreshold;
+    // Under-pricing: a Z-score can never flag it, because price is bounded below by 0
+    // while the median sits far above — so a "too cheap" listing (stolen goods dumped
+    // fast, or a wash-trade setup) is caught by a ratio rule instead.
+    const cheapCutoff = med > 0 ? med / (underpriceFactor ?? 5) : 0;
+    const underpriced = cheapCutoff > 0 && nft.priceEth <= cheapCutoff;
+
+    if (overpriced || underpriced) {
+      const ratio = med > 0 ? nft.priceEth / med : 0;
+      const listingRisk = Math.min(100, listingPenalty
+        + (overpriced ? Math.max(0, Math.abs(z) - zThreshold) * perExcessZ : 0));
+      risk = Math.min(100, risk + listingRisk);
+      const how = underpriced
+        ? `only ${ratio.toFixed(3)}× the collection median (${med} ETH) — far below the normal range`
+        : `|Z| = ${Math.abs(z).toFixed(2)} (> ${zThreshold}), ~${ratio.toFixed(1)}× the collection median of ${med} ETH`;
+      listing = { priceEth: nft.priceEth, zScore: Number(z.toFixed(3)), medianPrice: med,
+                  ratio: Number(ratio.toFixed(3)), direction: underpriced ? "under" : "over", risk: Math.round(listingRisk) };
+      await FraudFlag.create({
+        tokenId,
+        flagType: "LISTING_PRICE_ANOMALY",
+        penaltyScore: Math.round(listingRisk),
+        description: `Listed at ${nft.priceEth} ETH — ${how}`,
+        evidence: { listedPrice: nft.priceEth, zScore: Number(z.toFixed(3)), medianPrice: med,
+                    ratio: Number(ratio.toFixed(3)), direction: underpriced ? "under" : "over", sampleSize: stats.sampleSize },
+      });
+    }
+  }
+
   return {
     tokenId,
     collectionName: anyTx.collectionName,
@@ -118,6 +165,7 @@ async function priceRiskForToken(tokenId) {
     stats,
     history: mine,
     anomalies,
+    listing,
   };
 }
 

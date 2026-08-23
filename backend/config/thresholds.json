@@ -23,7 +23,10 @@
     "zScoreThreshold": 2.5,
     "basePenalty": 40,
     "perAnomaly": 15,
-    "perExcessZ": 10
+    "perExcessZ": 10,
+    "listingPenalty": 45,
+    "minSamplesForListing": 3,
+    "underpriceFactor": 5
   },
   "authenticity": {
     "nonCompliantPenalty": 70,
@@ -40,6 +43,14 @@
   },
   "riskLevels": {
     "mediumFrom": 40,
-    "highFrom": 70
+    "highFrom": 70,
+    "_escalationComment": "A weighted average dilutes a single decisive signal: priceRisk 100 x 0.25 = 25 ('Low'), and a proven Tampered asset (authRisk 100 x 0.40 = 40) is only 'Medium'. Each curve maps that indicator's value -> a minimum unified score, interpolated between anchor points [indicatorValue, floor]; the final score is max(weighted, highest floor). Curves are per-indicator because the same number means different things: fraud 90 is two self-transfers (routine on mainnet), price 90 is a listing at ~5x the collection median. Remove a curve to disable escalation for that indicator.",
+    "escalation": {
+      "curves": {
+        "authenticity": [[100, 92]],
+        "fraud":        [[45, 40], [80, 50], [100, 75]],
+        "price":        [[45, 40], [70, 55], [90, 75], [100, 92]]
+      }
+    }
   }
 }

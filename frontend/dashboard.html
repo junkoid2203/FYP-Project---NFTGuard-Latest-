@@ -100,6 +100,12 @@ select:focus,input:focus{outline:none;border-color:var(--guard)}
 .panel h3{font-family:'Space Grotesk';font-weight:600;font-size:14.5px;display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .panel h3 small{font-family:'JetBrains Mono';font-weight:400;font-size:10.5px;color:var(--faint);letter-spacing:.03em;text-align:right}
 .c3{grid-column:span 3}.c4{grid-column:span 4}.c5{grid-column:span 5}.c6{grid-column:span 6}.c7{grid-column:span 7}.c8{grid-column:span 8}.c9{grid-column:span 9}.c12{grid-column:span 12}
+/* auth view: keep pipeline + registry side by side, and sit the on-chain tester
+   directly under the pipeline instead of below the (very tall) registry table */
+/* auth view: pipeline + on-chain tester stack in the left column at their natural
+   height (align-self:start), so neither is stretched to match the tall registry */
+#authLeft{display:flex;flex-direction:column;gap:14px;align-self:start;min-width:0}
+#authRegistry{align-self:start}
 .chart{position:relative;height:230px}
 .toolrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
 .toolrow .lbl{font-size:12px;color:var(--faint)}
@@ -233,6 +239,50 @@ td.mono{font-family:'JetBrains Mono';font-size:11.5px;color:var(--dim)}
 
 .empty{color:var(--faint);font-size:12.5px;padding:16px;border:1px dashed var(--line);border-radius:10px;text-align:center}
 
+/* ---------- wash-trading ring visualisation ---------- */
+.mg-canvas{position:relative;flex:1;min-width:260px;height:280px;border-radius:14px;overflow:hidden;
+  border:1px solid var(--line);
+  background:
+    radial-gradient(120% 120% at 50% 42%,rgba(110,168,255,.06),transparent 60%),
+    radial-gradient(circle at 50% 42%,#0d1420 0%,#0a0f18 70%,#080b12 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03),inset 0 0 40px rgba(0,0,0,.4)}
+.mg-canvas::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.4;
+  background-image:linear-gradient(rgba(140,160,190,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(140,160,190,.05) 1px,transparent 1px);
+  background-size:26px 26px;mask-image:radial-gradient(closest-side at 50% 45%,#000 40%,transparent 92%)}
+.mg-canvas svg{position:relative;z-index:1}
+.mg-node{cursor:pointer}
+.mg-node circle.core{transition:transform .18s ease}
+.mg-node:hover circle.core{transform:scale(1.08);transform-box:fill-box;transform-origin:center}
+.mg-node text{font-family:'JetBrains Mono';font-size:9.5px;fill:var(--dim);
+  paint-order:stroke;stroke:#080c13;stroke-width:2.4px;stroke-linejoin:round}
+.mg-node:hover text{fill:var(--ink)}
+.mg-halo{transform-box:fill-box;transform-origin:center}
+.mg-halo.pulse{animation:mgPulse 2.4s ease-in-out infinite}
+@keyframes mgPulse{0%,100%{opacity:.85;transform:scale(1)}50%{opacity:1;transform:scale(1.14)}}
+.mg-edge{fill:none;stroke-linecap:round}
+.mg-edge.flow{stroke-dasharray:1.5 6;animation:mgFlow 1.3s linear infinite}
+.mg-edge.hot{animation-duration:.9s}
+@keyframes mgFlow{to{stroke-dashoffset:-15}}
+.mg-sel-ring{fill:none;stroke:var(--ink);stroke-width:2;stroke-dasharray:4 4;opacity:.9;
+  transform-box:fill-box;transform-origin:center;animation:mgSpin 9s linear infinite}
+@keyframes mgSpin{to{transform:rotate(360deg)}}
+
+/* ring inspector panel */
+.mg-panel{width:210px;min-width:190px;background:linear-gradient(180deg,var(--raised),var(--panel));
+  border:1px solid var(--line);border-radius:14px;padding:15px;min-height:210px}
+.mg-panel .addr{font-family:'JetBrains Mono';font-size:11px;word-break:break-all;color:var(--ink);
+  background:var(--inset);border:1px solid var(--line);border-radius:8px;padding:8px 9px;line-height:1.5}
+.mg-panel .sxs{display:flex;gap:8px;margin:11px 0}
+.mg-panel .sx{flex:1;background:var(--inset);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+.mg-panel .sx .v{font-family:'JetBrains Mono';font-size:16px;font-weight:600;line-height:1.1}
+.mg-panel .sx .k{font-size:9.5px;color:var(--faint);letter-spacing:.05em;text-transform:uppercase;margin-top:3px}
+.mg-panel .meter{height:6px;border-radius:4px;background:rgba(140,160,190,.14);overflow:hidden;margin-top:7px}
+.mg-panel .meter i{display:block;height:100%;border-radius:4px;transition:width .4s ease}
+.mg-panel .note{font-size:11px;margin-top:10px;line-height:1.5}
+.mg-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  height:100%;min-height:180px;color:var(--faint);font-size:12px;text-align:center;padding:10px}
+.mg-empty svg{width:30px;height:30px;stroke:var(--faint);opacity:.6}
+
 #toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);z-index:99;opacity:0;
   background:var(--raised);border:1px solid var(--line-strong);border-radius:12px;padding:12px 18px;font-size:13.5px;
   transition:all .25s;pointer-events:none;max-width:90vw}
@@ -352,27 +402,41 @@ footer{margin-top:28px;color:var(--faint);font-size:11.5px;font-family:'JetBrain
   <!-- ============ VIEW: MODULE 1 — AUTHENTICITY ============ -->
   <div class="view" id="view-auth">
     <div class="grid">
-      <div class="panel c7">
-        <h3>Verification pipeline</h3>
-        <div class="toolrow">
-          <span class="lbl">Token</span>
-          <select id="authSel"></select>
-          <button class="btn primary sm" id="authRun">Run verification</button>
+      <div class="c7" id="authLeft">
+        <div class="panel" id="authPipeline">
+          <h3>Verification pipeline</h3>
+          <div class="toolrow">
+            <span class="lbl">Token</span>
+            <select id="authSel"></select>
+            <button class="btn primary sm" id="authRun">Run verification</button>
+          </div>
+          <div class="pipe">
+            <div class="step" id="stp1"><div class="ic">1</div><div style="flex:1">
+              <h4>Smart contract validation</h4><div class="sd">ERC-165 supportsInterface — ERC-721 (0x80ac58cd) / ERC-1155 (0xd9b67a26)</div>
+              <div class="detail"></div></div></div>
+            <div class="step" id="stp2"><div class="ic">2</div><div style="flex:1">
+              <h4>Metadata integrity</h4><div class="sd">SHA-256 of off-chain IPFS metadata vs on-chain anchor stored at mint</div>
+              <div class="detail"></div></div></div>
+            <div class="step" id="stp3"><div class="ic">3</div><div style="flex:1">
+              <h4>Duplicate / copy-mint detection</h4><div class="sd">Perceptual hash (pHash) compared against the minted-asset registry</div>
+              <div class="detail"></div></div></div>
+          </div>
+          <div class="verdict" id="authVerdict"></div>
         </div>
-        <div class="pipe">
-          <div class="step" id="stp1"><div class="ic">1</div><div style="flex:1">
-            <h4>Smart contract validation</h4><div class="sd">ERC-165 supportsInterface — ERC-721 (0x80ac58cd) / ERC-1155 (0xd9b67a26)</div>
-            <div class="detail"></div></div></div>
-          <div class="step" id="stp2"><div class="ic">2</div><div style="flex:1">
-            <h4>Metadata integrity</h4><div class="sd">SHA-256 of off-chain IPFS metadata vs on-chain anchor stored at mint</div>
-            <div class="detail"></div></div></div>
-          <div class="step" id="stp3"><div class="ic">3</div><div style="flex:1">
-            <h4>Duplicate / copy-mint detection</h4><div class="sd">Perceptual hash (pHash) compared against the minted-asset registry</div>
-            <div class="detail"></div></div></div>
+        <div class="panel" id="ocPanel">
+          <h3>Test a real on-chain NFT <small>imports a live Ethereum-mainnet token and runs the pipeline on it</small></h3>
+          <div class="toolrow">
+            <span class="lbl">Contract</span>
+            <input id="ocContract" type="text" placeholder="0x…" style="flex:1;min-width:220px;font-family:'JetBrains Mono';font-size:11.5px">
+            <span class="lbl">Token ID</span>
+            <input id="ocTokenId" type="text" placeholder="1" style="width:82px;font-family:'JetBrains Mono';font-size:11.5px">
+            <button class="btn primary sm" id="ocRun">Import &amp; verify</button>
+            <span id="ocPresets" style="display:inline-flex;gap:7px;flex-wrap:wrap"></span>
+          </div>
+          <div id="ocResult"></div>
         </div>
-        <div class="verdict" id="authVerdict"></div>
       </div>
-      <div class="panel c5">
+      <div class="panel c5" id="authRegistry">
         <h3>Registry status <small>all indexed NFTs</small></h3>
         <div style="overflow-x:auto">
         <table>
@@ -498,13 +562,27 @@ footer{margin-top:28px;color:var(--faint);font-size:11.5px;font-family:'JetBrain
           <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:#6b7280"></span>banned</span>
         </div>
         <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start">
-          <div id="mgGraph" style="position:relative;flex:1;min-width:260px;height:280px;background:#0b1018;border-radius:12px"></div>
-          <div id="mgPanel" style="width:210px;min-width:190px;background:#0f1520;border:1px solid var(--line);border-radius:12px;padding:14px;min-height:210px"></div>
+          <div id="mgGraph" class="mg-canvas"></div>
+          <div id="mgPanel" class="mg-panel"></div>
         </div>
       </div>
       <div class="panel c5">
         <h3>Detected rings <small>ranked by wash score · your marketplace</small></h3>
         <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Wallets</th><th>Trades</th><th>Recip.</th><th>Wash</th></tr></thead><tbody id="grRings"></tbody></table></div>
+      </div>
+      <div class="panel c7">
+        <h3>ML wash-trade classifier <small id="mlSource">offline study · Random Forest on real mainnet sales</small></h3>
+        <p style="font-size:12px;color:var(--dim);margin:0 0 12px;line-height:1.55">
+          Trained offline in <code>ml/nftguard_analysis.ipynb</code> on independent behavioural features
+          (price, wallet activity, timing, marketplace) — <b>not</b> on the heuristic columns themselves,
+          so it is an independent check rather than a restatement of the rules.
+        </p>
+        <div class="kpis" id="mlKpis"></div>
+        <div id="mlDetail" style="margin-top:12px"></div>
+      </div>
+      <div class="panel c5">
+        <h3>ML-flagged wallets <small>highest-confidence predictions · click to ban</small></h3>
+        <div id="mlFlagged"></div>
       </div>
       <div class="panel c12">
         <h3>Blacklisted wallets <small>blocked from mint, buy &amp; list marketplace-wide</small></h3>
@@ -531,7 +609,7 @@ footer{margin-top:28px;color:var(--faint);font-size:11.5px;font-family:'JetBrain
         <div class="feed" id="riskFlags" style="max-height:220px"></div>
       </div>
       <div class="panel c12">
-        <h3>Risk composition — whole collection <small>how every score decomposes</small></h3>
+        <h3>Risk composition — whole collection <small>every score decomposed · selected token highlighted, rest dimmed</small></h3>
         <div class="chart" style="height:250px"><canvas id="chStack"></canvas></div>
       </div>
     </div>
@@ -559,7 +637,8 @@ const TH={loopMin:3,loopPen:45,freqWin:60,freqMult:3,freqMin:4,freqPen:30,selfPe
   z:2.5,zBase:40,zPer:15,zExcess:10,authNC:70,authTam:80,authDup:50,
   w:{a:.40,f:.35,p:.25},med:40,high:70};
 const C={guard:"#00FF88",amber:"#FFB020",alert:"#FF4D5E",chain:"#6EA8FF",dim:"#93A0B4",faint:"#5B6A80",grid:"rgba(140,160,190,.07)"};
-const S={nfts:[],stats:null,wallet:null,balance:10,charts:{},view:"overview"};
+const SIM_BALANCE=1000000;   // simulated wallets get effectively unlimited test ETH
+const S={nfts:[],stats:null,wallet:null,balance:SIM_BALANCE,charts:{},view:"overview"};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const shortAddr=a=>{a=String(a||"");return a.length>13?a.slice(0,6)+"…"+a.slice(-4):a;};
@@ -777,31 +856,64 @@ function mgFillPanels(){
 async function mgLoadBlacklist(){
   try{ const bl=await api("/blacklist",{},8000); mgBanned={}; bl.forEach(b=>mgBanned[(b.address||"").toLowerCase()]=true); mgRenderBlacklist(bl); }catch(e){}
 }
+let mgSel=null;
 function mgCol(w){ return w>=70?C.alert:w>=40?C.amber:C.guard; }
+function mgKey(banned,w){ return banned?'Ban':w>=70?'High':w>=40?'Med':'Low'; }
 function mgDraw(){
   const g=$("#mgGraph"); if(!g||!mgData) return;
   const nodes=mgData.graph.nodes, edges=mgData.graph.edges;
-  if(!nodes.length){ g.innerHTML=`<div class="empty" style="padding:20px">No wash-trading ring detected in your marketplace trades yet.</div>`; return; }
-  const cx=150,cy=140,R=104;
-  nodes.forEach((n,i)=>{ const a=(-90+i*(360/nodes.length))*Math.PI/180; n.x=cx+R*Math.cos(a); n.y=cy+R*Math.sin(a); n.r=12+Math.min(12,(n.trades||1)*1.1); });
+  if(!nodes.length){ g.innerHTML=`<div class="empty" style="margin:20px">No wash-trading ring detected in your marketplace trades yet.</div>`; return; }
+  const cx=150,cy=140,R=100;
+  nodes.forEach((n,i)=>{ const a=(-90+i*(360/nodes.length))*Math.PI/180; n.x=cx+R*Math.cos(a); n.y=cy+R*Math.sin(a); n.r=12+Math.min(11,(n.trades||1)*1.1); });
   const idx={}; nodes.forEach(n=>idx[n.address]=n);
-  function ep(a,b){ const dx=b.x-a.x,dy=b.y-a.y,dd=Math.hypot(dx,dy)||1; const x1=a.x+dx/dd*a.r,y1=a.y+dy/dd*a.r,x2=b.x-dx/dd*(b.r+6),y2=b.y-dy/dd*(b.r+6); const mx=(x1+x2)/2,my=(y1+y2)/2,nx=-(y2-y1),ny=(x2-x1),nl=Math.hypot(nx,ny)||1; return 'M'+x1+' '+y1+' Q'+(mx+nx/nl*14)+' '+(my+ny/nl*14)+' '+x2+' '+y2; }
-  let s='<svg viewBox="0 0 300 280" width="100%" height="100%" style="display:block"><defs><marker id="mgar" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0 0L6 3L0 6z" fill="var(--faint)"/></marker></defs>';
-  edges.forEach(e=>{ const a=idx[e.from],b=idx[e.to]; if(a&&b&&a!==b) s+='<path d="'+ep(a,b)+'" fill="none" stroke="var(--faint)" stroke-width="1.3" stroke-opacity="0.55" marker-end="url(#mgar)"/>'; });
-  nodes.forEach((n,i)=>{ const banned=mgBanned[n.address.toLowerCase()]; s+='<g class="mg-node" data-i="'+i+'" style="cursor:pointer"><circle cx="'+n.x+'" cy="'+n.y+'" r="'+n.r+'" fill="'+(banned?'#6b7280':mgCol(n.washScore))+'" stroke="#0b1018" stroke-width="2"/><text x="'+n.x+'" y="'+(n.y+n.r+12)+'" text-anchor="middle" style="font-family:\'JetBrains Mono\';font-size:10px;fill:var(--dim)">'+esc(shortAddr(n.address))+'</text></g>'; });
+  const eset=new Set(edges.map(e=>e.from+'>'+e.to));                 // for reciprocity lookup
+  function ep(a,b){ const dx=b.x-a.x,dy=b.y-a.y,dd=Math.hypot(dx,dy)||1; const x1=a.x+dx/dd*a.r,y1=a.y+dy/dd*a.r,x2=b.x-dx/dd*(b.r+7),y2=b.y-dy/dd*(b.r+7); const mx=(x1+x2)/2,my=(y1+y2)/2,nx=-(y2-y1),ny=(x2-x1),nl=Math.hypot(nx,ny)||1; return 'M'+x1+' '+y1+' Q'+(mx+nx/nl*16)+' '+(my+ny/nl*16)+' '+x2+' '+y2; }
+
+  const grad=(id,a,b,c)=>`<radialGradient id="${id}" cx="38%" cy="32%" r="75%"><stop offset="0%" stop-color="${a}"/><stop offset="55%" stop-color="${b}"/><stop offset="100%" stop-color="${c}"/></radialGradient>`;
+  const halo=(id,c)=>`<radialGradient id="${id}"><stop offset="0%" stop-color="${c}" stop-opacity=".55"/><stop offset="62%" stop-color="${c}" stop-opacity=".10"/><stop offset="100%" stop-color="${c}" stop-opacity="0"/></radialGradient>`;
+  const mark=(id,c)=>`<marker id="${id}" markerWidth="8" markerHeight="8" refX="6.5" refY="3" orient="auto"><path d="M0 0L6.5 3L0 6z" fill="${c}"/></marker>`;
+
+  let s='<svg viewBox="0 0 300 280" width="100%" height="100%" style="display:block"><defs>'
+    + grad('gHigh','#ff9aa4','#ff4d5e','#b52a37') + grad('gMed','#ffd88a','#ffb020','#b87400')
+    + grad('gLow','#a6ffd5','#00ff88','#00a457') + grad('gBan','#aab2c0','#6b7280','#3f4650')
+    + halo('hHigh','#ff4d5e') + halo('hMed','#ffb020') + halo('hLow','#00ff88') + halo('hBan','#6b7280')
+    + mark('arF','#5f6f86') + mark('arH','#ff6672') + '</defs>';
+
+  s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="rgba(140,160,190,.14)" stroke-width="1" stroke-dasharray="2 5"/>';
+
+  edges.forEach(e=>{ const a=idx[e.from],b=idx[e.to]; if(!a||!b||a===b) return;
+    const hot=eset.has(e.to+'>'+e.from);                            // A<->B reciprocated = wash signal
+    s+='<path class="mg-edge flow'+(hot?' hot':'')+'" d="'+ep(a,b)+'" stroke="'+(hot?'#ff6672':'#5f6f86')+'" stroke-width="'+(hot?1.9:1.3)+'" stroke-opacity="'+(hot?.9:.5)+'" marker-end="url(#'+(hot?'arH':'arF')+')"/>';
+  });
+
+  nodes.forEach((n,i)=>{ const banned=mgBanned[n.address.toLowerCase()], k=mgKey(banned,n.washScore);
+    s+='<g class="mg-node" data-i="'+i+'">';
+    s+='<circle class="mg-halo'+(!banned&&n.washScore>=70?' pulse':'')+'" cx="'+n.x+'" cy="'+n.y+'" r="'+(n.r+11)+'" fill="url(#h'+k+')"/>';
+    if(i===mgSel) s+='<circle class="mg-sel-ring" cx="'+n.x+'" cy="'+n.y+'" r="'+(n.r+6)+'"/>';
+    s+='<circle class="core" cx="'+n.x+'" cy="'+n.y+'" r="'+n.r+'" fill="url(#g'+k+')" stroke="rgba(255,255,255,.22)" stroke-width="1"/>';
+    s+='<ellipse cx="'+n.x+'" cy="'+(n.y-n.r*0.34)+'" rx="'+(n.r*0.52)+'" ry="'+(n.r*0.3)+'" fill="#fff" opacity="0.18"/>';
+    s+='<text x="'+n.x+'" y="'+(n.y+n.r+13)+'" text-anchor="middle">'+esc(shortAddr(n.address))+'</text></g>';
+  });
   s+='</svg>';
   g.innerHTML=s;
   Array.prototype.forEach.call(g.querySelectorAll('.mg-node'),el=>{ const i=+el.getAttribute('data-i'); el.addEventListener('click',()=>mgSelect(i)); });
   if($("#mgPanel")&&!$("#mgPanel").dataset.sel) mgEmptyPanel();
 }
-function mgEmptyPanel(){ if($("#mgPanel")) $("#mgPanel").innerHTML=`<div style="color:var(--faint);font-size:12.5px;padding:24px 6px;text-align:center">Click a wallet in the ring to inspect and ban it.</div>`; }
+function mgEmptyPanel(){ if($("#mgPanel")) $("#mgPanel").innerHTML=`<div class="mg-empty"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.3"/><circle cx="18" cy="6" r="2.3"/><circle cx="12" cy="18" r="2.3"/><path d="M7.9 7.4 16.1 16.3M16.1 7.4 7.9 16.3M8.4 6h7.2"/></svg><div>Click a wallet in the ring to inspect it and ban it marketplace-wide.</div></div>`; }
 function mgSelect(i){
-  const n=mgData.graph.nodes[i], banned=mgBanned[n.address.toLowerCase()];
+  const n=mgData.graph.nodes[i]; if(!n) return;
+  const banned=mgBanned[n.address.toLowerCase()];
+  mgSel=i; mgDraw();
   const p=$("#mgPanel"); if(!p) return; p.dataset.sel="1";
-  p.innerHTML=`<div style="font-family:'JetBrains Mono';font-size:11px;word-break:break-all;color:var(--ink)">${esc(n.address)}</div>
-    <div style="font-size:12px;color:${n.washScore>=70?'var(--alert)':'var(--dim)'};margin:5px 0 14px">wash score ${n.washScore} · ${n.trades} trades</div>
-    <button class="btn sm" id="mgBan" style="width:100%;border-color:${banned?'var(--guard)':'var(--alert)'};color:${banned?'var(--guard)':'var(--alert)'}">${banned?'Un-ban wallet':'Ban wallet'}</button>
-    ${banned?'<div style="font-size:11px;color:var(--alert);margin-top:8px">Blocked from mint, buy &amp; list.</div>':'<div style="font-size:11px;color:var(--faint);margin-top:8px">Banning blocks this wallet marketplace-wide.</div>'}`;
+  const wc=n.washScore>=70?'var(--alert)':n.washScore>=40?'var(--amber)':'var(--guard)';
+  p.innerHTML=`<div class="addr">${esc(n.address)}</div>
+    <div class="sxs">
+      <div class="sx"><div class="v" style="color:${wc}">${n.washScore}</div><div class="k">Wash score</div>
+        <div class="meter"><i style="width:${Math.max(4,n.washScore)}%;background:${wc}"></i></div></div>
+      <div class="sx"><div class="v" style="color:var(--chain)">${n.trades}</div><div class="k">Trades</div></div>
+    </div>
+    <button class="btn sm" id="mgBan" style="width:100%;border-color:${banned?'var(--guard)':'var(--alert)'};color:${banned?'var(--guard)':'var(--alert)'}">${banned?'&#10003; Un-ban wallet':'Ban wallet'}</button>
+    ${banned?'<div class="note" style="color:var(--alert)">Currently blocked from mint, buy &amp; list.</div>':'<div class="note" style="color:var(--faint)">Banning blocks this wallet marketplace-wide.</div>'}`;
   $("#mgBan").onclick=()=>mgToggleBan(n);
 }
 async function mgToggleBan(n){
@@ -810,7 +922,6 @@ async function mgToggleBan(n){
     if(banned) await api("/blacklist/"+n.address,{method:"DELETE"},8000);
     else await api("/blacklist",{method:"POST",body:JSON.stringify({address:n.address,reason:"wash-ring member",washScore:n.washScore})},8000);
     await mgLoadBlacklist();
-    mgDraw();
     mgSelect(mgData.graph.nodes.indexOf(n));
   }catch(e){}
 }
@@ -906,6 +1017,67 @@ function renderAuthTableOnly(){
 }
 $("#authRun").addEventListener("click",runVerify);
 
+/* ---- import a REAL mainnet NFT and run the pipeline on it ----
+   Every preset below was verified against Ethereum mainnet with a live
+   ERC-165 supportsInterface() call — the expected column is observed, not assumed. */
+const OC_PRESETS=[
+  {label:"Bored Ape #1",      c:"0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D", t:"1",   exp:"pass", note:"real ERC-721 → Verified"},
+  {label:"Azuki #40",         c:"0xED5AF388653567Af2F388E6224dC7C4b3241C544", t:"40",  exp:"pass", note:"real ERC-721 → Verified"},
+  {label:"CryptoPunk #7804",  c:"0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB", t:"7804",exp:"fail", note:"predates ERC-721 → NonCompliant"},
+  {label:"USDC (ERC-20)",     c:"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", t:"1",   exp:"fail", note:"not an NFT contract → NonCompliant"},
+];
+function ocRenderPresets(){
+  const box=$("#ocPresets"); if(!box) return;
+  box.innerHTML=OC_PRESETS.map((p,i)=>
+    `<button class="btn sm" data-oc="${i}" title="${esc(p.note)}" style="border-color:${p.exp==="fail"?"rgba(255,77,94,.45)":"rgba(0,255,136,.35)"}">${esc(p.label)}</button>`).join("");
+  box.querySelectorAll("[data-oc]").forEach(b=>b.addEventListener("click",()=>{
+    const p=OC_PRESETS[+b.dataset.oc]; $("#ocContract").value=p.c; $("#ocTokenId").value=p.t;
+  }));
+  $("#ocResult").innerHTML=`<div class="empty">Layer 1 makes a real ERC-165 call to Ethereum mainnet and Layer 3 hashes the real artwork — both verdicts are genuinely detected. Layer 2 shows N/A for third-party contracts (no NFTGuard anchor). Import the same token twice to catch a real copy-mint.</div>`;
+}
+ocRenderPresets();
+async function ocImport(){
+  const contract=($("#ocContract").value||"").trim(), tokenId=($("#ocTokenId").value||"").trim();
+  const out=$("#ocResult");
+  if(!contract||!tokenId){ toast("Enter a contract address and token ID","err"); return; }
+  if(!LIVE){ toast("Importing needs the live backend (npm start)","err"); return; }
+  out.innerHTML=`<div class="empty">Fetching the token from Ethereum mainnet and running the pipeline…</div>`;
+  try{
+    const r=await api("/import-onchain",{method:"POST",body:JSON.stringify({contract,tokenId})},45000);
+    const n=r.nft, v=r.verification, lk=r.links||{};
+    const os=lk.opensea||`https://opensea.io/item/ethereum/${contract}/${tokenId}`;
+    const es=lk.explorer||`https://etherscan.io/address/${contract}`;
+    const rows=(v.checks||[]).map(c=>{
+      const col=c.na?"var(--dim)":(c.pass?"var(--guard)":"var(--alert)");
+      const mark=c.na?"N/A":(c.pass?"✓":"✕");
+      return `<tr><td style="color:${col};font-weight:600;width:44px">${mark}</td>
+        <td style="white-space:nowrap">${esc(c.layer)}</td>
+        <td style="color:var(--dim);font-size:12px">${esc(c.detail)}</td></tr>`;
+    }).join("");
+    out.innerHTML=`
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
+        ${n.image?`<img src="${esc(n.image)}" alt="" style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:1px solid var(--line)">`:""}
+        <div style="flex:1;min-width:280px">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+            <b style="font-size:16px">${esc(n.name)}</b>
+            <span class="badge ${esc(n.authenticityStatus)}">${esc(n.authenticityStatus)}</span>
+          </div>
+          <div style="font-size:12px;color:var(--faint);margin-bottom:10px">
+            imported as #${n.tokenId} · ${esc(n.collectionName)}${lk.chainLabel?` · <b style="color:var(--chain)">${esc(lk.chainLabel)}</b>`:""} ·
+            <a href="${esc(os)}" target="_blank" rel="noopener" style="color:var(--chain)">OpenSea ↗</a> ·
+            <a href="${esc(es)}" target="_blank" rel="noopener" style="color:var(--chain)">Explorer ↗</a>
+          </div>
+          <table style="width:100%"><tbody>${rows}</tbody></table>
+        </div>
+      </div>`;
+    toast(`Imported #${n.tokenId} — ${n.authenticityStatus}`);
+    try{ await boot(); }catch(_){}
+  }catch(e){
+    out.innerHTML=`<div class="empty" style="border-color:rgba(255,77,94,.4);color:var(--alert)">Import failed: ${esc(e.message)}</div>`;
+  }
+}
+$("#ocRun").addEventListener("click",ocImport);
+
 /* ================= MODULE 2 — TRANSACTION SIMULATION ================= */
 function renderSim(){
   renderWalletCard();
@@ -926,7 +1098,7 @@ function renderWalletCard(){
   $("#walletCard").innerHTML=S.wallet?`
     <div style="font-size:11px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase">Testnet wallet</div>
     <div class="addr">${esc(S.wallet)}</div>
-    <div class="bal">${S.balance.toFixed(3)} <small>Sepolia ETH (simulated)</small></div>`
+    <div class="bal">∞ <small>Sepolia ETH (simulated — unlimited for testing)</small></div>`
     :`<div class="empty">No wallet connected — click "Connect wallet" above to create a simulated testnet wallet.</div>`;
 }
 function renderTxTable(){
@@ -944,7 +1116,7 @@ $("#txFilter").addEventListener("input",renderTxTable);
 
 $("#walletBtn").addEventListener("click",()=>{
   if(S.wallet){S.wallet=null;$("#walletBtn").textContent="Connect wallet";toast("Wallet disconnected");}
-  else{S.wallet="0x"+[...Array(40)].map(()=>"0123456789abcdef"[Math.random()*16|0]).join("");S.balance=10;
+  else{S.wallet="0x"+[...Array(40)].map(()=>"0123456789abcdef"[Math.random()*16|0]).join("");S.balance=SIM_BALANCE;
     $("#walletBtn").textContent=shortAddr(S.wallet);toast("Simulated testnet wallet connected: "+shortAddr(S.wallet));}
   if(S.view==="sim")renderSim();
 });
@@ -988,7 +1160,9 @@ async function cancelList(id){
 async function buyNft(id){
   if(!S.wallet)return toast("Connect a wallet first","err");
   const n=S.nfts.find(x=>x.tokenId===id);
-  if(S.balance<n.priceEth)return toast("Insufficient simulated balance","err");
+  // Simulated wallet is intentionally unlimited — this is a fraud-detection demo,
+  // so running out of play money would only get in the way of testing.
+  if(S.balance<n.priceEth) S.balance=SIM_BALANCE;
   if(LIVE){
     try{const r=await api("/buy",{method:"POST",body:JSON.stringify({tokenId:id,buyerAddress:S.wallet})},30000);
       toast(`Purchased #${id} — tx ${shortAddr(r.txHash)}${r.simulated?" (simulated)":" on Sepolia"}`);
@@ -1054,10 +1228,83 @@ $("#pricePeriod").addEventListener("click",e=>{const b=e.target.closest("button"
   S.pricePeriod=+b.dataset.d;renderPriceHist();});
 
 /* ================= MODULE 4 — FRAUD DETECTION ================= */
+
+/* ============ ML wash-trade classifier (offline study, surfaced live) ============
+   Reads frontend/ml_results.json — regenerate with:
+     ml/.venv/Scripts/python.exe ml/export_for_dashboard.py
+   The model is trained OFFLINE; its metrics and predictions are served statically,
+   and its flagged wallets feed the same blacklist enforcement as the heuristics. */
+let mlData=null;
+async function renderML(){
+  if(mlData){ mlPaint(); return; }
+  try{
+    const r=await fetch("/ml_results.json",{cache:"no-store"});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    mlData=await r.json(); mlPaint();
+  }catch(e){
+    if($("#mlKpis")) $("#mlKpis").innerHTML=`<div class="empty" style="grid-column:1/-1">ML results not available — run <code>ml/.venv/Scripts/python.exe ml/export_for_dashboard.py</code> to generate <code>frontend/ml_results.json</code>.</div>`;
+    if($("#mlFlagged")) $("#mlFlagged").innerHTML="";
+  }
+}
+function mlPaint(){
+  const m=mlData.metrics||{}, ds=mlData.dataset||{}, c=mlData.confusion||{};
+  if($("#mlSource")) $("#mlSource").textContent=
+    `${ds.n_sales||"?"} real sales · ${(ds.collections||[]).join(" + ")} · ${ds.date_from||""} → ${ds.date_to||""}`;
+  const pct=v=>v==null?"–":(v*100).toFixed(1)+"%";
+  const cards=[
+    ["ROC-AUC", (m.roc_auc??0).toFixed(3), "ranking quality", m.roc_auc>=0.85?C.guard:C.amber],
+    ["Recall",  pct(m.recall),  "wash trades caught", C.alert],
+    ["Precision",pct(m.precision),"of flags are correct", C.amber],
+    ["CV AUC",  (m.cv_auc??0).toFixed(3)+" ±"+(m.cv_std??0).toFixed(3), "5-fold, overfit check", C.chain]
+  ];
+  $("#mlKpis").innerHTML=cards.map(x=>`<div class="kpi" style="--kc:${x[3]}"><div class="n" style="color:${x[3]}">${x[1]}</div><div class="l">${x[0]}</div><div class="d">${x[2]}</div></div>`).join("");
+
+  const fi=(mlData.feature_importance||[]);
+  const maxImp=Math.max(...fi.map(f=>f[1]),0.001);
+  $("#mlDetail").innerHTML=`
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div style="flex:1;min-width:210px">
+        <div style="font-size:11px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">Confusion matrix <span style="text-transform:none;letter-spacing:0">(n=${m.n_test||"?"} held-out)</span></div>
+        <table style="width:100%;font-size:12px">
+          <tr><td></td><td class="mono" style="color:var(--faint)">pred legit</td><td class="mono" style="color:var(--faint)">pred wash</td></tr>
+          <tr><td class="mono" style="color:var(--faint)">actual legit</td><td class="mono" style="color:var(--guard)">${c.tn??"–"}</td><td class="mono" style="color:var(--amber)">${c.fp??"–"} <small>FP</small></td></tr>
+          <tr><td class="mono" style="color:var(--faint)">actual wash</td><td class="mono" style="color:var(--alert)">${c.fn??"–"} <small>FN</small></td><td class="mono" style="color:var(--guard)">${c.tp??"–"}</td></tr>
+        </table>
+        <div style="font-size:11px;color:var(--faint);margin-top:8px;line-height:1.5">Train ${pct(m.train_acc)} vs test ${pct(m.test_acc)} — gap ${((( m.train_acc||0)-(m.test_acc||0))*100).toFixed(1)} pts (overfitting check).</div>
+      </div>
+      <div style="flex:1;min-width:210px">
+        <div style="font-size:11px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">Feature importance</div>
+        ${fi.map(f=>`<div style="margin-bottom:7px"><div style="display:flex;justify-content:space-between;font-size:11.5px"><span>${esc(f[0])}</span><span class="mono" style="color:var(--dim)">${f[1].toFixed(3)}</span></div>
+          <div class="meter" style="height:5px;border-radius:3px;background:rgba(140,160,190,.14);overflow:hidden;margin-top:3px"><i style="display:block;height:100%;width:${(f[1]/maxImp*100).toFixed(0)}%;background:var(--chain)"></i></div></div>`).join("")}
+      </div>
+    </div>`;
+
+  const fl=(mlData.flagged||[]);
+  $("#mlFlagged").innerHTML = fl.length ? fl.slice(0,12).map(f=>{
+    const banned=mgBanned[(f.seller||"").toLowerCase()];
+    const why=[]; if(f.is_self_transfer) why.push("self-transfer"); if(f.pair_trade_count>=3) why.push(f.pair_trade_count+"x pair trades");
+    return `<div style="padding:9px 0;border-bottom:1px dashed var(--line)">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span class="mono" style="font-size:11px;color:var(--ink)">${esc(shortAddr(f.seller))}</span>
+        <button class="btn sm" data-mlban="${esc(f.seller)}" style="border-color:${banned?'var(--guard)':'var(--alert)'};color:${banned?'var(--guard)':'var(--alert)'}">${banned?'Un-ban':'Ban'}</button>
+      </div>
+      <div style="font-size:10.5px;color:var(--faint);margin-top:3px">${esc(f.collection)} #${esc(String(f.tokenId))} · ${f.price_eth} ETH · ${esc(why.join(" · ")||"model prediction")}</div>
+    </div>`;}).join("") : `<div class="empty">No wallets flagged by the model.</div>`;
+
+  $("#mlFlagged").querySelectorAll("[data-mlban]").forEach(b=>b.addEventListener("click",async()=>{
+    const a=b.dataset.mlban, banned=mgBanned[a.toLowerCase()];
+    try{
+      if(banned) await api("/blacklist/"+a,{method:"DELETE"},8000);
+      else await api("/blacklist",{method:"POST",body:JSON.stringify({address:a,reason:"ML classifier: predicted wash trading"})},8000);
+      await mgLoadBlacklist(); mlPaint();
+      toast(banned?"Wallet un-banned":"Wallet banned (flagged by ML model)");
+    }catch(e){ toast("Failed: "+e.message,"err"); }
+  }));
+}
 function renderFraud(){
   [1,2,3,4].forEach(i=>{const r=$("#rule"+i);r.className="rule idle";r.querySelector(".st").textContent="IDLE";r.querySelector(".ev").textContent="";});
   $("#fraudScoreOut").textContent="";$("#fraudFormula").style.display="none";
-  renderFlagFeed();renderFreqChart();renderMarketGraph();
+  renderFlagFeed();renderFreqChart();renderMarketGraph();renderML();
 }
 function renderFlagFeed(){
   const all=[];S.nfts.forEach(n=>(n.flags||[]).forEach(f=>all.push({...f,tokenId:n.tokenId,name:n.name})));
@@ -1140,15 +1387,20 @@ async function renderRiskToken(recompute=false){
       <p>${esc(f.description)}</p></div>`).join("")
     :`<div class="empty">No flags — this NFT is clean across all three indicators.</div>`;
 }
-$("#riskSel").addEventListener("input",()=>renderRiskToken(false));
-$("#riskRun").addEventListener("click",()=>renderRiskToken(true));
+$("#riskSel").addEventListener("input",()=>{renderRiskToken(false);renderStack();});
+$("#riskRun").addEventListener("click",async()=>{await renderRiskToken(true);renderStack();});
 function renderStack(){
   const list=[...S.nfts].sort((a,b)=>a.tokenId-b.tokenId);
+  const selId=+$("#riskSel").value||list[0]?.tokenId;
   const g=k=>list.map(n=>n.risk?.breakdown?.contribution?.[k]??0);
+  // keep the whole-collection context, but make the token chosen above POP:
+  // full colour on its bar, every other bar dimmed, and an outline on the selection.
+  const col=base=>list.map(n=>n.tokenId===selId?base+"FF":base+"22");
+  const bw=list.map(n=>n.tokenId===selId?2:0);
   chart("stack",$("#chStack"),{type:"bar",data:{labels:list.map(n=>"#"+n.tokenId+" "+n.name),
-    datasets:[{label:"Authenticity ×0.40",data:g("authenticity"),backgroundColor:C.chain+"CC",borderRadius:4,maxBarThickness:30},
-      {label:"Fraud ×0.35",data:g("fraud"),backgroundColor:C.alert+"CC",borderRadius:4,maxBarThickness:30},
-      {label:"Price ×0.25",data:g("priceAnomaly"),backgroundColor:C.amber+"CC",borderRadius:4,maxBarThickness:30}]},
+    datasets:[{label:"Authenticity ×0.40",data:g("authenticity"),backgroundColor:col(C.chain),borderColor:C.chain,borderWidth:bw,borderRadius:4,maxBarThickness:30},
+      {label:"Fraud ×0.35",data:g("fraud"),backgroundColor:col(C.alert),borderColor:C.alert,borderWidth:bw,borderRadius:4,maxBarThickness:30},
+      {label:"Price ×0.25",data:g("priceAnomaly"),backgroundColor:col(C.amber),borderColor:C.amber,borderWidth:bw,borderRadius:4,maxBarThickness:30}]},
     options:base({x:{stacked:true,ticks:{maxRotation:38,minRotation:38}},y:{stacked:true,max:100,beginAtZero:true}})});
 }
 

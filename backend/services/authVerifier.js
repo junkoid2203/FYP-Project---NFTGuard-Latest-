@@ -82,15 +82,20 @@ async function verifyNft(tokenId) {
   let status = "Verified";
 
   // ---- Layer 1: contract compliance (steps 3-6, Fig 4.3) ----
-  const compliance = await blockchain.checkContractCompliance(nft.contractAddress);
+  // An imported mainnet token carries a REAL ERC-165 result observed at import
+  // time (services/onChainImporter.js) — use it instead of the simulated flag.
+  const compliance = (nft.external && nft.chainCompliance)
+    ? { ...nft.chainCompliance, checked: true }
+    : await blockchain.checkContractCompliance(nft.contractAddress);
   if (compliance.checked) {
     nft.erc721Compliant = Boolean(compliance.compliant);
     checks.push({
       layer: "Smart contract validation",
       pass: compliance.compliant,
-      detail: compliance.compliant
+      detail: (compliance.compliant
         ? `ERC-165 supportsInterface -> ERC-721: ${compliance.erc721}, ERC-1155: ${compliance.erc1155}`
-        : compliance.reason || "Contract does not implement ERC-721 / ERC-1155",
+        : compliance.reason || "Contract does not implement ERC-721 / ERC-1155")
+        + (compliance.source ? ` [${compliance.source}]` : ""),
     });
     if (!compliance.compliant) {
       authRisk = 100; // authenticity is binary: untrusted contract => no trust
@@ -128,15 +133,28 @@ async function verifyNft(tokenId) {
     checks.push({ layer: "IPFS metadata fetch", pass: false, detail: `Fetch failed: ${err.message}` });
   }
 
+  // Third-party mainnet contracts never stored an NFTGuard SHA-256 anchor, so there
+  // is no baseline to compare against. Report that honestly as NOT APPLICABLE
+  // instead of silently passing (or failing) the token.
+  const noAnchor = Boolean(nft.external) && !onChainHash;
+  if (noAnchor) {
+    checks.push({
+      layer: "Metadata integrity (SHA-256)",
+      pass: true,
+      na: true,
+      detail: "N/A — external contract stores no NFTGuard on-chain SHA-256 anchor, so tamper-vs-mint cannot be proven for this token",
+    });
+  }
+
   const hashMatch = Boolean(onChainHash && offChainHash && onChainHash.toLowerCase() === offChainHash.toLowerCase());
-  checks.push({
+  if (!noAnchor) checks.push({
     layer: "Metadata integrity (SHA-256)",
     pass: hashMatch,
     detail: hashMatch
       ? "Off-chain metadata hash matches on-chain anchor"
       : `MISMATCH — on-chain ${short(onChainHash)} vs off-chain ${short(offChainHash)}`,
   });
-  if (!hashMatch) {
+  if (!noAnchor && !hashMatch) {
     authRisk = 100; // tampered metadata destroys authenticity entirely
     if (status === "Verified") status = "Tampered";
     await FraudFlag.findOneAndUpdate(
@@ -152,8 +170,20 @@ async function verifyNft(tokenId) {
   if (!nft.imageHash && nft.image) {
     nft.imageHash = (await computeImagePHash(nft.image)) || nft.imageHash;
   }
+  // If no perceptual hash could be produced, the comparison never ran — report that
+  // honestly as N/A instead of "no similar assets found", which would be a pass the
+  // layer did not earn (e.g. APNG/SVG artwork Jimp cannot decode).
   const duplicates = await findDuplicates(tokenId, nft.imageHash);
-  checks.push({
+  if (!nft.imageHash) {
+    checks.push({
+      layer: "Duplicate detection (pHash)",
+      pass: true,
+      na: true,
+      detail: nft.image
+        ? "N/A — artwork could not be decoded (unsupported image format), so no perceptual hash exists to compare"
+        : "N/A — this token has no image to hash",
+    });
+  } else checks.push({
     layer: "Duplicate detection (pHash)",
     pass: duplicates.length === 0,
     detail: duplicates.length === 0

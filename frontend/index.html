@@ -100,6 +100,24 @@ section{max-width:1240px;margin:0 auto;padding:84px 4vw 20px}
   border-radius:10px;padding:9px 12px;font-size:13.5px;font-family:'Inter'}
 .filters input{min-width:220px}
 .filters select:focus,.filters input:focus{outline:none;border-color:var(--guard)}
+/* "My NFTs" owned-only toggle — restyled to match the filter pills (sibling-combinator driven) */
+.owned-toggle{position:relative;display:inline-flex;align-items:stretch;cursor:pointer;user-select:none}
+.owned-toggle input{position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none}
+.owned-toggle .ot-pill{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;
+  background:var(--panel-solid);border:1px solid var(--line-strong);border-radius:10px;
+  padding:9px 14px 9px 11px;font-size:13.5px;font-weight:500;color:var(--dim);
+  transition:border-color .16s,color .16s,background .16s,box-shadow .16s}
+.owned-toggle:hover .ot-pill{color:var(--ink);background:var(--raised)}
+.owned-toggle .tick{width:16px;height:16px;border-radius:5px;flex:0 0 auto;
+  border:1.6px solid var(--faint);display:inline-flex;align-items:center;justify-content:center;
+  transition:background .16s,border-color .16s}
+.owned-toggle .tick svg{width:10px;height:10px;fill:none;stroke:#03160C;stroke-width:3.6;
+  stroke-linecap:round;stroke-linejoin:round;opacity:0;transform:scale(.5);transition:opacity .16s,transform .16s}
+.owned-toggle input:checked ~ .ot-pill{border-color:var(--guard);color:var(--guard);
+  background:var(--guard-dim);box-shadow:inset 0 0 0 1px rgba(0,255,136,.22),0 0 14px -6px var(--guard)}
+.owned-toggle input:checked ~ .ot-pill .tick{background:var(--guard);border-color:var(--guard)}
+.owned-toggle input:checked ~ .ot-pill .tick svg{opacity:1;transform:scale(1)}
+.owned-toggle input:focus-visible ~ .ot-pill{outline:2px solid var(--guard);outline-offset:2px}
 
 /* ---------- NFT grid ---------- */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:18px}
@@ -260,6 +278,21 @@ section{max-width:1240px;margin:0 auto;padding:84px 4vw 20px}
 .field label{display:block;font-size:12px;color:var(--dim);margin-bottom:6px;letter-spacing:.04em}
 .field input{width:100%;background:var(--void);border:1px solid var(--line-strong);color:var(--ink);border-radius:10px;padding:10px 12px;font-size:14px}
 .field input:focus{outline:none;border-color:var(--guard)}
+/* select — match the dark inputs instead of falling back to the white OS control */
+.field select{width:100%;background:var(--void);border:1px solid var(--line-strong);color:var(--ink);
+  border-radius:10px;padding:10px 40px 10px 12px;font-size:14px;font-family:'Inter';cursor:pointer;
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235B6A80' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 13px center}
+.field select:focus{outline:none;border-color:var(--guard)}
+.field select option{background:var(--panel-solid);color:var(--ink)}
+/* file picker — theme the native "Choose File" button so it stops rendering white */
+.field input[type=file]{padding:7px 12px;cursor:pointer}
+.field input[type=file]::file-selector-button,
+.field input[type=file]::-webkit-file-upload-button{font-family:'Space Grotesk';font-weight:600;font-size:12.5px;
+  margin-right:12px;padding:7px 13px;border-radius:8px;border:1px solid var(--line-strong);
+  background:var(--raised);color:var(--ink);cursor:pointer;transition:border-color .15s,color .15s}
+.field input[type=file]::file-selector-button:hover{border-color:var(--guard);color:var(--guard)}
 
 /* toast */
 #toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);z-index:99;opacity:0;
@@ -499,8 +532,9 @@ section{padding:56px 4vw 20px}
       <option value="risk-desc">Risk: high → low</option>
       <option value="risk-asc">Risk: low → high</option>
     </select>
-    <label id="fOwnedWrap" style="display:inline-flex;align-items:center;gap:7px;color:var(--faint);font-size:13px;cursor:pointer;user-select:none;padding:0 4px" title="Show only NFTs owned by your connected wallet">
-      <input type="checkbox" id="fOwned" style="accent-color:var(--guard);width:15px;height:15px;cursor:pointer"> My NFTs
+    <label id="fOwnedWrap" class="owned-toggle" title="Show only NFTs owned by your connected wallet">
+      <input type="checkbox" id="fOwned">
+      <span class="ot-pill"><span class="tick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span>My NFTs</span>
     </label>
   </div>
   <div class="grid" id="nftGrid"></div>
@@ -542,14 +576,6 @@ section{padding:56px 4vw 20px}
       <input id="mImgUrl" placeholder="Paste an image URL…">
       <input id="mImgFile" type="file" accept="image/*" style="margin-top:8px;color:var(--faint);font-size:13px">
       <div id="mImgPreview" style="display:none;margin-top:10px"><img id="mImgPreviewImg" alt="preview" style="max-width:160px;max-height:160px;border-radius:12px;border:1px solid rgba(140,160,190,.18)"></div>
-    </div>
-    <div class="field"><label for="mFlaw">Authenticity (demo / testing)</label>
-      <select id="mFlaw">
-        <option value="">Authentic — passes every check (→ Verified)</option>
-        <option value="tampered">Tampered metadata — hash won't match its anchor (→ Unverified)</option>
-        <option value="noncompliant">Non-compliant contract — fails the ERC-721 check (→ Unverified)</option>
-      </select>
-      <div style="font-size:12px;color:var(--faint);margin-top:6px">A clean mint is always <b>Verified</b>. Pick a flaw to watch the authenticity engine catch a fake.</div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn primary" id="mintBtn">Mint (simulated)</button>
@@ -1060,6 +1086,7 @@ async function boot(){
   try{
     const h = await api("/health");
     LIVE = true;
+    state.mode = h.mode;                       // "simulated" | "live" — gates the real-ETH checks
     $("#modePill").textContent = h.mode; $("#modePill").classList.add("live");
     $("#ftContract").textContent = h.contract || "simulated mode";
     const [stats,nfts] = await Promise.all([api("/stats"), api("/nfts")]);
@@ -1179,9 +1206,17 @@ async function openDetail(id){
     ["Authenticity risk", b.authRisk, b.contribution.authenticity, b.weights.authenticity, "var(--chain)"],
     ["Fraud heuristics",  b.fraudRisk, b.contribution.fraud, b.weights.fraud, "var(--alert)"],
     ["Price anomaly",     b.priceRisk, b.contribution.priceAnomaly, b.weights.priceAnomaly, "var(--amber)"]];
+  // When one indicator is severe enough to override the weighted average, say so —
+  // otherwise the sum of the three contributions doesn't visibly add up to the total.
+  const escl = b.escalation;
+  const weightedLine = `<div class="bb"><div class="t"><span>Weighted subtotal <small style="color:var(--faint)">0.4 + 0.35 + 0.25</small></span><b>${b.weightedScore ?? r.unifiedScore}</b></div>
+     <div class="bar"><i style="width:${b.weightedScore ?? r.unifiedScore}%;background:var(--faint)"></i></div></div>`;
+  const esclLine = escl ? `<div class="bb"><div class="t"><span style="color:var(--amber)">⚠ Severe-indicator escalation</span><b style="color:var(--amber)">${escl.raisedFrom} → ${r.unifiedScore}</b></div>
+     <div style="font-size:11.5px;color:var(--faint);margin-top:3px;line-height:1.5">One indicator scored <b>${escl.strongestIndicator}/100</b> (${escl.level}). A weighted average would dilute a single decisive red flag, so the score is raised to the ${escl.level} floor.</div></div>` : "";
   $("#mBars").innerHTML = rows.map(([t,v,c,w,col])=>`
     <div class="bb"><div class="t"><span>${t} <small style="color:var(--faint)">× ${w}</small></span><b>${v} → +${c}</b></div>
     <div class="bar"><i style="width:${v}%;background:${col}"></i></div></div>`).join("") +
+    (escl ? weightedLine + esclLine : "") +
     `<div class="bb"><div class="t"><span>Unified score</span><b style="color:${rc}">${r.unifiedScore} / 100</b></div>
      <div class="bar"><i style="width:${r.unifiedScore}%;background:${rc}"></i></div></div>`;
   // authenticity checks
@@ -1373,6 +1408,9 @@ function openCheckout(n){
   if(!state.wallet){ toast("Connect a wallet first","err"); openWalletModal(); return; }
   const price=n.priceEth||0, usd=(price*ETH_USD).toLocaleString(undefined,{maximumFractionDigits:2});
   const lvl=n.risk&&n.risk.riskLevel, risky=lvl==="Medium"||lvl==="High";
+  // Assets that fail authenticity verification are not tradeable at all (the backend
+  // rejects them too — this just stops the user before they try).
+  const blocked=["Tampered","Duplicate","NonCompliant"].includes(n.authenticityStatus);
   const reasons=(n.flags||[]).map(f=>f.flagType.replaceAll("_"," ").toLowerCase()).slice(0,3).join(", ")||"suspicious price / trading patterns";
   const img=n.image?`<img src="${esc(n.image)}" alt="" onerror="this.remove()">`:tokenArt(n.tokenId,120);
   $("#coBody").innerHTML=`
@@ -1391,15 +1429,27 @@ function openCheckout(n){
       <div>
         <div class="co-label">Payment</div>
         <div class="co-pay"><span class="co-dot"></span><span class="mono">${esc(shortAddr(state.wallet))}</span><span class="co-badge">Connected</span></div>
-        ${["Tampered","Duplicate","NonCompliant"].includes(n.authenticityStatus)?`<div class="co-warn">⚠ Authenticity: <b>${esc(n.authenticityStatus)}</b> — ${n.authenticityStatus==="Tampered"?"metadata doesn't match its on-chain hash (possible fake)":n.authenticityStatus==="Duplicate"?"image matches another NFT (likely copy-mint)":"contract failed the ERC-721 standard check"}. NFTGuard advises against buying.</div>`:""}
-        ${risky?`<div class="co-warn">⚠ <b>${lvl} risk</b> (score ${n.risk.unifiedScore}/100)${reasons?`: ${esc(reasons)}`:""}. Trading patterns look suspicious — buy with caution.</div>`:""}
+        ${blocked?`<div class="co-warn" style="border-color:rgba(255,77,94,.5);background:var(--alert-dim)">⛔ <b>Purchase blocked — ${esc(n.authenticityStatus)}</b><br>${n.authenticityStatus==="Tampered"?"The metadata doesn't match its on-chain hash (possible fake)":n.authenticityStatus==="Duplicate"?"The image matches another minted NFT (likely copy-mint)":"The contract failed the ERC-721 standard check"}. NFTGuard does not allow assets that fail authenticity verification to be traded.</div>`:""}
+        ${(!blocked&&risky)?`<div class="co-warn">⚠ <b>${lvl} risk</b> (score ${n.risk.unifiedScore}/100)${reasons?`: ${esc(reasons)}`:""}. Trading patterns look suspicious — review before you buy.</div>
+        <label style="display:flex;gap:9px;align-items:flex-start;margin-top:11px;font-size:12.5px;color:var(--dim);cursor:pointer;user-select:none">
+          <input type="checkbox" id="coAck" style="accent-color:var(--amber);width:15px;height:15px;margin-top:1px;flex:none">
+          <span>I understand this NFT is flagged <b>${lvl} risk</b> and I still want to buy it.</span></label>`:""}
         <div id="coStatus"></div>
-        <button class="btn primary wc-full" id="coConfirm" style="margin-top:14px">Complete purchase</button>
-        <div class="co-fine">Simulated purchase — records a SALE transaction and transfers ownership to your wallet.</div>
+        <button class="btn primary wc-full" id="coConfirm" style="margin-top:14px"${blocked?" disabled":""}>${blocked?"Purchase blocked":"Complete purchase"}</button>
+        <div class="co-fine">${blocked?"This listing failed NFTGuard's authenticity checks and cannot be purchased.":"Simulated purchase — records a SALE transaction and transfers ownership to your wallet."}</div>
       </div>
     </div>`;
   $("#coConfirm").onclick=confirmPurchase;
-  // real-wallet balance check (mirrors the "not enough funds" state)
+  // Medium/High risk requires an explicit acknowledgement before the button unlocks.
+  if(!blocked&&risky&&$("#coAck")){
+    const btn=$("#coConfirm"), ack=$("#coAck");
+    btn.disabled=true; btn.style.opacity=".55";
+    ack.addEventListener("change",()=>{ btn.disabled=!ack.checked; btn.style.opacity=ack.checked?"":".55"; });
+  }
+  // Real-wallet balance check. A connected MetaMask wallet is always held to its ACTUAL
+  // on-chain balance, in every mode — "unlimited test ETH" is a simulated-wallet
+  // convenience only, and letting a real wallet spend money it does not have would
+  // misrepresent what the marketplace would do on-chain.
   if(state.walletReal && window.ethereum){
     window.ethereum.request({method:"eth_getBalance",params:[state.wallet,"latest"]}).then(wei=>{
       const bal=parseInt(wei,16)/1e18;
@@ -1407,11 +1457,38 @@ function openCheckout(n){
         const b=$("#coConfirm"); if(b){ b.disabled=true; b.textContent="Insufficient funds"; } }
     }).catch(()=>{});
   }
+  // listing-vs-market check — proactive mitigation: warn BEFORE the buyer spends if the
+  // ask sits far above the collection's typical sale price (an anomalous *sale* only flags
+  // after the fact, so this catches an overpriced *listing* up front).
+  if(LIVE && n.collectionName && price>0){
+    api("/price/"+encodeURIComponent(n.collectionName),{},8000).then(d=>{
+      const med=d&&d.stats&&d.stats.medianPrice;
+      if(med>0){ const ratio=price/med;
+        if(ratio>=3){
+          const el=document.createElement("div"); el.className="co-warn";
+          el.innerHTML=`⚠ <b>Overpriced vs market</b>: this ${price} ETH ask is ~${ratio.toFixed(1)}× the collection's median sale (${med.toFixed(2)} ETH). You would pay far above recent trades — consider making an <b>offer</b> below the ask instead of buying now.`;
+          const s=$("#coStatus"); if(s&&s.parentNode) s.parentNode.insertBefore(el,s);
+        }
+      }
+    }).catch(()=>{});
+  }
   $("#checkoutOverlay").classList.add("open"); document.body.style.overflow="hidden";
 }
 async function confirmPurchase(){
   const n=state.current; if(!n) return;
   const btn=$("#coConfirm"); btn.disabled=true; btn.textContent="Processing…";
+  // Re-check funds at click time: the balance lookup in openCheckout is async, so a fast
+  // click could otherwise slip through before it returns.
+  if(state.walletReal && window.ethereum){
+    try{
+      const wei=await window.ethereum.request({method:"eth_getBalance",params:[state.wallet,"latest"]});
+      const bal=parseInt(wei,16)/1e18;
+      if(bal < (n.priceEth||0)){
+        $("#coStatus").innerHTML=`<div class="co-insuff">⊖ Not enough funds — this wallet holds ${bal.toFixed(4)} ETH but the item costs ${n.priceEth} ETH</div>`;
+        btn.textContent="Insufficient funds"; toast("Not enough ETH in the connected wallet","err"); return;
+      }
+    }catch(_){}
+  }
   if(!LIVE){
     n.transactions=n.transactions||[];
     n.transactions.push({txType:"SALE",senderAddress:n.ownerAddress,recipientAddress:state.wallet,priceEth:n.priceEth,timestamp:new Date().toISOString(),txHash:"0xsim…"});
@@ -1567,20 +1644,19 @@ if($("#mImgUrl")) $("#mImgUrl").addEventListener("input",()=>{
 $("#mintBtn").addEventListener("click",async()=>{
   const name=$("#mName").value.trim();
   const image=$("#mImgUrl").value.trim()||mintImgData||"";
-  const demoFlaw=$("#mFlaw")?$("#mFlaw").value:"";
   if(!name){toast("Give the NFT a name","err");return;}
   if(!state.wallet){toast("Connect a wallet first","err");return;}
   if(state.walletFlagged){toast("⚠ This wallet is flagged for wash trading — minting is blocked","err");return;}
   if(LIVE){
-    try{ const r=await api("/mint",{method:"POST",body:JSON.stringify({name,image,walletAddress:state.wallet,demoFlaw})},30000);
+    try{ const r=await api("/mint",{method:"POST",body:JSON.stringify({name,image,walletAddress:state.wallet})},30000);
       const st=r.nft.authenticityStatus||"Verified";
       toast(`Minted #${r.nft.tokenId} — ${st}${r.simulated?" (simulated)":" on Sepolia"}. Open it to list for sale.`);
-      $("#mName").value="";$("#mImgUrl").value="";mintImgData="";$("#mImgPreview").style.display="none";if($("#mImgFile"))$("#mImgFile").value="";if($("#mFlaw"))$("#mFlaw").value="";
+      $("#mName").value="";$("#mImgUrl").value="";mintImgData="";$("#mImgPreview").style.display="none";if($("#mImgFile"))$("#mImgFile").value="";
       await refreshAfterAction(r.nft.tokenId);
     }catch(e){toast("Mint failed: "+e.message,"err");}
   }else{
     const id=Math.max(0,...state.nfts.map(n=>n.tokenId))+1;
-    const st=demoFlaw==="tampered"?"Tampered":demoFlaw==="noncompliant"?"NonCompliant":"Verified";
+    const st="Verified";
     state.nfts.push({tokenId:id,name,image,priceEth:0,listed:false,collectionName:"NFTGuard Collection",
       authenticityStatus:st,ownerAddress:state.wallet,contractAddress:"0xSIMULATED",metadataHash:"0xnew…",
       risk:{unifiedScore:st==="Verified"?0:40,riskLevel:st==="Verified"?"Low":"Medium",breakdown:{authRisk:st==="Verified"?0:100,fraudRisk:0,priceRisk:0,weights:{authenticity:.4,fraud:.35,priceAnomaly:.25},contribution:{authenticity:st==="Verified"?0:40,fraud:0,priceAnomaly:0}}},

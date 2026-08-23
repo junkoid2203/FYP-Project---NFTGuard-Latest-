@@ -32,11 +32,42 @@ const { computeUnifiedRisk } = require("../services/riskScoreEngine");
 const { investigateWallet } = require("../services/walletInvestigator");
 const { analyzeMarketGraph } = require("../services/graphAnalyzer");
 const { handleChat } = require("../services/chatAssistant");
+const { importOnChainNft } = require("../services/onChainImporter");
 
 const wrap = fn => (req, res) => fn(req, res).catch(err => {
   console.error(err);
   res.status(500).json({ error: err.message });
 });
+
+/**
+ * Marketplace-wide enforcement (server side — the frontend checks are only a UX
+ * courtesy and can be bypassed by calling the API directly).
+ *
+ * A wallet banned for wash trading must not be able to mint, list, buy or make
+ * offers, otherwise "banning" is cosmetic.
+ */
+async function blockedWallet(address) {
+  const a = String(address || "").trim().toLowerCase();
+  if (!a) return null;
+  const banned = await Blacklist.findOne({ address: a }).lean();
+  if (!banned) return null;
+  return `Wallet ${a.slice(0, 6)}…${a.slice(-4)} is blacklisted for wash trading`
+       + (banned.reason ? ` (${banned.reason})` : "")
+       + " — minting, listing, buying and offers are disabled for this wallet.";
+}
+
+/** Authenticity failures are not tradeable: NFTGuard blocks the sale outright. */
+const UNSELLABLE = ["Tampered", "Duplicate", "NonCompliant"];
+function blockedAsset(nft) {
+  if (!UNSELLABLE.includes(nft.authenticityStatus)) return null;
+  const why = nft.authenticityStatus === "Tampered"
+      ? "its metadata does not match its on-chain hash (possible fake)"
+    : nft.authenticityStatus === "Duplicate"
+      ? "its image matches another minted asset (likely copy-mint)"
+      : "its contract failed the ERC-721/1155 standard check";
+  return `#${nft.tokenId} is flagged ${nft.authenticityStatus} — ${why}. `
+       + "NFTGuard blocks trading of assets that fail authenticity verification.";
+}
 
 // ---------------------------------------------------------------- health
 router.get("/health", wrap(async (req, res) => {
@@ -96,6 +127,9 @@ router.post("/mint", wrap(async (req, res) => {
   const { name, description = "", image = "", collectionName = "NFTGuard Collection", walletAddress, demoFlaw = "" } = req.body;
   if (!name || !walletAddress) return res.status(400).json({ error: "name and walletAddress are required" });
 
+  const mintBan = await blockedWallet(walletAddress);
+  if (mintBan) return res.status(403).json({ error: mintBan });
+
   const last = await Nft.findOne().sort({ tokenId: -1 }).lean();
   let tokenId = (last ? last.tokenId : 0) + 1;
 
@@ -148,6 +182,11 @@ router.post("/list", wrap(async (req, res) => {
   if (!nft) return res.status(404).json({ error: "NFT not found" });
   if (!priceEth || priceEth <= 0) return res.status(400).json({ error: "priceEth must be > 0" });
 
+  const listBan = await blockedWallet(nft.ownerAddress);
+  if (listBan) return res.status(403).json({ error: listBan });
+  const listBlocked = blockedAsset(nft);
+  if (listBlocked) return res.status(403).json({ error: listBlocked });
+
   const chain = await blockchain.listOnChain(tokenId, priceEth);
   nft.listed = true; nft.priceEth = priceEth;
   await nft.save();
@@ -157,7 +196,14 @@ router.post("/list", wrap(async (req, res) => {
     senderAddress: nft.ownerAddress, recipientAddress: nft.ownerAddress,
     priceEth, txHash: chain.txHash, simulated: chain.simulated,
   });
-  res.json({ ok: true, txHash: chain.txHash, simulated: chain.simulated });
+
+  // Re-score immediately: the asking price feeds the price-anomaly indicator, so
+  // listing (or re-pricing) far outside the collection's range must move the risk
+  // score right away — not only after someone has already bought at that price.
+  let risk = null;
+  try { risk = await computeUnifiedRisk(tokenId, { reverify: false }); } catch (e) { console.warn("[list] risk:", e.message); }
+  res.json({ ok: true, txHash: chain.txHash, simulated: chain.simulated,
+             risk: risk && { unifiedScore: risk.unifiedScore, riskLevel: risk.riskLevel, priceRisk: risk.breakdown.priceRisk } });
 }));
 
 // ---------------------------------------------------------------- buy (FR 2.4 / 2.5)
@@ -167,6 +213,14 @@ router.post("/buy", wrap(async (req, res) => {
   if (!nft) return res.status(404).json({ error: "NFT not found" });
   if (!nft.listed) return res.status(400).json({ error: "NFT is not listed for sale" });
   if (!buyerAddress) return res.status(400).json({ error: "buyerAddress is required" });
+
+  // Buyer banned, seller banned, or the asset itself failed authenticity → no sale.
+  const buyerBan = await blockedWallet(buyerAddress);
+  if (buyerBan) return res.status(403).json({ error: buyerBan });
+  const sellerBan = await blockedWallet(nft.ownerAddress);
+  if (sellerBan) return res.status(403).json({ error: "Seller blocked — " + sellerBan });
+  const assetBlocked = blockedAsset(nft);
+  if (assetBlocked) return res.status(403).json({ error: assetBlocked });
 
   const chain = await blockchain.buyOnChain(tokenId, nft.priceEth);
   const seller = nft.ownerAddress;
@@ -192,6 +246,21 @@ router.get("/transactions/:tokenId", wrap(async (req, res) => {
 // ---------------------------------------------------------------- verify (FR 1.x, Fig 4.3)
 router.post("/verify/:tokenId", wrap(async (req, res) => {
   res.json(await verifyNft(Number(req.params.tokenId)));
+}));
+
+// ------------------------------------- import a REAL mainnet NFT + verify it
+// Demonstrates genuine detection on live data: Layer 1 makes a real ERC-165 call,
+// Layer 3 hashes the real artwork (import the same token twice -> Duplicate).
+router.post("/import-onchain", wrap(async (req, res) => {
+  const { contract, tokenId } = req.body || {};
+  if (!contract || tokenId === undefined || tokenId === "") {
+    return res.status(400).json({ error: "contract and tokenId are required" });
+  }
+  const { nft, links } = await importOnChainNft(String(contract).trim(), String(tokenId).trim());
+  const verification = await verifyNft(nft.tokenId);
+  try { await computeUnifiedRisk(nft.tokenId, { reverify: false }); } catch (_) {}
+  const fresh = await Nft.findOne({ tokenId: nft.tokenId }).lean();
+  res.json({ ok: true, nft: fresh, verification, links });
 }));
 
 // ---------------------------------------------------------------- fraud (FR 4.x, Fig 4.12)
@@ -294,6 +363,10 @@ router.post("/offers", wrap(async (req, res) => {
     return res.status(400).json({ error: "tokenId, fromAddress and priceEth (> 0) are required" });
   const nft = await Nft.findOne({ tokenId: Number(tokenId) });
   if (!nft) return res.status(404).json({ error: "NFT not found" });
+  const offerBan = await blockedWallet(fromAddress);
+  if (offerBan) return res.status(403).json({ error: offerBan });
+  const offerBlocked = blockedAsset(nft);
+  if (offerBlocked) return res.status(403).json({ error: offerBlocked });
   if (nft.ownerAddress && nft.ownerAddress.toLowerCase() === String(fromAddress).toLowerCase())
     return res.status(400).json({ error: "You already own this NFT" });
   // An offer is a bid to negotiate a LOWER price. Paying the asking price is what
@@ -311,6 +384,8 @@ router.post("/unlist", wrap(async (req, res) => {
   if (!nft) return res.status(404).json({ error: "NFT not found" });
   nft.listed = false;
   await nft.save();
+  // Delisting removes the anomalous asking price, so the listing flag must clear too.
+  try { await computeUnifiedRisk(Number(tokenId), { reverify: false }); } catch (_) {}
   res.json({ ok: true });
 }));
 

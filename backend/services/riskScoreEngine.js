@@ -48,11 +48,47 @@ async function computeUnifiedRisk(tokenId, { reverify = true } = {}) {
   const price = await priceRiskForToken(tokenId);
 
   const w = thresholds.riskWeights;
-  const unified = Math.round(
+  const weighted = Math.round(
     w.authenticity * auth.authRisk +
     w.fraud * fraud.fraudRisk +
     w.priceAnomaly * price.priceRisk
   );
+
+  // Severe-indicator escalation. The weighted average alone caps any single signal at
+  // its weight (price 100 -> 25 = "Low"; a proven fake -> 40 = "Medium"), which is wrong
+  // for a fraud system: one decisive red flag must be able to raise the verdict by itself.
+  //
+  // Each indicator has its OWN curve, because the same number does not mean the same
+  // thing across them: fraudRisk 90 is two self-transfers (routine in real mainnet data),
+  // while priceRisk 90 is an asset listed at ~5x its collection median. Shared bands also
+  // produced a cliff — 97 ETH scored 55 while 100 ETH scored 75. The curves are
+  // interpolated, so the score now rises smoothly with severity.
+  const esc = thresholds.riskLevels.escalation || {};
+  const curves = esc.curves || {};
+  const floorFor = (value, curve) => {
+    if (!Array.isArray(curve) || !curve.length || !(value > 0)) return 0;
+    if (value < curve[0][0]) return 0;                       // below the first anchor: no floor
+    for (let i = 0; i < curve.length; i++) {
+      const [x, y] = curve[i];
+      if (value === x) return y;
+      if (value < x) {
+        const [px, py] = curve[i - 1];
+        return py + ((value - px) / (x - px)) * (y - py);    // linear between anchors
+      }
+    }
+    return curve[curve.length - 1][1];                       // at/above the last anchor
+  };
+
+  const candidates = [
+    { indicator: "authenticity", value: auth.authRisk,  floor: floorFor(auth.authRisk,  curves.authenticity) },
+    { indicator: "fraud",        value: fraud.fraudRisk, floor: floorFor(fraud.fraudRisk, curves.fraud) },
+    { indicator: "price",        value: price.priceRisk, floor: floorFor(price.priceRisk, curves.price) },
+  ];
+  const top = candidates.reduce((a, b) => (b.floor > a.floor ? b : a), candidates[0]);
+  const floor = Math.round(top.floor);
+  const escalatedBy = floor >= 70 ? "critical" : floor >= 55 ? "severe" : "moderate";
+
+  const unified = Math.max(weighted, floor || 0);
   const riskLevel = levelOf(unified);
 
   const breakdown = {
@@ -65,6 +101,11 @@ async function computeUnifiedRisk(tokenId, { reverify = true } = {}) {
       fraud: Number((w.fraud * fraud.fraudRisk).toFixed(1)),
       priceAnomaly: Number((w.priceAnomaly * price.priceRisk).toFixed(1)),
     },
+    weightedScore: weighted,
+    // present only when a single indicator lifted the score above the weighted sum
+    escalation: (floor > weighted)
+      ? { level: escalatedBy, indicator: top.indicator, strongestIndicator: top.value, floor, raisedFrom: weighted }
+      : null,
   };
 
   await RiskScore.findOneAndUpdate(

@@ -12,6 +12,7 @@ const flagSchema = new mongoose.Schema(
         "SELF_TRANSFER",
         "RAPID_PRICE_ESCALATION",
         "PRICE_ANOMALY",
+        "LISTING_PRICE_ANOMALY",
         "METADATA_TAMPERED",
         "DUPLICATE_ASSET",
         "NON_COMPLIANT_CONTRACT",
