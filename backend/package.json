@@ -9,7 +9,8 @@
     "seed": "node scripts/seedDemo.js",
     "test": "node scripts/testAuth.js",
     "check": "node scripts/checkAuth.js",
-    "clear-imports": "node scripts/clearImports.js"
+    "clear-imports": "node scripts/clearImports.js",
+    "test:fraud": "node scripts/testFraudRules.js"
   },
   "dependencies": {
     "axios": "^1.7.2",

@@ -389,6 +389,95 @@ plt.tight_layout(); plt.show()
 """)
 
 md(r"""
+### 12.5 Do the heuristic rules and the ML model agree?
+The rules are deterministic and explainable; the model is statistical. If they broadly
+agree, that is mutual corroboration. Where they disagree is more interesting, because it
+shows what each approach can see that the other cannot.
+
+**Circularity warning, stated up front:** the weak labels were defined as
+`is_self_transfer OR pair_trade_count >= 3`, i.e. Rules 3 and 1. So those two rules agree
+with the labels **by construction** and their "accuracy" is meaningless. The honest
+questions are (a) can the model recover those flags from *independent behavioural
+features*, and (b) what do Rules 2 and 4, which are **not** in the labels, add?
+""")
+code(r"""
+# per-sale rule flags (Rules 1 and 3 are sale-level; 2 and 4 are sequence-level)
+rule1 = (df["pair_trade_count"] >= WT["loopPairMinCount"]) & (df["is_self_transfer"] == 0)
+rule3 = df["is_self_transfer"] == 1
+# Rule 4 - a sale that jumped >= minIncreasePct over the token's previous sale, in-window
+d2 = df.sort_values(["tokenId", "dt"]).copy()
+prev_p = d2.groupby("tokenId")["price_eth"].shift()
+gap_min = d2.groupby("tokenId")["dt"].diff().dt.total_seconds() / 60
+rule4 = ((d2["price_eth"] - prev_p) / prev_p >= RPE["minIncreasePct"]) & (gap_min <= RPE["windowMinutes"])
+rule4 = rule4.reindex(df.index).fillna(False)
+
+flags = pd.DataFrame({"R1_loop": rule1, "R3_self": rule3, "R4_escalation": rule4})
+print("how often each rule fires across %d sales:" % len(df))
+for c_ in flags.columns:
+    print("   %-15s %5d  (%.1f%%)" % (c_, flags[c_].sum(), 100 * flags[c_].mean()))
+
+print()
+print("rule OVERLAP matrix (sales where both fire) - the diagonal is each rule's own count:")
+ov = pd.DataFrame({a: {b: int((flags[a] & flags[b]).sum()) for b in flags.columns} for a in flags.columns})
+print(ov.to_string())
+print()
+print("R1 and R3 overlap =", int((flags["R1_loop"] & flags["R3_self"]).sum()),
+      "-> the loop rule now excludes self-transfers, so the same event is never penalised twice.")
+""")
+code(r"""
+# model prediction for EVERY sale, then compare with the rules
+df["ml_pred"]  = best.predict(df[FEATURES])
+df["ml_proba"] = best.predict_proba(df[FEATURES])[:, 1]
+rule_any = flags.any(axis=1)
+
+agree_both   = int(( rule_any &  (df["ml_pred"] == 1)).sum())
+rules_only   = int(( rule_any &  (df["ml_pred"] == 0)).sum())
+model_only   = int((~rule_any &  (df["ml_pred"] == 1)).sum())
+neither      = int((~rule_any &  (df["ml_pred"] == 0)).sum())
+tot = len(df)
+print("rules vs model, across all %d sales" % tot)
+print("   both flag it          : %5d  (%.1f%%)" % (agree_both, 100*agree_both/tot))
+print("   rules only            : %5d  (%.1f%%)" % (rules_only, 100*rules_only/tot))
+print("   model only            : %5d  (%.1f%%)  <- caught WITHOUT any rule firing" % (model_only, 100*model_only/tot))
+print("   neither               : %5d  (%.1f%%)" % (neither, 100*neither/tot))
+print("   overall agreement     : %.1f%%" % (100*(agree_both+neither)/tot))
+
+fig, ax = plt.subplots(1, 2, figsize=(12, 4))
+sns.heatmap([[neither, model_only], [rules_only, agree_both]], annot=True, fmt="d",
+            cmap="Blues", cbar=False, ax=ax[0],
+            xticklabels=["model: legit", "model: wash"],
+            yticklabels=["rules: quiet", "rules: fired"])
+ax[0].set_title("Rule vs model agreement")
+ax[1].hist(df.loc[rule_any, "ml_proba"], bins=25, alpha=.7, label="rules fired", color="#E45756")
+ax[1].hist(df.loc[~rule_any, "ml_proba"], bins=25, alpha=.7, label="rules quiet", color="#54A24B")
+ax[1].set_xlabel("model P(wash)"); ax[1].set_ylabel("sales"); ax[1].legend()
+ax[1].set_title("Model confidence, split by whether a rule fired")
+plt.tight_layout(); plt.show()
+""")
+code(r"""
+# what each rule contributes on its own, measured against the weak label
+from sklearn.metrics import precision_score, recall_score
+print("%-16s %9s %8s %8s   %s" % ("rule", "precision", "recall", "fires", "note"))
+notes = {"R1_loop": "IN the label definition - circular",
+         "R3_self": "IN the label definition - circular",
+         "R4_escalation": "NOT in the labels - independent signal"}
+for c_ in flags.columns:
+    pr = precision_score(df["label_wash"], flags[c_], zero_division=0)
+    rc = recall_score(df["label_wash"], flags[c_], zero_division=0)
+    print("%-16s %9.3f %8.3f %8d   %s" % (c_, pr, rc, flags[c_].sum(), notes[c_]))
+
+print()
+print("model alone : precision %.3f  recall %.3f"
+      % (precision_score(df["label_wash"], df["ml_pred"]),
+         recall_score(df["label_wash"], df["ml_pred"])))
+print()
+print("Reading this honestly: R1 and R3 score near 1.0 because they DEFINE the labels.")
+print("R4 is the meaningful row - it fires on sales the labels never marked, so it is")
+print("genuinely additional evidence rather than a restatement of the same signal.")
+""")
+
+
+md(r"""
 ## 13. Threshold sensitivity analysis
 The Z-threshold is a **design choice**, not a measurement. Iglewicz & Hoaglin (1993)
 recommend 3.5 for the modified Z-score; this project uses **2.5**, deliberately more

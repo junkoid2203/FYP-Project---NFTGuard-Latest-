@@ -23,7 +23,13 @@ function detectBuyerSellerLoop(txs) {
   const counts = {};
   for (const t of txs) {
     if (t.txType !== "SALE" && t.txType !== "TRANSFER") continue;
-    const k = pairKey(t.senderAddress, t.recipientAddress);
+    // A wallet trading with ITSELF is not a two-party buyer-seller loop — that is
+    // Rule 3's job. Without this guard pairKey(A,A) forms a "pair", so three
+    // self-transfers fired BOTH rules and the same event was penalised twice.
+    const from = String(t.senderAddress).toLowerCase();
+    const to = String(t.recipientAddress).toLowerCase();
+    if (from === to) continue;
+    const k = pairKey(from, to);
     counts[k] = (counts[k] || 0) + 1;
   }
   const loops = Object.entries(counts).filter(([, n]) => n >= min);
