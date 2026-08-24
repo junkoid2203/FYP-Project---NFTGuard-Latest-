@@ -258,7 +258,16 @@ router.post("/buy", wrap(async (req, res) => {
   });
   await cancelOwnOffers(tokenId, buyerAddress);
 
-  res.json({ ok: true, transaction: tx, txHash: chain.txHash, simulated: chain.simulated });
+  // A completed sale is exactly what the price and fraud rules analyse, so re-score now.
+  // Without this the new SALE sat unanalysed until some later action (a re-list) happened
+  // to trigger a recompute, so a buyer saw no PRICE_ANOMALY on a sale they had just made.
+  let risk = null;
+  try { risk = await computeUnifiedRisk(tokenId, { reverify: false }); }
+  catch (e) { console.warn("[buy] risk:", e.message); }
+
+  res.json({ ok: true, transaction: tx, txHash: chain.txHash, simulated: chain.simulated,
+             risk: risk && { unifiedScore: risk.unifiedScore, riskLevel: risk.riskLevel,
+                             flags: (risk.flags || []).map(f => f.flagType) } });
 }));
 
 // ---------------------------------------------------------------- history (FR 2.6)
