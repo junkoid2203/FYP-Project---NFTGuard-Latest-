@@ -1279,7 +1279,11 @@ async function openDetail(id){
     $("#mListPrice").style.display = (chainable && ownedByMe) ? "" : "none";
   }
   $("#mListChain").style.display = (chainable && ownedByMe) ? "" : "none";
-  $("#mBuyChain").style.display  = (chainable && !ownedByMe && n.listed) ? "" : "none";
+  // Buying keeps ONE button. It opens the checkout (risk warnings, acknowledgement) and
+  // confirmPurchase() then settles on-chain, so a second "Buy on-chain" would just be a
+  // duplicate that skipped those warnings.
+  $("#mBuyChain").style.display = "none";
+  $("#mBuy").textContent = onChain ? "🦊 Buy now (on-chain)" : "Buy now";
   // Without MetaMask an on-chain token cannot be traded at all — say so instead of
   // quietly leaving the panel empty or falling back to a simulated trade.
   const hint = $("#mChainHint");
@@ -1519,7 +1523,11 @@ function openCheckout(n){
           <span>I understand this NFT is flagged <b>${lvl} risk</b> and I still want to buy it.</span></label>`:""}
         <div id="coStatus"></div>
         <button class="btn primary wc-full" id="coConfirm" style="margin-top:14px"${blocked?" disabled":""}>${blocked?"Purchase blocked":"Complete purchase"}</button>
-        <div class="co-fine">${blocked?"This listing failed NFTGuard's authenticity checks and cannot be purchased.":"Simulated purchase — records a SALE transaction and transfers ownership to your wallet."}</div>
+        <div class="co-fine">${blocked
+          ? "This listing failed NFTGuard's authenticity checks and cannot be purchased."
+          : isOnChainNft(n)
+            ? `🦊 On-chain purchase — MetaMask will ask you to confirm, ${n.priceEth} ETH is sent to the seller and ownership transfers on Sepolia. The transaction is verifiable on Etherscan.`
+            : "Simulated purchase — records a SALE transaction and transfers ownership to your wallet."}</div>
       </div>
     </div>`;
   $("#coTitle").textContent="Checkout";
