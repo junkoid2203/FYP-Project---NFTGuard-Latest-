@@ -442,6 +442,7 @@ router.post("/record-mint", wrap(async (req, res) => {
     creatorAddress: walletAddress, ownerAddress: walletAddress,
     listed: Number(priceEth) > 0, priceEth: Number(priceEth) || 0,
     erc721Compliant: true, authenticityStatus: "Verified",
+    onChainTokenId: onChainTokenId != null ? Number(onChainTokenId) : null,
     traits: { "On-chain token": "#" + (onChainTokenId != null ? onChainTokenId : "?"), Network: "Sepolia", Tx: txHash },
   });
   await Transaction.create({
@@ -452,6 +453,69 @@ router.post("/record-mint", wrap(async (req, res) => {
   try { await computeUnifiedRisk(tokenId); } catch (e) { console.warn("[record-mint] risk:", e.message); }
   const fresh = await Nft.findOne({ tokenId }).lean();
   res.json({ ok: true, nft: fresh || nft });
+}));
+
+/**
+ * record-list / record-buy — persist a CONFIRMED on-chain action.
+ *
+ * The transaction is signed by the user's own MetaMask in the browser and is already
+ * mined on Sepolia by the time we get here; these endpoints only mirror it into MongoDB
+ * so the fraud rules, price analytics and risk score can see it. Without this an
+ * on-chain trade would be invisible to the detection engine.
+ */
+router.post("/record-list", wrap(async (req, res) => {
+  const { tokenId, priceEth, txHash } = req.body || {};
+  if (!tokenId || !(Number(priceEth) > 0) || !txHash)
+    return res.status(400).json({ error: "tokenId, priceEth (> 0) and txHash are required" });
+  const nft = await Nft.findOne({ tokenId: Number(tokenId) });
+  if (!nft) return res.status(404).json({ error: "NFT not found" });
+
+  const ban = await blockedWallet(nft.ownerAddress);
+  if (ban) return res.status(403).json({ error: ban });
+  const blocked = blockedAsset(nft);
+  if (blocked) return res.status(403).json({ error: blocked });
+
+  nft.listed = true; nft.priceEth = Number(priceEth);
+  await nft.save();
+  await Transaction.create({
+    tokenId: nft.tokenId, collectionName: nft.collectionName, txType: "LIST",
+    senderAddress: nft.ownerAddress, recipientAddress: nft.ownerAddress,
+    priceEth: Number(priceEth), txHash, simulated: false,
+  });
+  let risk = null;
+  try { risk = await computeUnifiedRisk(nft.tokenId, { reverify: false }); } catch (_) {}
+  res.json({ ok: true, txHash, risk: risk && { unifiedScore: risk.unifiedScore, riskLevel: risk.riskLevel } });
+}));
+
+router.post("/record-buy", wrap(async (req, res) => {
+  const { tokenId, buyerAddress, priceEth, txHash } = req.body || {};
+  if (!tokenId || !buyerAddress || !txHash)
+    return res.status(400).json({ error: "tokenId, buyerAddress and txHash are required" });
+  const nft = await Nft.findOne({ tokenId: Number(tokenId) });
+  if (!nft) return res.status(404).json({ error: "NFT not found" });
+
+  const buyerBan = await blockedWallet(buyerAddress);
+  if (buyerBan) return res.status(403).json({ error: buyerBan });
+  const sellerBan = await blockedWallet(nft.ownerAddress);
+  if (sellerBan) return res.status(403).json({ error: "Seller blocked — " + sellerBan });
+  const blocked = blockedAsset(nft);
+  if (blocked) return res.status(403).json({ error: blocked });
+
+  const seller = nft.ownerAddress;
+  const paid = Number(priceEth) > 0 ? Number(priceEth) : nft.priceEth;
+  nft.ownerAddress = buyerAddress;
+  nft.listed = false;
+  await nft.save();
+  await Transaction.create({
+    tokenId: nft.tokenId, collectionName: nft.collectionName, txType: "SALE",
+    senderAddress: seller, recipientAddress: buyerAddress,
+    priceEth: paid, txHash, simulated: false,
+  });
+  let risk = null;
+  try { risk = await computeUnifiedRisk(nft.tokenId, { reverify: false }); } catch (_) {}
+  const flags = risk ? (risk.flags || []).map(f => f.flagType) : [];
+  res.json({ ok: true, txHash, seller, buyer: buyerAddress, priceEth: paid,
+             risk: risk && { unifiedScore: risk.unifiedScore, riskLevel: risk.riskLevel, flags } });
 }));
 
 // ---------------------------------------------------------------- marketplace wash-ring graph (this marketplace's own data)

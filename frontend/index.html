@@ -619,6 +619,8 @@ section{padding:56px 4vw 20px}
             <button class="btn" id="mCancel" style="display:none;border-color:#FF4D5E;color:#FF4D5E">Cancel listing</button>
             <button class="btn" id="mVerify">Re-run verification</button>
             <button class="btn" id="mOffer">Make offer</button>
+            <button class="btn" id="mListChain" style="display:none;border-color:var(--chain);color:var(--chain)">🦊 List on-chain</button>
+            <button class="btn" id="mBuyChain" style="display:none;border-color:var(--chain);color:var(--chain)">🦊 Buy on-chain</button>
           </div>
         </div>
         <details class="os-sec" open><summary>Traits</summary><div class="os-traits" id="mTraits"></div></details>
@@ -1235,6 +1237,11 @@ async function openDetail(id){
   $("#mListPrice").style.display = ownedByMe ? "" : "none";
   $("#mListPrice").value = (ownedByMe && n.listed) ? n.priceEth : "";
   $("#mCancel").style.display = (ownedByMe && n.listed) ? "" : "none";
+  // On-chain actions appear only for tokens that really exist in the Sepolia contract,
+  // and only with MetaMask connected — otherwise the call would revert.
+  const chainable = isOnChainNft(n) && state.walletReal && window.ethereum;
+  $("#mListChain").style.display = (chainable && ownedByMe) ? "" : "none";
+  $("#mBuyChain").style.display  = (chainable && !ownedByMe && n.listed) ? "" : "none";
   // Reset + reload the offers panel for THIS token so it never shows the
   // previously-opened NFT's offers (each item has its own offers).
   const _offSec=$("#mOffersSec"); if(_offSec) _offSec.open=false;
@@ -1403,6 +1410,35 @@ function hideWalletFlag(){const bar=document.getElementById("walletFlag");if(bar
 /* ---------- buy ---------- */
 const ETH_USD = 1880; // demo ETH -> USD rate for checkout display
 $("#mBuy").addEventListener("click",()=>{ const n=state.current; if(n) openCheckout(n); });
+
+/* ---- on-chain marketplace actions (MetaMask signs; Etherscan-verifiable) ---- */
+$("#mListChain").addEventListener("click",async()=>{
+  const n=state.current; if(!n) return;
+  const raw=$("#mListPrice").value.trim();
+  const price=Number(raw);
+  if(!(price>0)){ toast("Enter a price in the box first (try 0.001 for a cheap on-chain demo)","err"); $("#mListPrice").focus(); return; }
+  const b=$("#mListChain"); const old=b.textContent; b.disabled=true; b.textContent="Listing…";
+  try{
+    const hash=await listOnChainUI(n,price);
+    toast(`Listed on-chain for ${price} ETH`);
+    $("#mintResult") && ($("#mintResult").innerHTML="");
+    window.open(sepoliaTx(hash),"_blank","noopener");
+    await refreshAfterAction(n.tokenId);
+  }catch(e){ toast("On-chain listing failed: "+(e.shortMessage||e.message),"err"); }
+  finally{ b.disabled=false; b.textContent=old; }
+});
+
+$("#mBuyChain").addEventListener("click",async()=>{
+  const n=state.current; if(!n) return;
+  const b=$("#mBuyChain"); const old=b.textContent; b.disabled=true; b.textContent="Buying…";
+  try{
+    const {hash,risk}=await buyOnChainUI(n);
+    toast(`Bought on-chain — risk now ${risk?risk.unifiedScore+" ("+risk.riskLevel+")":"recomputed"}`);
+    window.open(sepoliaTx(hash),"_blank","noopener");
+    await refreshAfterAction(n.tokenId);
+  }catch(e){ toast("On-chain purchase failed: "+(e.shortMessage||e.message),"err"); }
+  finally{ b.disabled=false; b.textContent=old; }
+});
 
 function openCheckout(n){
   if(!state.wallet){ toast("Connect a wallet first","err"); openWalletModal(); return; }
@@ -1671,6 +1707,67 @@ const MINT_ABI=[
   "function mintNFT(string uri, bytes32 _metadataHash) returns (uint256)",
   "event Minted(uint256 indexed tokenId, address indexed creator, string tokenURI, bytes32 metadataHash, uint256 timestamp)"
 ];
+/* Marketplace calls, signed by the user's own MetaMask (never by the server).
+   The contract is both the ERC-721 and the marketplace, so no approve() step is needed. */
+const MARKET_ABI=[
+  "function listForSale(uint256 tokenId, uint256 price) external",
+  "function cancelListing(uint256 tokenId) external",
+  "function buy(uint256 tokenId) external payable",
+  "function ownerOf(uint256 tokenId) external view returns (address)",
+  "function getListing(uint256 tokenId) external view returns (uint256 price, bool active)"
+];
+/* Only NFTs minted through our own contract exist on-chain; a seeded token lives in
+   MongoDB only, so listForSale() on it would revert. */
+const isOnChainNft = n => n && n.onChainTokenId != null &&
+  String(n.contractAddress||"").toLowerCase() === NFTGUARD_CONTRACT.toLowerCase();
+
+async function chainSigner(){
+  if(!window.ethereum) throw new Error("MetaMask not found");
+  if(typeof window.ethers==="undefined") throw new Error("Blockchain library still loading");
+  await window.ethereum.request({method:"eth_requestAccounts"});
+  const provider=new window.ethers.BrowserProvider(window.ethereum);
+  const net=await provider.getNetwork();
+  if(Number(net.chainId)!==11155111){
+    try{ await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0xaa36a7"}]}); }
+    catch(_){ throw new Error("Switch MetaMask to the Sepolia network"); }
+  }
+  return (await new window.ethers.BrowserProvider(window.ethereum).getSigner());
+}
+const sepoliaTx = h => `https://sepolia.etherscan.io/tx/${h}`;
+
+/* List on-chain: seller signs listForSale(), then we mirror it into the database so the
+   fraud rules and price analytics can see the listing. */
+async function listOnChainUI(n, priceEth){
+  const signer=await chainSigner();
+  const c=new window.ethers.Contract(NFTGUARD_CONTRACT, MARKET_ABI, signer);
+  const owner=(await c.ownerOf(n.onChainTokenId)).toLowerCase();
+  const me=(await signer.getAddress()).toLowerCase();
+  if(owner!==me) throw new Error("This wallet does not own the token on-chain (owner is "+shortAddr(owner)+")");
+  toast("Confirm the listing in MetaMask…");
+  const tx=await c.listForSale(n.onChainTokenId, window.ethers.parseEther(String(priceEth)));
+  toast("Listing sent — waiting for Sepolia…");
+  const receipt=await tx.wait();
+  await api("/record-list",{method:"POST",body:JSON.stringify({tokenId:n.tokenId, priceEth:Number(priceEth), txHash:receipt.hash})},20000);
+  return receipt.hash;
+}
+
+/* Buy on-chain: buyer signs buy() and actually sends the price as msg.value. */
+async function buyOnChainUI(n){
+  const signer=await chainSigner();
+  const c=new window.ethers.Contract(NFTGUARD_CONTRACT, MARKET_ABI, signer);
+  const me=(await signer.getAddress()).toLowerCase();
+  const owner=(await c.ownerOf(n.onChainTokenId)).toLowerCase();
+  if(owner===me) throw new Error("You already own this token on-chain — buy it from a different account");
+  const [price,active]=await c.getListing(n.onChainTokenId);
+  if(!active) throw new Error("This token is not listed on-chain — list it first");
+  toast("Confirm the purchase in MetaMask…");
+  const tx=await c.buy(n.onChainTokenId,{value:price});
+  toast("Purchase sent — waiting for Sepolia…");
+  const receipt=await tx.wait();
+  const paid=Number(window.ethers.formatEther(price));
+  const r=await api("/record-buy",{method:"POST",body:JSON.stringify({tokenId:n.tokenId, buyerAddress:await signer.getAddress(), priceEth:paid, txHash:receipt.hash})},20000);
+  return {hash:receipt.hash, risk:r.risk};
+}
 $("#mintChainBtn").addEventListener("click",mintOnChain);
 async function mintOnChain(){
   const res=$("#mintResult");

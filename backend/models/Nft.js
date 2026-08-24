@@ -24,6 +24,10 @@ const nftSchema = new mongoose.Schema(
     listed: { type: Boolean, default: false },
     priceEth: { type: Number, default: 0 },
     traits: { type: Object, default: {} },
+    // Real token id inside the NFTGuard Sepolia contract. Set only for NFTs minted
+    // with the on-chain button; these are the only ones that can be listed/bought
+    // on-chain, since a seeded token exists in MongoDB but not in the contract.
+    onChainTokenId: { type: Number, default: null },
     // --- imported real mainnet tokens (see services/onChainImporter.js) ---
     external: { type: Boolean, default: false },     // true = third-party contract
     externalContract: { type: String, default: "" },
