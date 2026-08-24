@@ -621,6 +621,7 @@ section{padding:56px 4vw 20px}
             <button class="btn" id="mOffer">Make offer</button>
             <button class="btn" id="mListChain" style="display:none;border-color:var(--chain);color:var(--chain)">🦊 List on-chain</button>
             <button class="btn" id="mBuyChain" style="display:none;border-color:var(--chain);color:var(--chain)">🦊 Buy on-chain</button>
+            <div id="mChainHint" style="display:none;flex-basis:100%;font-size:12px;color:var(--chain);line-height:1.5;margin-top:6px"></div>
           </div>
         </div>
         <details class="os-sec" open><summary>Traits</summary><div class="os-traits" id="mTraits"></div></details>
@@ -1266,11 +1267,28 @@ async function openDetail(id){
   $("#mListPrice").style.display = ownedByMe ? "" : "none";
   $("#mListPrice").value = (ownedByMe && n.listed) ? n.priceEth : "";
   $("#mCancel").style.display = (ownedByMe && n.listed) ? "" : "none";
-  // On-chain actions appear only for tokens that really exist in the Sepolia contract,
-  // and only with MetaMask connected — otherwise the call would revert.
-  const chainable = isOnChainNft(n) && state.walletReal && window.ethereum;
+  // A token that genuinely lives in our Sepolia contract must only ever change hands
+  // ON-CHAIN. The simulated list/cancel write to MongoDB alone, which silently desyncs
+  // the database from the chain — that drift is what left "Test 1" claiming an owner
+  // who did not actually hold the token.
+  const onChain  = isOnChainNft(n);
+  const chainable = onChain && state.walletReal && window.ethereum;
+  if(onChain){
+    $("#mList").style.display   = "none";   // simulated listing would not reach the chain
+    $("#mCancel").style.display = "none";
+    $("#mListPrice").style.display = (chainable && ownedByMe) ? "" : "none";
+  }
   $("#mListChain").style.display = (chainable && ownedByMe) ? "" : "none";
   $("#mBuyChain").style.display  = (chainable && !ownedByMe && n.listed) ? "" : "none";
+  // Without MetaMask an on-chain token cannot be traded at all — say so instead of
+  // quietly leaving the panel empty or falling back to a simulated trade.
+  const hint = $("#mChainHint");
+  if(hint){
+    hint.style.display = (onChain && !chainable) ? "" : "none";
+    hint.textContent = onChain && !chainable
+      ? "This NFT exists on Sepolia (token #" + n.onChainTokenId + "). Connect MetaMask to list or buy it on-chain — simulated trading is disabled so the database cannot drift from the blockchain."
+      : "";
+  }
   // Reset + reload the offers panel for THIS token so it never shows the
   // previously-opened NFT's offers (each item has its own offers).
   const _offSec=$("#mOffersSec"); if(_offSec) _offSec.open=false;
@@ -1564,6 +1582,14 @@ async function confirmPurchase(){
   // A token that exists in our Sepolia contract must settle ON-CHAIN — MetaMask signs
   // buy() and the price really moves. Falling back to the simulated /buy here would
   // record a sale that never happened on the chain the NFT actually lives on.
+  if(isOnChainNft(n) && !(state.walletReal && window.ethereum)){
+    // Never settle an on-chain token off-chain: the database would claim a transfer the
+    // blockchain never made, and the next real listForSale() would revert as "not owner".
+    $("#coStatus").innerHTML=`<div class="co-warn" style="border-color:rgba(110,168,255,.5)">This NFT lives on Sepolia (token #${n.onChainTokenId}). Connect MetaMask to buy it on-chain — a simulated purchase would desync the marketplace from the blockchain.</div>`;
+    btn.disabled=true; btn.textContent="Requires MetaMask";
+    toast("Connect MetaMask to buy this on-chain NFT","err");
+    return;
+  }
   if(isOnChainNft(n) && state.walletReal && window.ethereum){
     try{
       btn.textContent="Confirm in MetaMask…";
