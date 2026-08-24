@@ -440,6 +440,8 @@ router.post("/offers/:offerId/accept-onchain", wrap(async (req, res) => {
   if (!offer || offer.status !== "Active") return res.status(404).json({ error: "Offer not found or no longer active" });
   const nft = await Nft.findOne({ tokenId: offer.tokenId });
   if (!nft) return res.status(404).json({ error: "NFT not found" });
+  if (String(nft.ownerAddress).toLowerCase() === String(offer.fromAddress).toLowerCase())
+    return res.status(400).json({ error: "That bid came from the current owner" });
 
   nft.listed = true; nft.priceEth = offer.priceEth;
   await nft.save();
@@ -477,6 +479,15 @@ router.post("/offers/:offerId/accept", wrap(async (req, res) => {
   if (!offer || offer.status !== "Active") return res.status(404).json({ error: "Offer not found or no longer active" });
   const nft = await Nft.findOne({ tokenId: offer.tokenId });
   if (!nft) return res.status(404).json({ error: "NFT not found" });
+
+  // Defence in depth: cancelOwnOffers() should already have retired any bid from the
+  // current owner, but if a stale one survives, accepting it would write a sale from a
+  // wallet to ITSELF — fabricating the self-transfer the fraud engine is meant to detect.
+  if (String(nft.ownerAddress).toLowerCase() === String(offer.fromAddress).toLowerCase()) {
+    offer.status = "Cancelled";
+    await offer.save();
+    return res.status(400).json({ error: "That bid came from the current owner — cancelled instead of accepted" });
+  }
 
   const seller = nft.ownerAddress;
   const chain = await blockchain.buyOnChain(offer.tokenId, offer.priceEth);
