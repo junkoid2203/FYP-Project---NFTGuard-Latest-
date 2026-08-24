@@ -104,8 +104,12 @@ async function priceRiskForToken(tokenId) {
   // and a token that is no longer anomalous correctly loses its flag.
   await FraudFlag.deleteMany({ tokenId, flagType: { $in: ["PRICE_ANOMALY", "LISTING_PRICE_ANOMALY"] } });
 
+  // A collection needs a real sample before its median/MAD mean anything. With 3 sales a
+  // perfectly ordinary price scores |Z| = 6.7, so judging it would be pure noise.
+  const enoughData = stats.sampleSize >= (thresholds.priceAnomaly.minSamples ?? 8);
+
   let risk = 0;
-  if (anomalies.length) {
+  if (enoughData && anomalies.length) {
     const { basePenalty, perAnomaly, perExcessZ } = thresholds.priceAnomaly;
     const maxAbsZ = Math.max(...anomalies.map(a => Math.abs(a.zScore)));
     risk = Math.min(100, basePenalty + anomalies.length * perAnomaly + Math.max(0, (maxAbsZ - zThreshold)) * perExcessZ);

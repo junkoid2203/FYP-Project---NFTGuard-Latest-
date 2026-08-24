@@ -232,6 +232,12 @@ router.post("/buy", wrap(async (req, res) => {
   if (!buyerAddress) return res.status(400).json({ error: "buyerAddress is required" });
 
   // Buyer banned, seller banned, or the asset itself failed authenticity → no sale.
+  // You cannot buy your own NFT. Without this the marketplace could MANUFACTURE a
+  // self-transfer — the very pattern the fraud engine treats as a strong wash-trading
+  // signal — from an ordinary double-click or a stale modal.
+  if (String(nft.ownerAddress).toLowerCase() === String(buyerAddress).toLowerCase())
+    return res.status(400).json({ error: "You already own this NFT — a wallet cannot buy from itself" });
+
   const buyerBan = await blockedWallet(buyerAddress);
   if (buyerBan) return res.status(403).json({ error: buyerBan });
   const sellerBan = await blockedWallet(nft.ownerAddress);
@@ -558,6 +564,9 @@ router.post("/record-buy", wrap(async (req, res) => {
     return res.status(400).json({ error: "tokenId, buyerAddress and txHash are required" });
   const nft = await Nft.findOne({ tokenId: Number(tokenId) });
   if (!nft) return res.status(404).json({ error: "NFT not found" });
+
+  if (String(nft.ownerAddress).toLowerCase() === String(buyerAddress).toLowerCase())
+    return res.status(400).json({ error: "You already own this NFT — a wallet cannot buy from itself" });
 
   const buyerBan = await blockedWallet(buyerAddress);
   if (buyerBan) return res.status(403).json({ error: buyerBan });

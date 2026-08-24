@@ -25,7 +25,9 @@
     "perAnomaly": 15,
     "perExcessZ": 10,
     "listingPenalty": 45,
-    "minSamplesForListing": 3,
+    "_minSamplesComment": "A median and MAD computed from a handful of sales are meaningless — a brand-new collection with 3 trades produced |Z| = 6.7 and flagged an ordinary price. Require a real sample before judging any price.",
+    "minSamples": 8,
+    "minSamplesForListing": 8,
     "underpriceFactor": 5
   },
   "authenticity": {

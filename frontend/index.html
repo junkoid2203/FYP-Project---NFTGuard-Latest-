@@ -950,10 +950,13 @@ body.profile-mode #profile{display:block}
       return '<div class="nf-row">'+img+
         '<div class="nf-info"><div class="nf-nm">'+esc(nft.name||("Token #"+o.tokenId))+'</div>'+
         '<div class="nf-sub">'+esc(o.priceEth)+' ETH · from '+esc(shortA(o.fromAddress))+'</div></div>'+
-        '<button class="btn primary sm" data-acc="'+esc(o._id)+'">Accept</button>'+
+        '<button class="btn primary sm" data-acc="'+esc(o._id)+'" data-price="'+esc(o.priceEth)+'" data-from="'+esc(o.fromAddress)+'" data-token="'+esc(o.tokenId)+'">Accept</button>'+
         '<button class="btn sm" data-rej="'+esc(o._id)+'" style="margin-left:6px;border-color:#FF4D5E;color:#FF4D5E">Reject</button></div>';
     }).join("");
-    list.querySelectorAll("[data-acc]").forEach(function(b){ b.addEventListener("click",function(){ accept(b.dataset.acc,b); }); });
+    list.querySelectorAll("[data-acc]").forEach(function(b){ b.addEventListener("click",function(){
+      if(window.ngAcceptOfferConfirm && b.dataset.token){ panel.classList.remove("open"); window.ngAcceptOfferConfirm(b.dataset.acc,b.dataset.price,b.dataset.from,b.dataset.token); }
+      else accept(b.dataset.acc,b);
+    }); });
     list.querySelectorAll("[data-rej]").forEach(function(b){ b.addEventListener("click",function(){ reject(b.dataset.rej,b); }); });
   }
   async function accept(id,b){
@@ -1007,7 +1010,7 @@ body.profile-mode #profile{display:block}
 </style>
 <div class="overlay" id="checkoutOverlay" style="z-index:90" aria-modal="true" role="dialog">
   <div class="modal" style="max-width:720px;width:100%">
-    <div class="m-head"><h3>Checkout</h3><button class="x" id="coClose" aria-label="Close">×</button></div>
+    <div class="m-head"><h3 id="coTitle">Checkout</h3><button class="x" id="coClose" aria-label="Close">×</button></div>
     <div id="coBody" style="padding:22px"></div>
   </div>
 </div>
@@ -1501,6 +1504,7 @@ function openCheckout(n){
         <div class="co-fine">${blocked?"This listing failed NFTGuard's authenticity checks and cannot be purchased.":"Simulated purchase — records a SALE transaction and transfers ownership to your wallet."}</div>
       </div>
     </div>`;
+  $("#coTitle").textContent="Checkout";
   $("#coConfirm").onclick=confirmPurchase;
   // Medium/High risk requires an explicit acknowledgement before the button unlocks.
   if(!blocked&&risky&&$("#coAck")){
@@ -1631,14 +1635,69 @@ async function loadOffers(tokenId){
     <div class="offer-row">
       <div><b style="font-family:'JetBrains Mono';font-weight:600">${o.priceEth} ETH</b> <span class="co-sub">from ${esc(shortAddr(o.fromAddress))}</span></div>
       ${isOwner?`<span style="display:inline-flex;gap:6px">
-        <button class="btn primary sm" data-acc="${o._id}" data-price="${o.priceEth}">Accept</button>
+        <button class="btn primary sm" data-acc="${o._id}" data-price="${o.priceEth}" data-from="${o.fromAddress}">Accept</button>
         <button class="btn sm" data-rejm="${o._id}" style="border-color:#FF4D5E;color:#FF4D5E">Reject</button>
       </span>`:`<span class="co-sub">${new Date(o.createdAt).toLocaleDateString()}</span>`}
     </div>`).join("");
-  box.querySelectorAll("[data-acc]").forEach(b=>b.addEventListener("click",()=>acceptOffer(b.dataset.acc,Number(b.dataset.price))));
+  box.querySelectorAll("[data-acc]").forEach(b=>b.addEventListener("click",()=>acceptOffer(b.dataset.acc,Number(b.dataset.price),b.dataset.from)));
   box.querySelectorAll("[data-rejm]").forEach(b=>b.addEventListener("click",()=>rejectOffer(b.dataset.rejm)));
 }
-async function acceptOffer(offerId, offerPrice){
+/* Confirmation step before accepting a bid — the seller sees exactly what they are
+   agreeing to, and whether it will settle on-chain, before any signature is requested. */
+function openAcceptConfirm(n, offerId, offerPrice, fromAddress){
+  const onChain = isOnChainNft(n) && state.walletReal && window.ethereum;
+  const usd=(offerPrice*ETH_USD).toLocaleString(undefined,{maximumFractionDigits:2});
+  const img=n.image?`<img src="${esc(n.image)}" alt="" onerror="this.remove()">`:tokenArt(n.tokenId,120);
+  $("#coTitle").textContent="Accept offer";
+  $("#coBody").innerHTML=`
+    <div class="co-grid">
+      <div>
+        <div class="co-item">
+          <div class="co-thumb">${img}</div>
+          <div style="flex:1;min-width:0">
+            <div class="co-nm">${esc(n.name)}</div>
+            <div class="co-sub">${esc(n.collectionName)}</div>
+          </div>
+          <div style="text-align:right"><div class="co-eth">${offerPrice} ETH</div><div class="co-usd">$${usd}</div></div>
+        </div>
+        <div class="co-total"><span>You receive</span><div style="text-align:right"><div class="co-eth">${offerPrice} ETH</div><div class="co-usd">$${usd}</div></div></div>
+      </div>
+      <div>
+        <div class="co-label">Bidder</div>
+        <div class="co-pay"><span class="co-dot"></span><span class="mono">${esc(shortAddr(fromAddress))}</span></div>
+        ${onChain
+          ? `<div class="co-warn" style="border-color:rgba(110,168,255,.5);background:rgba(110,168,255,.10)">🦊 <b>Settles on-chain</b><br>Your contract has no <code>acceptOffer()</code>, so accepting lists the token on Sepolia at <b>${offerPrice} ETH</b>. MetaMask will ask you to sign. Ownership transfers when the bidder completes the purchase.</div>`
+          : `<div class="co-warn">⚠ <b>Simulated settlement</b> — this token does not exist in the Sepolia contract, so ownership transfers in the marketplace records only.</div>`}
+        <div id="coStatus"></div>
+        <button class="btn primary wc-full" id="coConfirm" style="margin-top:14px">${onChain?"Accept & list on-chain":"Accept offer"}</button>
+        <div class="co-fine">Accepting declines any other open bids on this NFT.</div>
+      </div>
+    </div>`;
+  $("#coConfirm").onclick=async()=>{
+    const b=$("#coConfirm"); b.disabled=true; b.textContent="Processing…";
+    try{ await doAcceptOffer(offerId, offerPrice); closeCheckout(); }
+    catch(e){ b.disabled=false; b.textContent=onChain?"Accept & list on-chain":"Accept offer"; }
+  };
+  $("#checkoutOverlay").classList.add("open"); document.body.style.overflow="hidden";
+}
+
+/* Shared entry point so the topbar notification panel gets the same confirmation step
+   as the NFT modal, instead of accepting a bid on a single click. */
+window.ngAcceptOfferConfirm = async function(offerId, offerPrice, fromAddress, tokenId){
+  try{
+    const nft = await api("/nfts/"+tokenId,{},10000);
+    state.current = nft;
+    openAcceptConfirm(nft, offerId, Number(offerPrice), fromAddress);
+  }catch(e){ toast("Could not open the offer: "+e.message,"err"); }
+};
+
+async function acceptOffer(offerId, offerPrice, fromAddress){
+  const n=state.current;
+  if(n){ openAcceptConfirm(n, offerId, offerPrice, fromAddress); return; }
+  return doAcceptOffer(offerId, offerPrice);
+}
+
+async function doAcceptOffer(offerId, offerPrice){
   const n=state.current;
   // The contract has no acceptOffer() — offers live in our database, not on-chain. For a
   // token that DOES exist on-chain, accepting therefore means the owner re-lists it at the
