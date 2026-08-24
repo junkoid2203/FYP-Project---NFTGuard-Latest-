@@ -56,6 +56,23 @@ async function blockedWallet(address) {
        + " — minting, listing, buying and offers are disabled for this wallet.";
 }
 
+/**
+ * After ownership changes, any Active offer made BY the new owner is meaningless —
+ * you cannot bid on your own asset. Without this a buyer's own offer stayed live on
+ * the NFT they had just bought, and they could "accept" their own bid.
+ * Offers from other wallets survive on purpose: they are bids on the asset, and the
+ * new owner may still want to accept one.
+ */
+async function cancelOwnOffers(tokenId, newOwner) {
+  if (!newOwner) return 0;
+  const r = await Offer.updateMany(
+    { tokenId: Number(tokenId), status: "Active",
+      fromAddress: { $regex: `^${String(newOwner).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" } },
+    { status: "Cancelled" }
+  );
+  return r.modifiedCount || 0;
+}
+
 /** Authenticity failures are not tradeable: NFTGuard blocks the sale outright. */
 const UNSELLABLE = ["Tampered", "Duplicate", "NonCompliant"];
 function blockedAsset(nft) {
@@ -233,6 +250,7 @@ router.post("/buy", wrap(async (req, res) => {
     senderAddress: seller, recipientAddress: buyerAddress,
     priceEth: nft.priceEth, txHash: chain.txHash, simulated: chain.simulated,
   });
+  await cancelOwnOffers(tokenId, buyerAddress);
 
   res.json({ ok: true, transaction: tx, txHash: chain.txHash, simulated: chain.simulated });
 }));
@@ -402,6 +420,52 @@ router.get("/offers-received/:address", wrap(async (req, res) => {
   res.json(offers.map(o => ({ ...o, nft: byTok[o.tokenId] || null })));
 }));
 
+/**
+ * Owner accepted a bid on an ON-CHAIN token. The contract has no acceptOffer(), so
+ * acceptance is expressed as a real listForSale() at the agreed price (already signed
+ * and mined by the owner's MetaMask). Ownership moves only when the bidder settles with
+ * buy() — recorded via /record-buy — so our records never claim a transfer the chain
+ * has not made.
+ */
+router.post("/offers/:offerId/accept-onchain", wrap(async (req, res) => {
+  const { txHash } = req.body || {};
+  if (!txHash) return res.status(400).json({ error: "txHash is required" });
+  const offer = await Offer.findById(req.params.offerId).catch(() => null);
+  if (!offer || offer.status !== "Active") return res.status(404).json({ error: "Offer not found or no longer active" });
+  const nft = await Nft.findOne({ tokenId: offer.tokenId });
+  if (!nft) return res.status(404).json({ error: "NFT not found" });
+
+  nft.listed = true; nft.priceEth = offer.priceEth;
+  await nft.save();
+  await Transaction.create({
+    tokenId: nft.tokenId, collectionName: nft.collectionName, txType: "LIST",
+    senderAddress: nft.ownerAddress, recipientAddress: nft.ownerAddress,
+    priceEth: offer.priceEth, txHash, simulated: false,
+  });
+  offer.status = "Accepted";
+  await offer.save();
+  // competing bids are declined, as they would be by an ordinary accept
+  await Offer.updateMany({ tokenId: offer.tokenId, status: "Active", _id: { $ne: offer._id } }, { status: "Rejected" });
+  let risk = null;
+  try { risk = await computeUnifiedRisk(nft.tokenId, { reverify: false }); } catch (_) {}
+  res.json({ ok: true, txHash, listedAt: offer.priceEth, awaitingBuyer: offer.fromAddress,
+             risk: risk && { unifiedScore: risk.unifiedScore, riskLevel: risk.riskLevel } });
+}));
+
+/** Owner declines a bid. Only the current owner of the token may reject it. */
+router.post("/offers/:offerId/reject", wrap(async (req, res) => {
+  const offer = await Offer.findById(req.params.offerId).catch(() => null);
+  if (!offer || offer.status !== "Active") return res.status(404).json({ error: "Offer not found or no longer active" });
+  const nft = await Nft.findOne({ tokenId: offer.tokenId }).lean();
+  if (!nft) return res.status(404).json({ error: "NFT not found" });
+  const by = String(req.body?.ownerAddress || "").toLowerCase();
+  if (by && String(nft.ownerAddress).toLowerCase() !== by)
+    return res.status(403).json({ error: "Only the current owner can reject an offer" });
+  offer.status = "Rejected";
+  await offer.save();
+  res.json({ ok: true, offerId: String(offer._id), status: offer.status });
+}));
+
 router.post("/offers/:offerId/accept", wrap(async (req, res) => {
   const offer = await Offer.findById(req.params.offerId).catch(() => null);
   if (!offer || offer.status !== "Active") return res.status(404).json({ error: "Offer not found or no longer active" });
@@ -421,6 +485,7 @@ router.post("/offers/:offerId/accept", wrap(async (req, res) => {
   });
   offer.status = "Accepted";
   await offer.save();
+  await cancelOwnOffers(offer.tokenId, offer.fromAddress);
   await Offer.updateMany({ tokenId: offer.tokenId, status: "Active", _id: { $ne: offer._id } }, { status: "Rejected" });
 
   res.json({ ok: true, txHash: chain.txHash, simulated: chain.simulated });
@@ -511,6 +576,7 @@ router.post("/record-buy", wrap(async (req, res) => {
     senderAddress: seller, recipientAddress: buyerAddress,
     priceEth: paid, txHash, simulated: false,
   });
+  await cancelOwnOffers(nft.tokenId, buyerAddress);
   let risk = null;
   try { risk = await computeUnifiedRisk(nft.tokenId, { reverify: false }); } catch (_) {}
   const flags = risk ? (risk.flags || []).map(f => f.flagType) : [];

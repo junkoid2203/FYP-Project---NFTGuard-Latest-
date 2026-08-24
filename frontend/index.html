@@ -790,9 +790,11 @@ body.profile-mode #profile{display:block}
             '<td class="act-mono" style="color:var(--guard)">'+esc(o.priceEth)+' ETH</td>'+
             '<td class="act-mono">'+esc(shortA(o.fromAddress))+'</td>'+
             '<td style="color:var(--faint)">'+esc(ago(o.createdAt))+'</td>'+
-            '<td><button class="btn primary sm" data-pacc="'+esc(o._id)+'">Accept</button></td></tr>';
+            '<td><button class="btn primary sm" data-pacc="'+esc(o._id)+'">Accept</button>'+
+            ' <button class="btn sm" data-prej="'+esc(o._id)+'" style="border-color:#FF4D5E;color:#FF4D5E">Reject</button></td></tr>';
         }).join("");
         ob.querySelectorAll("[data-pacc]").forEach(function(b){ b.addEventListener("click",function(){ acceptProfOffer(b.dataset.pacc,b); }); });
+        ob.querySelectorAll("[data-prej]").forEach(function(b){ b.addEventListener("click",function(){ rejectProfOffer(b.dataset.prej,b); }); });
       } else { ow.style.display="none"; ob.innerHTML=""; }
     }
   }
@@ -805,6 +807,18 @@ body.profile-mode #profile{display:block}
       if(window.ngReload) await window.ngReload();
       if(window.ngRefreshNotif) window.ngRefreshNotif();
     }catch(e){ if(b){ b.disabled=false; b.textContent="Accept"; } }
+    renderProfile();
+  }
+
+  async function rejectProfOffer(id,b){
+    if(b){ b.disabled=true; b.textContent="…"; }
+    try{
+      var r=await fetch("/api/offers/"+id+"/reject",{method:"POST",headers:{"content-type":"application/json"},
+        body:JSON.stringify({ownerAddress:window.__ngWallet||""})});
+      var d=await r.json().catch(function(){return {};});
+      if(!r.ok) throw new Error(d.error||"failed");
+      if(window.ngRefreshNotif) window.ngRefreshNotif();
+    }catch(e){ if(b){ b.disabled=false; b.textContent="Reject"; } }
     renderProfile();
   }
 
@@ -936,9 +950,11 @@ body.profile-mode #profile{display:block}
       return '<div class="nf-row">'+img+
         '<div class="nf-info"><div class="nf-nm">'+esc(nft.name||("Token #"+o.tokenId))+'</div>'+
         '<div class="nf-sub">'+esc(o.priceEth)+' ETH · from '+esc(shortA(o.fromAddress))+'</div></div>'+
-        '<button class="btn primary sm" data-acc="'+esc(o._id)+'">Accept</button></div>';
+        '<button class="btn primary sm" data-acc="'+esc(o._id)+'">Accept</button>'+
+        '<button class="btn sm" data-rej="'+esc(o._id)+'" style="margin-left:6px;border-color:#FF4D5E;color:#FF4D5E">Reject</button></div>';
     }).join("");
     list.querySelectorAll("[data-acc]").forEach(function(b){ b.addEventListener("click",function(){ accept(b.dataset.acc,b); }); });
+    list.querySelectorAll("[data-rej]").forEach(function(b){ b.addEventListener("click",function(){ reject(b.dataset.rej,b); }); });
   }
   async function accept(id,b){
     if(b){ b.disabled=true; b.textContent="…"; }
@@ -947,6 +963,16 @@ body.profile-mode #profile{display:block}
       if(!r.ok) throw new Error(d.error||"failed");
       if(window.ngReload) await window.ngReload();
     }catch(e){ if(b){ b.disabled=false; b.textContent="Accept"; } }
+    load();
+  }
+  async function reject(id,b){
+    if(b){ b.disabled=true; b.textContent="…"; }
+    try{
+      var r=await fetch("/api/offers/"+id+"/reject",{method:"POST",headers:{"content-type":"application/json"},
+        body:JSON.stringify({ownerAddress:window.__ngWallet||""})});
+      var d=await r.json().catch(function(){return {};});
+      if(!r.ok) throw new Error(d.error||"failed");
+    }catch(e){ if(b){ b.disabled=false; b.textContent="Reject"; } }
     load();
   }
   if(btn){
@@ -1531,6 +1557,21 @@ async function confirmPurchase(){
     n.ownerAddress=state.wallet; n.listed=false;
     toast(`Simulated purchase of ${n.name} recorded`); closeCheckout(); renderGrid(); openDetail(n.tokenId); return;
   }
+  // A token that exists in our Sepolia contract must settle ON-CHAIN — MetaMask signs
+  // buy() and the price really moves. Falling back to the simulated /buy here would
+  // record a sale that never happened on the chain the NFT actually lives on.
+  if(isOnChainNft(n) && state.walletReal && window.ethereum){
+    try{
+      btn.textContent="Confirm in MetaMask…";
+      const {hash,risk}=await buyOnChainUI(n);
+      toast(`Purchased on-chain — risk now ${risk?risk.unifiedScore+" ("+risk.riskLevel+")":"recomputed"}`);
+      closeCheckout(); window.open(sepoliaTx(hash),"_blank","noopener");
+      await refreshAfterAction(n.tokenId); return;
+    }catch(e){
+      toast("On-chain purchase failed: "+(e.shortMessage||e.message),"err");
+      btn.disabled=false; btn.textContent="Complete purchase"; return;
+    }
+  }
   try{
     const r=await api("/buy",{method:"POST",body:JSON.stringify({tokenId:n.tokenId,buyerAddress:state.wallet})},20000);
     toast(`Purchased ${n.name} — tx ${shortAddr(r.txHash)}${r.simulated?" (simulated)":" on Sepolia"}`);
@@ -1589,11 +1630,32 @@ async function loadOffers(tokenId){
   box.innerHTML=active.map(o=>`
     <div class="offer-row">
       <div><b style="font-family:'JetBrains Mono';font-weight:600">${o.priceEth} ETH</b> <span class="co-sub">from ${esc(shortAddr(o.fromAddress))}</span></div>
-      ${isOwner?`<button class="btn primary sm" data-acc="${o._id}">Accept</button>`:`<span class="co-sub">${new Date(o.createdAt).toLocaleDateString()}</span>`}
+      ${isOwner?`<span style="display:inline-flex;gap:6px">
+        <button class="btn primary sm" data-acc="${o._id}" data-price="${o.priceEth}">Accept</button>
+        <button class="btn sm" data-rejm="${o._id}" style="border-color:#FF4D5E;color:#FF4D5E">Reject</button>
+      </span>`:`<span class="co-sub">${new Date(o.createdAt).toLocaleDateString()}</span>`}
     </div>`).join("");
-  box.querySelectorAll("[data-acc]").forEach(b=>b.addEventListener("click",()=>acceptOffer(b.dataset.acc)));
+  box.querySelectorAll("[data-acc]").forEach(b=>b.addEventListener("click",()=>acceptOffer(b.dataset.acc,Number(b.dataset.price))));
+  box.querySelectorAll("[data-rejm]").forEach(b=>b.addEventListener("click",()=>rejectOffer(b.dataset.rejm)));
 }
-async function acceptOffer(offerId){
+async function acceptOffer(offerId, offerPrice){
+  const n=state.current;
+  // The contract has no acceptOffer() — offers live in our database, not on-chain. For a
+  // token that DOES exist on-chain, accepting therefore means the owner re-lists it at the
+  // agreed price so the bidder can settle with a real buy(); an off-chain "accept" alone
+  // would move ownership in our records while the chain still says otherwise.
+  if(n && isOnChainNft(n) && state.walletReal && window.ethereum && offerPrice>0){
+    try{
+      toast("Accepting on-chain — confirm the listing in MetaMask…");
+      const hash=await listOnChainUI(n, offerPrice);
+      await api("/offers/"+offerId+"/accept-onchain",{method:"POST",body:JSON.stringify({txHash:hash})},20000);
+      toast(`Offer accepted — listed on-chain at ${offerPrice} ETH for the bidder to complete`);
+      window.open(sepoliaTx(hash),"_blank","noopener");
+      const id=n.tokenId; await refreshAfterAction(id);
+      if($("#mOffersSec")) $("#mOffersSec").open=true; loadOffers(id);
+      return;
+    }catch(e){ toast("On-chain accept failed: "+(e.shortMessage||e.message),"err"); return; }
+  }
   try{
     const r=await api("/offers/"+offerId+"/accept",{method:"POST"},20000);
     toast(`Offer accepted — ownership transferred (tx ${shortAddr(r.txHash)})`);
@@ -1601,6 +1663,14 @@ async function acceptOffer(offerId){
     await refreshAfterAction(id);
     if($("#mOffersSec")) $("#mOffersSec").open=true; loadOffers(id);
   }catch(e){ toast("Accept failed: "+e.message,"err"); }
+}
+async function rejectOffer(offerId){
+  try{
+    await api("/offers/"+offerId+"/reject",{method:"POST",body:JSON.stringify({ownerAddress:state.wallet||""})},20000);
+    toast("Offer rejected");
+    const id=state.current&&state.current.tokenId;
+    if($("#mOffersSec")) $("#mOffersSec").open=true; loadOffers(id);
+  }catch(e){ toast("Reject failed: "+e.message,"err"); }
 }
 $("#ofClose").addEventListener("click",closeOfferModal);
 $("#offerOverlay").addEventListener("click",e=>{ if(e.target.id==="offerOverlay") closeOfferModal(); });
