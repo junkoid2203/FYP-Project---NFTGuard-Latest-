@@ -127,14 +127,21 @@ async function priceRiskForToken(tokenId) {
   // A completed sale only flags fraud *after* a victim has already paid. The asking
   // price of a live listing can be judged immediately, so an NFT listed far outside
   // its collection's normal range raises risk the moment it is listed or re-priced.
-  const { listingPenalty, perExcessZ, minSamplesForListing, underpriceFactor } = thresholds.priceAnomaly;
+  const { listingPenalty, perExcessZ, minSamplesForListing, underpriceFactor, extremeRatio } = thresholds.priceAnomaly;
   const nft = await Nft.findOne({ tokenId }).select("listed priceEth").lean();
   let listing = null;
-  if (nft && nft.listed && nft.priceEth > 0 && stats.sampleSize >= (minSamplesForListing ?? 3)) {
+  const enoughSales = stats.sampleSize >= (minSamplesForListing ?? 3);
+  // A median and MAD from a handful of trades are meaningless, so statistical judgement
+  // needs a real sample. But an asking price thousands of times the median needs no
+  // statistics at all — so a small collection still flags a grossly extreme listing,
+  // while an ordinary one stays quiet.
+  const smallSampleExtreme = !enoughSales && stats.sampleSize >= 2 && stats.medianPrice > 0
+    && (nft && nft.priceEth >= stats.medianPrice * (extremeRatio ?? 10));
+  if (nft && nft.listed && nft.priceEth > 0 && (enoughSales || smallSampleExtreme)) {
     const z = zScoreOf(nft.priceEth, stats);
     const med = stats.medianPrice;
     // Over-pricing: the Z-score handles it (upside is unbounded).
-    const overpriced = Math.abs(z) > zThreshold;
+    const overpriced = enoughSales ? Math.abs(z) > zThreshold : true;
     // Under-pricing: a Z-score can never flag it, because price is bounded below by 0
     // while the median sits far above — so a "too cheap" listing (stolen goods dumped
     // fast, or a wash-trade setup) is caught by a ratio rule instead.
@@ -143,12 +150,17 @@ async function priceRiskForToken(tokenId) {
 
     if (overpriced || underpriced) {
       const ratio = med > 0 ? nft.priceEth / med : 0;
+      // Scale by how far past the threshold the Z-score sits — but only when the sample
+      // is large enough for that Z to mean anything. On a 3-sale collection the spread is
+      // near zero, so |Z| explodes into the thousands; there we charge the flat penalty.
       const listingRisk = Math.min(100, listingPenalty
-        + (overpriced ? Math.max(0, Math.abs(z) - zThreshold) * perExcessZ : 0));
+        + ((overpriced && enoughSales) ? Math.max(0, Math.abs(z) - zThreshold) * perExcessZ : 0));
       risk = Math.min(100, risk + listingRisk);
       const how = underpriced
         ? `only ${ratio.toFixed(3)}× the collection median (${med} ETH) — far below the normal range`
-        : `|Z| = ${Math.abs(z).toFixed(2)} (> ${zThreshold}), ~${ratio.toFixed(1)}× the collection median of ${med} ETH`;
+        : enoughSales
+          ? `|Z| = ${Math.abs(z).toFixed(2)} (> ${zThreshold}), ~${ratio.toFixed(1)}× the collection median of ${med} ETH`
+          : `~${ratio.toFixed(1)}× the collection median of ${med} ETH — extreme enough to flag despite only ${stats.sampleSize} recorded sale(s)`;
       listing = { priceEth: nft.priceEth, zScore: Number(z.toFixed(3)), medianPrice: med,
                   ratio: Number(ratio.toFixed(3)), direction: underpriced ? "under" : "over", risk: Math.round(listingRisk) };
       await FraudFlag.create({
