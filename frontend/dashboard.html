@@ -1160,7 +1160,7 @@ $("#walletBtn").addEventListener("click", async () => {
     return;
   }
   const ov=document.getElementById("dashWalletModal");
-  if (ov){ ov.classList.add("open"); document.getElementById("dwAddr").focus(); }
+  if (ov && ov.__open){ ov.__open(); document.getElementById("dwAddr").focus(); }
 });
 
 
@@ -1168,11 +1168,12 @@ $("#walletBtn").addEventListener("click", async () => {
 (function(){
   const ov=document.getElementById('dashWalletModal');
   if(!ov) return;
-  const close=()=>ov.classList.remove('open');
-  ov.style.display='';                       // .open controls visibility
-  const css=document.createElement('style');
-  css.textContent='#dashWalletModal.open{display:flex !important}';
-  document.head.appendChild(css);
+  // Toggle the inline style directly. Clearing it (ov.style.display='') left the element
+  // a plain block — permanently visible, with the card stuck at the top-left, because the
+  // centering only takes effect once the container is display:flex.
+  const close=()=>{ ov.classList.remove('open'); ov.style.display='none'; };
+  ov.__open=()=>{ ov.classList.add('open'); ov.style.display='flex'; };
+  close();
   document.getElementById('dwClose').onclick=close;
   ov.addEventListener('click',e=>{ if(e.target===ov) close(); });
   document.getElementById('dwMeta').onclick=async()=>{
