@@ -480,8 +480,28 @@ footer{margin-top:28px;color:var(--faint);font-size:11.5px;font-family:'JetBrain
       <div class="panel c12">
         <h3>Transaction history <small>record · view</small></h3>
         <div class="toolrow">
-          <span class="lbl">Filter token</span>
+          <span class="lbl">Token</span>
           <select id="txFilter"><option value="">All tokens</option></select>
+          <span class="lbl">Type</span>
+          <select id="txType">
+            <option value="">All types</option><option>MINT</option><option>LIST</option><option>SALE</option><option>TRANSFER</option>
+          </select>
+          <span class="lbl">Period</span>
+          <select id="txRange">
+            <option value="">Any time</option>
+            <option value="1">Last hour</option>
+            <option value="24">Last 24 hours</option>
+            <option value="168">Last 7 days</option>
+            <option value="720">Last 30 days</option>
+            <option value="custom">Custom range…</option>
+          </select>
+          <span id="txCustom" style="display:none;align-items:center;gap:8px">
+            <input id="txFrom" type="datetime-local" style="font-size:12px">
+            <span class="lbl">to</span>
+            <input id="txTo" type="datetime-local" style="font-size:12px">
+          </span>
+          <button class="btn sm" id="txClear">Clear</button>
+          <span id="txCount" style="margin-left:auto;font-size:11.5px;color:var(--faint)"></span>
         </div>
         <div style="overflow-x:auto;max-height:340px;overflow-y:auto">
         <table>
@@ -1163,16 +1183,58 @@ function renderWalletCard(){
     :`<div class="empty">No wallet connected — click "Connect wallet" above to create a simulated testnet wallet.</div>`;
 }
 function renderTxTable(){
-  const f=$("#txFilter").value;const rows=[];
-  S.nfts.forEach(n=>(n.transactions||[]).forEach(t=>{if(!f||+f===n.tokenId)rows.push({...t,tokenId:n.tokenId,name:n.name});}));
+  const f=$("#txFilter").value;
+  const type=$("#txType")?$("#txType").value:"";
+  const range=$("#txRange")?$("#txRange").value:"";
+  // Resolve the period into a [from,to] window. A preset is "the last N hours"; the
+  // custom option reads the two datetime inputs, either of which may be left blank.
+  let from=null, to=null;
+  if(range==="custom"){
+    const a=$("#txFrom").value, b=$("#txTo").value;
+    if(a) from=new Date(a).getTime();
+    if(b) to=new Date(b).getTime();
+  } else if(range){
+    from=Date.now()-Number(range)*3600*1000;
+  }
+
+  const all=[];
+  S.nfts.forEach(n=>(n.transactions||[]).forEach(t=>all.push({...t,tokenId:n.tokenId,name:n.name})));
+  const rows=all.filter(t=>{
+    if(f && +f!==t.tokenId) return false;
+    if(type && t.txType!==type) return false;
+    const ts=new Date(t.timestamp).getTime();
+    if(from!=null && ts<from) return false;
+    if(to!=null && ts>to) return false;
+    return true;
+  });
   rows.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+  const cnt=$("#txCount");
+  if(cnt) cnt.textContent = rows.length===all.length
+    ? `${all.length} transactions`
+    : `${rows.length} of ${all.length} transactions`;
   $("#txBody").innerHTML=rows.map(t=>`<tr>
     <td class="mono">#${t.tokenId}</td><td><span class="pill-type">${esc(t.txType)}</span></td>
     <td class="mono">${esc(shortAddr(t.senderAddress))}</td><td class="mono">${esc(shortAddr(t.recipientAddress))}</td>
     <td class="mono" style="color:var(--ink)">${t.priceEth||0} ETH</td>
     <td class="mono">${esc(shortAddr(t.txHash||"—"))}</td>
-    <td class="mono">${new Date(t.timestamp).toLocaleString()}</td></tr>`).join("")||`<tr><td colspan="7"><div class="empty">No transactions yet.</div></td></tr>`;
+    <td class="mono">${new Date(t.timestamp).toLocaleString()}</td></tr>`).join("")
+    || `<tr><td colspan="7"><div class="empty">${all.length ? "No transactions match these filters." : "No transactions yet."}</div></td></tr>`;
 }
+
+/* transaction-history filters */
+(function(){
+  const range=$("#txRange"), custom=$("#txCustom");
+  if(!range) return;
+  const sync=()=>{ custom.style.display = range.value==="custom" ? "inline-flex" : "none"; };
+  range.addEventListener("change",()=>{ sync(); renderTxTable(); });
+  ["#txType","#txFrom","#txTo"].forEach(id=>{ const el=$(id); if(el) el.addEventListener("change",renderTxTable); });
+  const clr=$("#txClear");
+  if(clr) clr.addEventListener("click",()=>{
+    $("#txFilter").value=""; $("#txType").value=""; range.value="";
+    $("#txFrom").value=""; $("#txTo").value=""; sync(); renderTxTable();
+  });
+  sync();
+})();
 $("#txFilter").addEventListener("input",renderTxTable);
 
 /* Same three connect options as the marketplace: MetaMask, a typed address, or a random
