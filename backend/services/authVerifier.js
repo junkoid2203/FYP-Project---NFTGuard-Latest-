@@ -77,6 +77,15 @@ async function verifyNft(tokenId) {
   const nft = await Nft.findOne({ tokenId });
   if (!nft) throw new Error(`NFT #${tokenId} not found`);
 
+  // Clear this token's authenticity flags before re-deriving them. Previously the layers
+  // only ever upserted, so a flag survived after its cause was gone — Cyber Relics #7 kept
+  // a DUPLICATE_ASSET flag while verifying as Verified, because its twin's perceptual hash
+  // had changed. The fraud and price analysers already clear theirs the same way.
+  await FraudFlag.deleteMany({
+    tokenId,
+    flagType: { $in: ["METADATA_TAMPERED", "DUPLICATE_ASSET", "NON_COMPLIANT_CONTRACT"] },
+  });
+
   const checks = [];
   let authRisk = 0;
   let status = "Verified";
