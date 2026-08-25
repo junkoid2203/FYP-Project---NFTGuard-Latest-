@@ -393,7 +393,32 @@ footer{margin-top:28px;color:var(--faint);font-size:11.5px;font-family:'JetBrain
       </div>
       <div class="panel c12">
         <h3>NFT risk watchlist <small>click a row → Risk Analytics module</small></h3>
-        <div style="overflow-x:auto">
+        <div class="toolrow">
+          <input id="wlSearch" type="search" placeholder="Search name or #id…" style="min-width:180px">
+          <select id="wlColl"><option value="">All collections</option></select>
+          <select id="wlLevel">
+            <option value="">All risk levels</option><option>Low</option><option>Medium</option><option>High</option>
+          </select>
+          <select id="wlAuth">
+            <option value="">All authenticity</option>
+            <option>Verified</option><option>Tampered</option><option>Duplicate</option>
+            <option>NonCompliant</option><option>Unverified</option>
+          </select>
+          <select id="wlFlagged">
+            <option value="">Flagged &amp; clean</option>
+            <option value="flagged">Has fraud flags</option>
+            <option value="clean">No flags</option>
+          </select>
+          <select id="wlSort">
+            <option value="risk-desc">Risk: high → low</option>
+            <option value="risk-asc">Risk: low → high</option>
+            <option value="flags">Most flags</option>
+            <option value="id">Token ID</option>
+          </select>
+          <button class="btn sm" id="wlClear">Clear</button>
+          <span id="wlCount" style="margin-left:auto;font-size:11.5px;color:var(--faint)"></span>
+        </div>
+        <div style="overflow-x:auto;max-height:520px;overflow-y:auto">
         <table>
           <thead><tr><th>Score</th><th>NFT</th><th>Authenticity</th><th>Risk level</th><th>Auth / Fraud / Price</th><th>Flags</th><th>Price</th><th>Owner</th></tr></thead>
           <tbody id="watchBody"></tbody>
@@ -1061,6 +1086,41 @@ function renderOverview(){
   chart("scores",$("#chScores"),{type:"bar",data:{labels:list.map(n=>`#${n.tokenId} ${n.name}`),
     datasets:[{data:list.map(n=>n.risk?.unifiedScore??0),backgroundColor:list.map(n=>lvlColor(n.risk?.riskLevel??"Low")+"CC"),borderRadius:5,maxBarThickness:26}]},
     options:base({plugins:{legend:{display:false}},x:{ticks:{maxRotation:38,minRotation:38}},y:{max:100,beginAtZero:true}})});
+  renderWatchlist();
+}
+
+/* The watchlist is filtered separately from the chart above it: the chart shows the whole
+   collection's risk profile, while the table is the working list an admin narrows down. */
+function renderWatchlist(){
+  wlFillCollections();
+  const q=($("#wlSearch")?$("#wlSearch").value:"").trim().toLowerCase();
+  const coll=$("#wlColl")?$("#wlColl").value:"";
+  const lvl=$("#wlLevel")?$("#wlLevel").value:"";
+  const auth=$("#wlAuth")?$("#wlAuth").value:"";
+  const fl=$("#wlFlagged")?$("#wlFlagged").value:"";
+  const sort=$("#wlSort")?$("#wlSort").value:"risk-desc";
+  const nflags=n=>(n.flags||[]).length;
+  const sc=n=>n.risk?.unifiedScore??0;
+
+  let list=S.nfts.filter(n=>{
+    if(q && !(String(n.name||"").toLowerCase().includes(q) || String(n.tokenId).includes(q.replace("#","")))) return false;
+    if(coll && n.collectionName!==coll) return false;
+    if(lvl && (n.risk?.riskLevel??"Low")!==lvl) return false;
+    if(auth && n.authenticityStatus!==auth) return false;
+    if(fl==="flagged" && nflags(n)===0) return false;
+    if(fl==="clean"   && nflags(n)>0) return false;
+    return true;
+  });
+  list.sort((a,b)=>
+      sort==="risk-asc" ? sc(a)-sc(b)
+    : sort==="flags"    ? nflags(b)-nflags(a) || sc(b)-sc(a)
+    : sort==="id"       ? a.tokenId-b.tokenId
+    :                     sc(b)-sc(a));
+
+  const cnt=$("#wlCount");
+  if(cnt) cnt.textContent = list.length===S.nfts.length
+    ? `${S.nfts.length} NFTs` : `${list.length} of ${S.nfts.length} NFTs`;
+
   $("#watchBody").innerHTML=list.map(n=>{
     const r=n.risk||{unifiedScore:0,riskLevel:"Low",breakdown:{authRisk:0,fraudRisk:0,priceRisk:0}};const rc=lvlColor(r.riskLevel);
     return `<tr class="click" onclick="gotoRisk(${n.tokenId})">
@@ -1072,8 +1132,28 @@ function renderOverview(){
       <td class="mono">${r.breakdown.authRisk??0} / ${r.breakdown.fraudRisk??0} / ${r.breakdown.priceRisk??0}</td>
       <td class="mono">${(n.flags||[]).length||"—"}</td>
       <td class="mono">${n.listed?n.priceEth+" ETH":"—"}</td>
-      <td class="mono">${esc(shortAddr(n.ownerAddress))}</td></tr>`;}).join("");
+      <td class="mono">${esc(shortAddr(n.ownerAddress))}</td></tr>`;}).join("")
+    || `<tr><td colspan="8"><div class="empty">No NFTs match these filters.</div></td></tr>`;
 }
+
+function wlFillCollections(){
+  const sel=$("#wlColl"); if(!sel) return;
+  const names=[...new Set(S.nfts.map(n=>n.collectionName).filter(Boolean))].sort();
+  const keep=sel.value;
+  sel.innerHTML='<option value="">All collections</option>'+names.map(c=>`<option>${esc(c)}</option>`).join("");
+  if(names.includes(keep)) sel.value=keep;
+}
+
+/* watchlist filters */
+(function(){
+  const ids=["#wlSearch","#wlColl","#wlLevel","#wlAuth","#wlFlagged","#wlSort"];
+  ids.forEach(id=>{ const el=$(id); if(el) el.addEventListener(id==="#wlSearch"?"input":"change",renderWatchlist); });
+  const clr=$("#wlClear");
+  if(clr) clr.addEventListener("click",()=>{
+    ids.forEach(id=>{ const el=$(id); if(el) el.value = id==="#wlSort" ? "risk-desc" : ""; });
+    renderWatchlist();
+  });
+})();
 
 /* ================= MODULE 1 — AUTHENTICITY ================= */
 function renderAuth(){
@@ -1260,11 +1340,26 @@ function simFillCollections(){
   });
 })();
 function renderWalletCard(){
-  $("#walletCard").innerHTML=S.wallet?`
-    <div style="font-size:11px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase">Testnet wallet</div>
+  if(!S.wallet){
+    $("#walletCard").innerHTML=`<div class="empty">No wallet connected — click "Connect wallet" above to connect MetaMask, an address, or a simulated wallet.</div>`;
+    return;
+  }
+  // A real MetaMask account holds real Sepolia ETH, so claiming "unlimited" for it was
+  // simply false. Only a simulated wallet gets the infinity symbol.
+  const real=!!S.walletReal;
+  $("#walletCard").innerHTML=`
+    <div style="font-size:11px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase">${real?"🦊 MetaMask wallet":"Simulated testnet wallet"}</div>
     <div class="addr">${esc(S.wallet)}</div>
-    <div class="bal">∞ <small>Sepolia ETH (simulated — unlimited for testing)</small></div>`
-    :`<div class="empty">No wallet connected — click "Connect wallet" above to create a simulated testnet wallet.</div>`;
+    <div class="bal" id="wcBal">${real?'<small>reading balance…</small>':'∞ <small>Sepolia ETH (simulated — unlimited for testing)</small>'}</div>`;
+  if(real && window.ethereum){
+    window.ethereum.request({method:"eth_getBalance",params:[S.wallet,"latest"]})
+      .then(wei=>{
+        const bal=parseInt(wei,16)/1e18;
+        const el=$("#wcBal");
+        if(el) el.innerHTML=`${bal.toFixed(4)} <small>Sepolia ETH (real balance)</small>`;
+      })
+      .catch(()=>{ const el=$("#wcBal"); if(el) el.innerHTML='<small>balance unavailable</small>'; });
+  }
 }
 function renderTxTable(){
   const f=$("#txFilter").value;
