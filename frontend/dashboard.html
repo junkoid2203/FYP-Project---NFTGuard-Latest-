@@ -1307,7 +1307,11 @@ function renderSim(){
   $("#simTable").innerHTML=list.map(n=>{
     const mine=S.wallet&&n.ownerAddress&&n.ownerAddress.toLowerCase()===S.wallet.toLowerCase();
     return `<tr>
-    <td><div class="nm">${esc(n.name)}</div><div class="tid">#${n.tokenId}</div></td>
+    <td><div class="nm">${esc(n.name)}</div><div class="tid">#${n.tokenId}${
+      isOnChainToken(n)
+        ? ' · <span style="color:var(--chain)" title="Exists in the NFTGuard Sepolia contract — trades settle on-chain">⛓ on-chain</span>'
+        : ' · <span style="color:var(--faint)" title="A marketplace record referencing this NFT. Trading it here is simulated and does not affect the real asset.">simulated record</span>'
+    }</div></td>
     <td class="mono">${esc(shortAddr(n.ownerAddress))}${mine?' <span class="badge Verified">you</span>':""}</td>
     <td>${n.listed?'<span class="badge Verified">Listed</span>':'<span class="badge Unverified">Unlisted</span>'}</td>
     <td class="mono">${n.listed?n.priceEth+" ETH":"—"}</td>
@@ -1503,9 +1507,29 @@ async function cancelList(id){
   const n=S.nfts.find(x=>x.tokenId===id);n.listed=false;
   toast(`Listing for #${id} cancelled`);renderSim();
 }
+/** Does this token really exist in OUR Sepolia contract (as opposed to being a database
+ *  record that merely references a mainnet NFT)? Only the former can settle on-chain. */
+const NFTGUARD_CONTRACT_DASH="0x8a4A907794816E6bE76993de230e134Ea95e61F4";
+const isOnChainToken = n => n && n.onChainTokenId!=null &&
+  String(n.contractAddress||"").toLowerCase()===NFTGUARD_CONTRACT_DASH.toLowerCase();
+
 async function buyNft(id){
   if(!S.wallet)return toast("Connect a wallet first","err");
   const n=S.nfts.find(x=>x.tokenId===id);
+  // The admin page had no funds check at all, so a MetaMask account could spend money it
+  // does not have — the marketplace refuses that, and the two pages must agree.
+  if(S.walletReal && window.ethereum){
+    try{
+      const wei=await window.ethereum.request({method:"eth_getBalance",params:[S.wallet,"latest"]});
+      const bal=parseInt(wei,16)/1e18;
+      if(bal < (n.priceEth||0))
+        return toast(`Not enough ETH — this wallet holds ${bal.toFixed(4)} but #${id} costs ${n.priceEth}`,"err");
+    }catch(_){}
+  }
+  // A token that genuinely lives in our contract must settle on-chain, so a simulated
+  // wallet cannot buy it; that would record a transfer the blockchain never made.
+  if(isOnChainToken(n) && !S.walletReal)
+    return toast(`#${id} exists on Sepolia (token #${n.onChainTokenId}) — connect MetaMask to buy it on-chain`,"err");
   // Simulated wallet is intentionally unlimited — this is a fraud-detection demo,
   // so running out of play money would only get in the way of testing.
   if(S.balance<n.priceEth) S.balance=SIM_BALANCE;
