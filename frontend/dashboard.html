@@ -470,7 +470,29 @@ footer{margin-top:28px;color:var(--faint);font-size:11.5px;font-family:'JetBrain
       </div>
       <div class="panel c8">
         <h3>Marketplace listings <small>list · buy</small></h3>
-        <div style="overflow-x:auto">
+        <div class="toolrow">
+          <input id="simSearch" type="search" placeholder="Search name or #id…" style="min-width:190px">
+          <select id="simColl"><option value="">All collections</option></select>
+          <select id="simStatus">
+            <option value="">Listed &amp; unlisted</option>
+            <option value="listed">Listed only</option>
+            <option value="unlisted">Unlisted only</option>
+            <option value="mine">Owned by me</option>
+          </select>
+          <select id="simRisk">
+            <option value="">All risk levels</option><option>Low</option><option>Medium</option><option>High</option>
+          </select>
+          <select id="simSort">
+            <option value="id">Token ID</option>
+            <option value="price-desc">Price: high → low</option>
+            <option value="price-asc">Price: low → high</option>
+            <option value="risk-desc">Risk: high → low</option>
+            <option value="name">Name A → Z</option>
+          </select>
+          <button class="btn sm" id="simClear">Clear</button>
+          <span id="simCount" style="margin-left:auto;font-size:11.5px;color:var(--faint)"></span>
+        </div>
+        <div style="overflow-x:auto;max-height:420px;overflow-y:auto">
         <table>
           <thead><tr><th>NFT</th><th>Owner</th><th>Status</th><th>Price</th><th style="width:210px">Actions</th></tr></thead>
           <tbody id="simTable"></tbody>
@@ -1162,7 +1184,47 @@ $("#ocRun").addEventListener("click",ocImport);
 /* ================= MODULE 2 — TRANSACTION SIMULATION ================= */
 function renderSim(){
   renderWalletCard();
-  $("#simTable").innerHTML=S.nfts.map(n=>{
+  simFillCollections();
+  const q=($("#simSearch")?$("#simSearch").value:"").trim().toLowerCase();
+  const coll=$("#simColl")?$("#simColl").value:"";
+  const st=$("#simStatus")?$("#simStatus").value:"";
+  const risk=$("#simRisk")?$("#simRisk").value:"";
+  const sort=$("#simSort")?$("#simSort").value:"id";
+  const me=(S.wallet||"").toLowerCase();
+
+  let list=S.nfts.filter(n=>{
+    if(q && !(String(n.name||"").toLowerCase().includes(q) || String(n.tokenId).includes(q.replace("#","")))) return false;
+    if(coll && n.collectionName!==coll) return false;
+    if(st==="listed"   && !n.listed) return false;
+    if(st==="unlisted" &&  n.listed) return false;
+    if(st==="mine"     && !(me && n.ownerAddress && n.ownerAddress.toLowerCase()===me)) return false;
+    if(risk && !(n.risk && n.risk.riskLevel===risk)) return false;
+    return true;
+  });
+  const sc=n=>(n.risk&&n.risk.unifiedScore)||0;
+  // An unlisted NFT keeps its last price in the record but shows "—", so sorting on the
+  // raw value floated unlisted rows to the top of a price sort. Treat them as having no
+  // price and push them to the end of either direction.
+  const px=n=>n.listed ? (n.priceEth||0) : null;
+  const byPrice=(a,b,desc)=>{
+    const x=px(a), y=px(b);
+    if(x===null && y===null) return a.tokenId-b.tokenId;
+    if(x===null) return 1;
+    if(y===null) return -1;
+    return desc ? y-x : x-y;
+  };
+  list.sort((a,b)=>
+      sort==="price-desc" ? byPrice(a,b,true)
+    : sort==="price-asc"  ? byPrice(a,b,false)
+    : sort==="risk-desc"  ? sc(b)-sc(a)
+    : sort==="name"       ? String(a.name||"").localeCompare(String(b.name||""))
+    :                       a.tokenId-b.tokenId);
+
+  const cnt=$("#simCount");
+  if(cnt) cnt.textContent = list.length===S.nfts.length
+    ? `${S.nfts.length} NFTs` : `${list.length} of ${S.nfts.length} NFTs`;
+
+  $("#simTable").innerHTML=list.map(n=>{
     const mine=S.wallet&&n.ownerAddress&&n.ownerAddress.toLowerCase()===S.wallet.toLowerCase();
     return `<tr>
     <td><div class="nm">${esc(n.name)}</div><div class="tid">#${n.tokenId}</div></td>
@@ -1172,9 +1234,31 @@ function renderSim(){
     <td>${n.listed&&!mine?`<button class="btn sm primary" onclick="buyNft(${n.tokenId})">Buy ${n.priceEth} ETH</button>`:""}
         ${mine&&!n.listed?`<span class="inline-price"><input type="number" step="0.01" min="0.01" id="lp${n.tokenId}" placeholder="ETH">
           <button class="btn sm" onclick="listNft(${n.tokenId})">List</button></span>`:""}
-        ${mine&&n.listed?`<button class="btn sm danger" onclick="cancelList(${n.tokenId})">Cancel</button>`:""}</td></tr>`;}).join("");
+        ${mine&&n.listed?`<button class="btn sm danger" onclick="cancelList(${n.tokenId})">Cancel</button>`:""}</td></tr>`;}).join("")
+    || `<tr><td colspan="5"><div class="empty">No NFTs match these filters.</div></td></tr>`;
   renderTxTable();
 }
+
+/* Collection list is derived from the data, so a newly minted or imported collection
+   appears in the dropdown without any hard-coded list. */
+function simFillCollections(){
+  const sel=$("#simColl"); if(!sel) return;
+  const names=[...new Set(S.nfts.map(n=>n.collectionName).filter(Boolean))].sort();
+  const keep=sel.value;
+  sel.innerHTML='<option value="">All collections</option>'+names.map(c=>`<option>${esc(c)}</option>`).join("");
+  if(names.includes(keep)) sel.value=keep;
+}
+
+/* marketplace-listing filters */
+(function(){
+  const ids=["#simSearch","#simColl","#simStatus","#simRisk","#simSort"];
+  ids.forEach(id=>{ const el=$(id); if(el) el.addEventListener(id==="#simSearch"?"input":"change",renderSim); });
+  const clr=$("#simClear");
+  if(clr) clr.addEventListener("click",()=>{
+    ids.forEach(id=>{ const el=$(id); if(el) el.value = id==="#simSort" ? "id" : ""; });
+    renderSim();
+  });
+})();
 function renderWalletCard(){
   $("#walletCard").innerHTML=S.wallet?`
     <div style="font-size:11px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase">Testnet wallet</div>
