@@ -77,28 +77,38 @@ async function analyzeMarketGraph() {
   };
   const rings = sccs.map(ringStats).sort((a, b) => b.size - a.size || b.washScore - a.washScore);
 
-  const top = rings[0];
-  let gNodes = [], gEdges = [];
-  if (top) {
-    const set = new Set(top.wallets);
-    gNodes = top.wallets.map(w => {
+  // Build drawable node/edge data for EVERY ring, not just the biggest. The dashboard
+  // previously drew rings[0] only, so a smaller ring — which is where a plain two-wallet
+  // A<->B loop lands — could never be inspected.
+  const buildGraph = ring => {
+    const set = new Set(ring.wallets);
+    const gNodes = ring.wallets.map(w => {
       let recip = 0;
-      top.wallets.forEach(o => { if (o !== w && (adjArr.get(w) || []).includes(o) && (adjArr.get(o) || []).includes(w)) recip++; });
-      const ws = Math.min(100, Math.round(30 + recip * 18 + (tradeCount[w] || 0) * 4));
-      return { address: w, trades: tradeCount[w] || 0, washScore: ws };
+      ring.wallets.forEach(o => { if (o !== w && (adjArr.get(w) || []).includes(o) && (adjArr.get(o) || []).includes(w)) recip++; });
+      return { address: w, trades: tradeCount[w] || 0,
+               washScore: Math.min(100, Math.round(30 + recip * 18 + (tradeCount[w] || 0) * 4)) };
     });
+    const gEdges = [];
     for (const [k, wt] of weight) {
       const [f, t2] = k.split(">");
       if (set.has(f) && set.has(t2)) gEdges.push({ from: f, to: t2, trades: wt });
     }
-  }
+    return { nodes: gNodes, edges: gEdges, washScore: ring.washScore };
+  };
+
+  const shown = rings.slice(0, 8);
+  const graphs = shown.map((r, i) => ({
+    index: i, size: r.size, trades: r.trades, reciprocity: r.reciprocity, washScore: r.washScore,
+    ...buildGraph(r),
+  }));
 
   return {
     totalSales: rows.length,
     wallets: nodes.length,
     ringCount: rings.length,
-    topRings: rings.slice(0, 6).map(r => ({ size: r.size, trades: r.trades, reciprocity: r.reciprocity, washScore: r.washScore })),
-    graph: { nodes: gNodes, edges: gEdges, washScore: top ? top.washScore : 0 },
+    topRings: shown.map(r => ({ size: r.size, trades: r.trades, reciprocity: r.reciprocity, washScore: r.washScore })),
+    graphs,                                                              // every ring, selectable
+    graph: graphs[0] || { nodes: [], edges: [], washScore: 0 },          // default = largest
   };
 }
 
