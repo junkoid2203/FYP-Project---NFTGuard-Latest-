@@ -1939,6 +1939,10 @@ async function mintOnChain(){
   const name=$("#mName").value.trim();
   const image=$("#mImgUrl").value.trim()||mintImgData||"";
   if(!name){ toast("Give the NFT a name","err"); return; }
+  // The simulated mint refuses a flagged wallet; the on-chain path did not, so a banned
+  // wallet could still mint by signing with MetaMask. Block it here too — and note the
+  // backend now rejects the record as well, using the MetaMask address that actually signs.
+  if(state.walletFlagged){ toast("⚠ This wallet is flagged for wash trading — minting is blocked","err"); return; }
   const btn=$("#mintChainBtn"); const orig=btn.textContent; btn.disabled=true;
   try{
     const provider=new window.ethers.BrowserProvider(window.ethereum);

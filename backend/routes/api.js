@@ -522,6 +522,12 @@ router.post("/record-mint", wrap(async (req, res) => {
   const { name, image = "", priceEth = 0, walletAddress, onChainTokenId, txHash, metadataHash = "", tokenURI = "" } = req.body || {};
   if (!name || !walletAddress || !txHash) return res.status(400).json({ error: "name, walletAddress and txHash are required" });
 
+  // The on-chain mint path was unguarded, so a blacklisted wallet could still mint by
+  // signing with MetaMask. The chain itself cannot be stopped, but the marketplace must
+  // refuse to index the result — otherwise a banned wallet still gets a listed NFT.
+  const mintBan = await blockedWallet(walletAddress);
+  if (mintBan) return res.status(403).json({ error: mintBan });
+
   const last = await Nft.findOne().sort({ tokenId: -1 }).lean();
   const tokenId = (last ? last.tokenId : 0) + 1; // app-internal id (real on-chain id kept in traits)
 
