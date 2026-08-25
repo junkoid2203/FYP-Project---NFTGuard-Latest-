@@ -34,6 +34,9 @@ const nftSchema = new mongoose.Schema(
     externalTokenId: { type: String, default: "" },
     externalChain: { type: String, default: "" },     // which EVM chain it was found on
     chainCompliance: { type: Object, default: null }, // real ERC-165 result observed on that chain
+    // Pre-tamper snapshot written by scripts/tamperNft.js so a test rug-pull can be undone.
+    // Kept out of `traits`, which is rendered to users as the token's attributes.
+    tamperBackup: { type: Object, default: null },
   },
   { timestamps: true }
 );
