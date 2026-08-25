@@ -29,8 +29,8 @@
     "minSamples": 8,
     "minSamplesForListing": 8,
     "underpriceFactor": 5,
-    "extremeRatio": 10,
-    "_extremeRatioComment": "Below minSamplesForListing a Z-score is meaningless, but a listing >= this multiple of the median is grossly out of range regardless of sample size, so it is still flagged."
+    "absurdPriceEth": 50000,
+    "_absurdPriceComment": "Below minSamplesForListing there is no reliable median, so a ratio would flag ordinary prices on a new collection. Only an absolute figure above any real NFT sale (record: Beeple ~38,000 ETH) is treated as impossible."
   },
   "authenticity": {
     "nonCompliantPenalty": 70,

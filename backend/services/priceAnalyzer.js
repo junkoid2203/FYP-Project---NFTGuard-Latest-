@@ -131,12 +131,14 @@ async function priceRiskForToken(tokenId) {
   const nft = await Nft.findOne({ tokenId }).select("listed priceEth").lean();
   let listing = null;
   const enoughSales = stats.sampleSize >= (minSamplesForListing ?? 3);
-  // A median and MAD from a handful of trades are meaningless, so statistical judgement
-  // needs a real sample. But an asking price thousands of times the median needs no
-  // statistics at all — so a small collection still flags a grossly extreme listing,
-  // while an ordinary one stays quiet.
-  const smallSampleExtreme = !enoughSales && stats.sampleSize >= 2 && stats.medianPrice > 0
-    && (nft && nft.priceEth >= stats.medianPrice * (extremeRatio ?? 10));
+  // Without a real sample there is no "normal" to compare against, and a ratio is useless
+  // here: a brand-new collection whose only trades were 0.002 ETH made 0.02 look extreme,
+  // so an ordinary asking price on a freshly minted NFT was flagged. Fall back instead to
+  // an ABSOLUTE ceiling set above any price an NFT has ever fetched (the record is
+  // Beeple's ~38,000 ETH), so a small collection is only flagged for a figure that could
+  // not be a genuine ask.
+  const absurd = thresholds.priceAnomaly.absurdPriceEth ?? 50000;
+  const smallSampleExtreme = !enoughSales && nft && nft.priceEth >= absurd;
   if (nft && nft.listed && nft.priceEth > 0 && (enoughSales || smallSampleExtreme)) {
     const z = zScoreOf(nft.priceEth, stats);
     const med = stats.medianPrice;
@@ -160,7 +162,7 @@ async function priceRiskForToken(tokenId) {
         ? `only ${ratio.toFixed(3)}× the collection median (${med} ETH) — far below the normal range`
         : enoughSales
           ? `|Z| = ${Math.abs(z).toFixed(2)} (> ${zThreshold}), ~${ratio.toFixed(1)}× the collection median of ${med} ETH`
-          : `~${ratio.toFixed(1)}× the collection median of ${med} ETH — extreme enough to flag despite only ${stats.sampleSize} recorded sale(s)`;
+          : `${nft.priceEth} ETH exceeds the ${absurd} ETH sanity ceiling — higher than any NFT has ever sold for, and this collection has only ${stats.sampleSize} sale(s) to judge against`;
       listing = { priceEth: nft.priceEth, zScore: Number(z.toFixed(3)), medianPrice: med,
                   ratio: Number(ratio.toFixed(3)), direction: underpriced ? "under" : "over", risk: Math.round(listingRisk) };
       await FraudFlag.create({
