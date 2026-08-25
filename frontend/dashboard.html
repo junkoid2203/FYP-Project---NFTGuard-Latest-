@@ -237,6 +237,8 @@ td.mono{font-family:'JetBrains Mono';font-size:11.5px;color:var(--dim)}
 .scard .v{font-family:'JetBrains Mono';font-size:17px;font-weight:600}
 .scard .k{font-size:10.5px;color:var(--faint);letter-spacing:.05em;text-transform:uppercase;margin-top:2px}
 
+/* the registry table scrolls inside a capped box, so keep its header visible */
+#authRegistry thead th{position:sticky;top:0;background:var(--panel);z-index:1}
 .empty{color:var(--faint);font-size:12.5px;padding:16px;border:1px dashed var(--line);border-radius:10px;text-align:center}
 
 /* ---------- wash-trading ring visualisation ---------- */
@@ -439,8 +441,10 @@ footer{margin-top:28px;color:var(--faint);font-size:11.5px;font-family:'JetBrain
         </div>
       </div>
       <div class="panel c5" id="authRegistry">
-        <h3>Registry status <small>all indexed NFTs</small></h3>
-        <div style="overflow-x:auto">
+        <h3>Registry status <small id="authCount">all indexed NFTs</small></h3>
+        <!-- capped + scrollable: the full list ran thousands of pixels tall while the
+             pipeline beside it is short, leaving the two columns badly mismatched -->
+        <div style="overflow:auto;max-height:560px;border:1px solid var(--line);border-radius:10px">
         <table>
           <thead><tr><th>NFT</th><th>Status</th><th>Metadata hash</th><th></th></tr></thead>
           <tbody id="authTable"></tbody>
@@ -927,6 +931,33 @@ function mgDraw(){
   if($("#mgPanel")&&!$("#mgPanel").dataset.sel) mgEmptyPanel();
 }
 function mgEmptyPanel(){ if($("#mgPanel")) $("#mgPanel").innerHTML=`<div class="mg-empty"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.3"/><circle cx="18" cy="6" r="2.3"/><circle cx="12" cy="18" r="2.3"/><path d="M7.9 7.4 16.1 16.3M16.1 7.4 7.9 16.3M8.4 6h7.2"/></svg><div>Click a wallet in the ring to inspect it and ban it marketplace-wide.</div></div>`; }
+/* Break a wallet's trades down per counterparty. "7 trades" alone hides whether that was
+   one partner seven times (a tight wash pair) or seven partners once each (ordinary
+   trading) — the distinction the wash score turns on. */
+function mgCounterparties(ring, node){
+  const me=node.address.toLowerCase(), tally={};
+  (ring.edges||[]).forEach(e=>{
+    const f=e.from.toLowerCase(), t=e.to.toLowerCase();
+    if(f!==me && t!==me) return;
+    const other=(f===me)?t:f;
+    if(other===me) return;                       // self-loop, counted separately
+    if(!tally[other]) tally[other]={out:0,in:0};
+    if(f===me) tally[other].out+=e.trades; else tally[other].in+=e.trades;
+  });
+  const rows=Object.entries(tally).sort((a,b)=>(b[1].out+b[1].in)-(a[1].out+a[1].in));
+  if(!rows.length) return "";
+  return `<div style="margin:11px 0 6px;font-size:10px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase">Traded with</div>`
+    + rows.map(([addr,c])=>{
+        const total=c.out+c.in, both=c.out>0&&c.in>0;
+        return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0;border-bottom:1px dashed var(--line)">
+          <span class="mono" style="font-size:10.5px;color:var(--ink)">${esc(shortAddr(addr))}</span>
+          <span style="font-size:10.5px;color:${both?'var(--alert)':'var(--dim)'};white-space:nowrap">
+            ${total}x <span style="color:var(--faint)">(${c.out}&rarr; ${c.in}&larr;)</span>${both?' ⇄':''}
+          </span></div>`;
+      }).join("")
+    + `<div style="font-size:10.5px;color:var(--faint);margin:6px 0 2px;line-height:1.45">⇄ marks a two-way pair — the NFT came back, which is the wash-trading signal.</div>`;
+}
+
 function mgSelect(i){
   const ring=(mgData.graphs && mgData.graphs[mgRing]) || mgData.graph;
   const n=ring.nodes[i]; if(!n) return;
@@ -940,7 +971,8 @@ function mgSelect(i){
         <div class="meter"><i style="width:${Math.max(4,n.washScore)}%;background:${wc}"></i></div></div>
       <div class="sx"><div class="v" style="color:var(--chain)">${n.trades}</div><div class="k">Trades</div></div>
     </div>
-    <button class="btn sm" id="mgBan" style="width:100%;border-color:${banned?'var(--guard)':'var(--alert)'};color:${banned?'var(--guard)':'var(--alert)'}">${banned?'&#10003; Un-ban wallet':'Ban wallet'}</button>
+    ${mgCounterparties(ring, n)}
+    <button class="btn sm" id="mgBan" style="width:100%;margin-top:10px;border-color:${banned?'var(--guard)':'var(--alert)'};color:${banned?'var(--guard)':'var(--alert)'}">${banned?'&#10003; Un-ban wallet':'Ban wallet'}</button>
     ${banned?'<div class="note" style="color:var(--alert)">Currently blocked from mint, buy &amp; list.</div>':'<div class="note" style="color:var(--faint)">Banning blocks this wallet marketplace-wide.</div>'}`;
   $("#mgBan").onclick=()=>mgToggleBan(n);
 }
