@@ -1,0 +1,26 @@
+# Render blueprint — one web service running the Express API, which also serves the
+# frontend as static files, so the whole marketplace deploys as a single service.
+#
+# MONGODB_URI is not listed here on purpose: it carries a password, so it is entered
+# in the Render dashboard instead of being committed. The remaining values are safe
+# to keep in the repo — the contract address is public on Sepolia either way.
+services:
+  - type: web
+    name: nftguard
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: CONTRACT_ADDRESS
+        value: "0x8a4A907794816E6bE76993de230e134Ea95e61F4"
+      - key: MONGODB_URI
+        sync: false      # set in the dashboard, never committed
+      - key: PINATA_GATEWAY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
