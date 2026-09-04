@@ -14,7 +14,8 @@
     "prove:erc165": "node scripts/proveErc165.js",
     "remove": "node scripts/removeNft.js",
     "tamper": "node scripts/tamperNft.js",
-    "prove:anchor": "node scripts/proveAnchor.js"
+    "prove:anchor": "node scripts/proveAnchor.js",
+    "migrate": "node scripts/migrateToCloud.js"
   },
   "dependencies": {
     "axios": "^1.7.2",
