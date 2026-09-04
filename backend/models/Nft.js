@@ -17,6 +17,10 @@ const nftSchema = new mongoose.Schema(
       enum: ["Unverified", "Verified", "Tampered", "Duplicate", "NonCompliant"],
       default: "Unverified",
     },
+    // Every layer this token failed, in pipeline order. authenticityStatus holds only the
+    // first of these because it is a single enum, which hid the second failure when a token
+    // failed two layers at once (e.g. tampered AND a copy-mint).
+    authenticityFailures: { type: [String], default: [] },
     erc721Compliant: { type: Boolean, default: null },
     collectionName: { type: String, default: "NFTGuard Collection", index: true },
     creatorAddress: { type: String, default: "" },

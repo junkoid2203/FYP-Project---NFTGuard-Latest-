@@ -253,6 +253,8 @@ section{max-width:1240px;margin:0 auto;padding:84px 4vw 20px}
 .check .ic{width:20px;height:20px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700}
 .check.pass .ic{background:var(--guard-dim);color:var(--guard)}
 .check.fail .ic{background:var(--alert-dim);color:var(--alert)}
+.check.na .ic{background:var(--line);color:var(--faint)}
+.check.na{opacity:.72}
 .check .d{color:var(--faint);font-size:12px;margin-top:2px;font-family:'JetBrains Mono';word-break:break-all}
 
 .flag{border:1px solid var(--line);border-left:3px solid var(--alert);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:rgba(255,77,94,.04)}
@@ -772,7 +774,7 @@ body.profile-mode #profile{display:block}
       : (items.length? items.map(function(n){
           var lvl=n.risk?n.risk.riskLevel:"Low";
           var img=n.image?'<img src="'+esc(n.image)+'" alt="" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.remove()">':'';
-          return '<article class="card"><div class="art" style="aspect-ratio:1/1;position:relative">'+img+'<span class="badge '+esc(n.authenticityStatus)+'">'+esc(n.authenticityStatus)+'</span></div>'+
+          return '<article class="card"><div class="art" style="aspect-ratio:1/1;position:relative">'+img+authBadge(n)+'</div>'+
             '<div class="meta"><div class="row1"><span class="name">'+esc(n.name)+'</span><span class="tid">#'+n.tokenId+'</span></div>'+
             '<div class="row2"><span class="price">'+(n.listed?esc(n.priceEth)+' <small>ETH</small>':'<small>not listed</small>')+'</span><span class="lvl '+lvl+'">'+lvl+'</span></div></div></article>';
         }).join("") : '<div class="noflag" style="grid-column:1/-1">No items yet. Mint an NFT from the Create tab and it will show up here.</div>');
@@ -1180,7 +1182,7 @@ function renderGrid(){
     const owned=n.ownerAddress&&state.wallet&&n.ownerAddress.toLowerCase()===state.wallet.toLowerCase();
     return `<article class="card" data-id="${n.tokenId}" tabindex="0" aria-label="${esc(n.name)}, risk ${score??"unknown"}">
       <div class="art">${n.image?`<img src="${esc(n.image)}" alt="${esc(n.name)}" loading="lazy" onerror="this.remove()">`:tokenArt(n.tokenId)}
-        <span class="badge ${esc(n.authenticityStatus)}">${esc(n.authenticityStatus)}</span>
+        ${authBadge(n)}
         ${score!==null?`<div class="ring" style="--rv:${score};--rc:${rc}"><b>${score}</b></div>`:""}
       </div>
       <div class="meta">
@@ -1301,16 +1303,22 @@ async function openDetail(id){
   $("#overlay").classList.add("open"); document.body.style.overflow="hidden";
 }
 function defaultChecks(n){
-  const tampered=n.authenticityStatus==="Tampered", dup=n.authenticityStatus==="Duplicate", nonc=n.authenticityStatus==="NonCompliant";
+  const f=authFails(n);
+  const nonc=f.includes("NonCompliant"), tampered=f.includes("Tampered"), dup=f.includes("Duplicate");
+  const known=f.length>0;   // a clean token failed nothing, so every layer really did pass
+  const line=(layer,failed,failMsg,passMsg)=> failed
+    ? {layer,pass:false,detail:failMsg}
+    : known ? {layer,pass:true,na:true,detail:"Not re-checked in this view — press Re-run verification for the live result"}
+            : {layer,pass:true,detail:passMsg};
   return [
-    {layer:"Smart contract validation",pass:!nonc,detail: nonc?"Contract failed ERC-721/ERC-1155 interface check":"ERC-165 supportsInterface → ERC-721: true"},
-    {layer:"Metadata integrity (SHA-256)",pass:!tampered,detail: tampered?"MISMATCH — off-chain hash differs from on-chain anchor":"Off-chain metadata hash matches on-chain anchor"},
-    {layer:"Duplicate detection (pHash)",pass:!dup,detail: dup?"Perceptual hash matches an existing registry asset":"No perceptually similar assets found in registry"},
+    line("Smart contract validation",nonc,"Contract failed ERC-721/ERC-1155 interface check","ERC-165 supportsInterface → ERC-721: true"),
+    line("Metadata integrity (SHA-256)",tampered,"MISMATCH — off-chain hash differs from on-chain anchor","Off-chain metadata hash matches on-chain anchor"),
+    line("Duplicate detection (pHash)",dup,"Perceptual hash matches an existing registry asset","No perceptually similar assets found in registry"),
   ];
 }
 function renderChecks(checks){
   $("#mChecks").innerHTML = checks.map(c=>`
-    <div class="check ${c.pass?"pass":"fail"}"><div class="ic">${c.pass?"✓":"✕"}</div>
+    <div class="check ${c.na?"na":c.pass?"pass":"fail"}"><div class="ic">${c.na?"–":c.pass?"✓":"✕"}</div>
     <div><div>${esc(c.layer)}</div><div class="d">${esc(c.detail)}</div></div></div>`).join("");
 }
 function renderTxTable(n){
@@ -1497,7 +1505,7 @@ function openCheckout(n){
   const lvl=n.risk&&n.risk.riskLevel, risky=lvl==="Medium"||lvl==="High";
   // Assets that fail authenticity verification are not tradeable at all (the backend
   // rejects them too — this just stops the user before they try).
-  const blocked=["Tampered","Duplicate","NonCompliant"].includes(n.authenticityStatus);
+  const blocked=authFails(n).length>0;
   const reasons=(n.flags||[]).map(f=>f.flagType.replaceAll("_"," ").toLowerCase()).slice(0,3).join(", ")||"suspicious price / trading patterns";
   const img=n.image?`<img src="${esc(n.image)}" alt="" onerror="this.remove()">`:tokenArt(n.tokenId,120);
   $("#coBody").innerHTML=`
@@ -1516,7 +1524,7 @@ function openCheckout(n){
       <div>
         <div class="co-label">Payment</div>
         <div class="co-pay"><span class="co-dot"></span><span class="mono">${esc(shortAddr(state.wallet))}</span><span class="co-badge">Connected</span></div>
-        ${blocked?`<div class="co-warn" style="border-color:rgba(255,77,94,.5);background:var(--alert-dim)">⛔ <b>Purchase blocked — ${esc(n.authenticityStatus)}</b><br>${n.authenticityStatus==="Tampered"?"The metadata doesn't match its on-chain hash (possible fake)":n.authenticityStatus==="Duplicate"?"The image matches another minted NFT (likely copy-mint)":"The contract failed the ERC-721 standard check"}. NFTGuard does not allow assets that fail authenticity verification to be traded.</div>`:""}
+        ${blocked?`<div class="co-warn" style="border-color:rgba(255,77,94,.5);background:var(--alert-dim)">⛔ <b>Purchase blocked — ${esc(authFails(n).join(" + "))}</b><br>${authFails(n).map(f=>AUTH_REASON[f]).filter(Boolean).join(". ")}. NFTGuard does not allow assets that fail authenticity verification to be traded.</div>`:""}
         ${(!blocked&&risky)?`<div class="co-warn">⚠ <b>${lvl} risk</b> (score ${n.risk.unifiedScore}/100)${reasons?`: ${esc(reasons)}`:""}. Trading patterns look suspicious — review before you buy.</div>
         <label style="display:flex;gap:9px;align-items:flex-start;margin-top:11px;font-size:12.5px;color:var(--dim);cursor:pointer;user-select:none">
           <input type="checkbox" id="coAck" style="accent-color:var(--amber);width:15px;height:15px;margin-top:1px;flex:none">
@@ -1799,6 +1807,18 @@ $("#mCancel").addEventListener("click",async()=>{
     n.listed=false; toast(`Listing cancelled for #${n.tokenId}`); renderGrid(); openDetail(n.tokenId);
   }
 });
+
+/* A token can fail more than one authenticity layer at once (e.g. tampered AND a copy-mint).
+   authenticityStatus is a single enum and carries only the first, so read the whole list. */
+function authFails(n){ const f=n.authenticityFailures; return (Array.isArray(f)&&f.length)?f
+  : (["Tampered","Duplicate","NonCompliant"].includes(n.authenticityStatus)?[n.authenticityStatus]:[]); }
+function authBadge(n){ const f=authFails(n);
+  const label=f.length>1?(f[0]+" +"+(f.length-1)):(n.authenticityStatus||"Unverified");
+  const tip=f.length>1?(' title="Failed '+f.length+' layers: '+f.join(", ")+'"'):"";
+  return '<span class="badge '+esc(n.authenticityStatus)+'"'+tip+'>'+esc(label)+'</span>'; }
+const AUTH_REASON={Tampered:"The metadata doesn't match its on-chain hash (possible fake)",
+  Duplicate:"The image matches another minted NFT (likely copy-mint)",
+  NonCompliant:"The contract failed the ERC-721 standard check"};
 
 /* ---------- re-verify ---------- */
 $("#mVerify").addEventListener("click",async()=>{

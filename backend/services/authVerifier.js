@@ -73,7 +73,7 @@ async function findDuplicates(tokenId, imageHash) {
  * Full verification pipeline for one token.
  * Mirrors sequence diagram Fig 4.3 step-by-step.
  */
-async function verifyNft(tokenId) {
+async function verifyNft(tokenId, cascade = true) {
   const nft = await Nft.findOne({ tokenId });
   if (!nft) throw new Error(`NFT #${tokenId} not found`);
 
@@ -87,8 +87,8 @@ async function verifyNft(tokenId) {
   });
 
   const checks = [];
+  const failures = [];   // every layer that failed, not just the first
   let authRisk = 0;
-  let status = "Verified";
 
   // ---- Layer 1: contract compliance (steps 3-6, Fig 4.3) ----
   // An imported mainnet token carries a REAL ERC-165 result observed at import
@@ -108,7 +108,7 @@ async function verifyNft(tokenId) {
     });
     if (!compliance.compliant) {
       authRisk = 100; // authenticity is binary: untrusted contract => no trust
-      status = "NonCompliant";
+      failures.push("NonCompliant");
       await FraudFlag.findOneAndUpdate(
         { tokenId, flagType: "NON_COMPLIANT_CONTRACT" },
         { tokenId, flagType: "NON_COMPLIANT_CONTRACT", penaltyScore: 100,
@@ -125,7 +125,7 @@ async function verifyNft(tokenId) {
       pass: simulatedPass,
       detail: `${compliance.reason} — using stored compliance flag (${simulatedPass ? "compliant" : "non-compliant"})`,
     });
-    if (!simulatedPass) { authRisk = 100; status = "NonCompliant"; }
+    if (!simulatedPass) { authRisk = 100; failures.push("NonCompliant"); }
   }
 
   // ---- Layer 2: metadata integrity (steps 7-11, Fig 4.3) ----
@@ -165,7 +165,7 @@ async function verifyNft(tokenId) {
   });
   if (!noAnchor && !hashMatch) {
     authRisk = 100; // tampered metadata destroys authenticity entirely
-    if (status === "Verified") status = "Tampered";
+    failures.push("Tampered");
     await FraudFlag.findOneAndUpdate(
       { tokenId, flagType: "METADATA_TAMPERED" },
       { tokenId, flagType: "METADATA_TAMPERED", penaltyScore: 100,
@@ -201,7 +201,13 @@ async function verifyNft(tokenId) {
   });
   if (duplicates.length > 0) {
     authRisk = 100; // a copy-mint is not an authentic asset
-    if (status === "Verified") status = "Duplicate";
+    failures.push("Duplicate");
+    // Duplication is mutual, but the older token was verified before this one existed, so its
+    // stored verdict still says "no similar assets found". Re-verify the twins so both sides
+    // agree — without cascading again, or the pair would call each other forever.
+    if (cascade) for (const d of duplicates) {
+      try { await verifyNft(d.tokenId, false); } catch (_) {}
+    }
     await FraudFlag.findOneAndUpdate(
       { tokenId, flagType: "DUPLICATE_ASSET" },
       { tokenId, flagType: "DUPLICATE_ASSET", penaltyScore: 100,
@@ -212,13 +218,18 @@ async function verifyNft(tokenId) {
   }
 
   // ---- Persist result (step 14, Fig 4.3) ----
+  // The status field is a single enum, so it carries the first failure; the full list
+  // travels alongside it so the UI can show that a token failed more than one layer.
+  const status = failures[0] || "Verified";
   nft.authenticityStatus = status;
+  nft.authenticityFailures = failures;
   nft.offChainMetadataHash = offChainHash || nft.offChainMetadataHash;
   await nft.save();
 
   return {
     tokenId,
     authenticityStatus: status,
+    authenticityFailures: failures,
     authRisk: Math.min(100, authRisk),
     checks,
     duplicates,
