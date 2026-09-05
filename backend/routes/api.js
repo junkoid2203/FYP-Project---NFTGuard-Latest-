@@ -75,6 +75,14 @@ async function cancelOwnOffers(tokenId, newOwner) {
 
 /** Authenticity failures are not tradeable: NFTGuard blocks the sale outright. */
 const UNSELLABLE = ["Tampered", "Duplicate", "NonCompliant"];
+/** Only the recorded owner may act on a token. Returns an error string, or null. */
+function notOwner(nft, walletAddress, action) {
+  if (!walletAddress) return `A wallet address is required to ${action} this NFT`;
+  if (String(nft.ownerAddress).toLowerCase() !== String(walletAddress).toLowerCase())
+    return `Only the owner may ${action} this NFT`;
+  return null;
+}
+
 function blockedAsset(nft) {
   if (!UNSELLABLE.includes(nft.authenticityStatus)) return null;
   const why = nft.authenticityStatus === "Tampered"
@@ -194,10 +202,16 @@ router.post("/mint", wrap(async (req, res) => {
 
 // ---------------------------------------------------------------- list (FR 2.3)
 router.post("/list", wrap(async (req, res) => {
-  const { tokenId, priceEth } = req.body;
+  const { tokenId, priceEth, walletAddress } = req.body;
   const nft = await Nft.findOne({ tokenId });
   if (!nft) return res.status(404).json({ error: "NFT not found" });
   if (!priceEth || priceEth <= 0) return res.status(400).json({ error: "priceEth must be > 0" });
+
+  // Only the owner may list. The interface already hides the control for a token the
+  // connected wallet does not own, but that is a convenience: the endpoint is still
+  // reachable from a browser console, so ownership has to be checked here as well.
+  const ownerErr = notOwner(nft, walletAddress, "list");
+  if (ownerErr) return res.status(403).json({ error: ownerErr });
 
   const listBan = await blockedWallet(nft.ownerAddress);
   if (listBan) return res.status(403).json({ error: listBan });
@@ -412,9 +426,13 @@ router.post("/offers", wrap(async (req, res) => {
 
 // ---------------------------------------------------------------- cancel a listing (owner un-lists)
 router.post("/unlist", wrap(async (req, res) => {
-  const { tokenId } = req.body || {};
+  const { tokenId, walletAddress } = req.body || {};
   const nft = await Nft.findOne({ tokenId: Number(tokenId) });
   if (!nft) return res.status(404).json({ error: "NFT not found" });
+
+  const ownerErr = notOwner(nft, walletAddress, "cancel the listing of");
+  if (ownerErr) return res.status(403).json({ error: ownerErr });
+
   nft.listed = false;
   await nft.save();
   // Delisting removes the anomalous asking price, so the listing flag must clear too.

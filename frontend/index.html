@@ -1784,7 +1784,7 @@ $("#mList").addEventListener("click",async()=>{
   if(state.walletFlagged){toast("⚠ This wallet is flagged for wash trading — listing is blocked","err");return;}
   const wasListed=n.listed, raising = wasListed && price>(n.priceEth||0);
   if(LIVE){
-    try{ await api("/list",{method:"POST",body:JSON.stringify({tokenId:n.tokenId,priceEth:price})},20000);
+    try{ await api("/list",{method:"POST",body:JSON.stringify({tokenId:n.tokenId,priceEth:price,walletAddress:state.wallet})},20000);
       toast(!wasListed ? `Listed #${n.tokenId} for sale at ${price} ETH`
            : raising ? `Re-listed #${n.tokenId} at ${price} ETH — raising a price on a real marketplace means cancel + new listing (costs gas).`
                      : `Price lowered to ${price} ETH — a free off-chain listing update.`);
@@ -1800,7 +1800,7 @@ $("#mCancel").addEventListener("click",async()=>{
   const n=state.current; if(!n)return;
   if(!confirm(`Cancel the listing for ${n.name}? It will no longer be for sale (you keep the NFT).`)) return;
   if(LIVE){
-    try{ await api("/unlist",{method:"POST",body:JSON.stringify({tokenId:n.tokenId})},15000);
+    try{ await api("/unlist",{method:"POST",body:JSON.stringify({tokenId:n.tokenId,walletAddress:state.wallet})},15000);
       toast(`Listing cancelled for #${n.tokenId}`); await refreshAfterAction(n.tokenId);
     }catch(e){toast("Cancel failed: "+e.message,"err");}
   }else{
