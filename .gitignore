@@ -17,7 +17,6 @@ __pycache__/
 Thumbs.db
 
 # editor / local tooling (not part of the project)
-.claude/
 .vscode/
 .idea/
 

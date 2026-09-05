@@ -1,5 +1,5 @@
 /**
- * chatAssistant.js — NFTGuard AI assistant (real LLM, via Claude).
+ * chatAssistant.js — NFTGuard AI assistant (real LLM, via the Google Gemini API).
  *
  * Design goal: NEVER crash or hang the server.
  *  - The Anthropic SDK is loaded lazily and defensively; a missing package or
