@@ -1277,13 +1277,18 @@ async function openDetail(id){
   // who did not actually hold the token.
   const onChain  = isOnChainNft(n);
   const chainable = onChain && state.walletReal && window.ethereum;
+  const authBlocked = authFails(n).length > 0;
   if(onChain){
     $("#mList").style.display   = "none";   // simulated listing would not reach the chain
     $("#mCancel").style.display = "none";
     $("#mTransfer").style.display = "none";  // a real token moves only through the chain
-    $("#mListPrice").style.display = (chainable && ownedByMe) ? "" : "none";
+    $("#mListPrice").style.display = (chainable && ownedByMe && !authBlocked) ? "" : "none";
   }
-  $("#mListChain").style.display = (chainable && ownedByMe) ? "" : "none";
+  // An asset that failed authenticity verification cannot be listed - /record-list refuses
+  // it. Hiding the button matters more here than anywhere else: the MetaMask transaction
+  // would succeed and cost gas, and only then would the server refuse to record it, leaving
+  // the token listed on Sepolia while the database says it is not.
+  $("#mListChain").style.display = (chainable && ownedByMe && !authBlocked) ? "" : "none";
   // Buying keeps ONE button. It opens the checkout (risk warnings, acknowledgement) and
   // confirmPurchase() then settles on-chain, so a second "Buy on-chain" would just be a
   // duplicate that skipped those warnings.
@@ -1293,10 +1298,13 @@ async function openDetail(id){
   // quietly leaving the panel empty or falling back to a simulated trade.
   const hint = $("#mChainHint");
   if(hint){
-    hint.style.display = (onChain && !chainable) ? "" : "none";
-    hint.textContent = onChain && !chainable
-      ? "This NFT exists on Sepolia (token #" + n.onChainTokenId + "). Connect MetaMask to list or buy it on-chain — simulated trading is disabled so the database cannot drift from the blockchain."
-      : "";
+    hint.style.display = (onChain && (!chainable || authBlocked)) ? "" : "none";
+    hint.textContent =
+      (onChain && authBlocked)
+        ? "This NFT exists on Sepolia (token #" + n.onChainTokenId + ") but failed authenticity verification (" + authFails(n).join(" + ") + "), so it cannot be traded. Listing it on-chain would cost gas and then be refused, leaving the blockchain and the marketplace out of step."
+      : (onChain && !chainable)
+        ? "This NFT exists on Sepolia (token #" + n.onChainTokenId + "). Connect MetaMask to list or buy it on-chain — simulated trading is disabled so the database cannot drift from the blockchain."
+        : "";
   }
   // Reset + reload the offers panel for THIS token so it never shows the
   // previously-opened NFT's offers (each item has its own offers).
