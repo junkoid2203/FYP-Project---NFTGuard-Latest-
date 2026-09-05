@@ -1826,7 +1826,10 @@ $("#mCancel").addEventListener("click",async()=>{
 function authFails(n){ const f=n.authenticityFailures; return (Array.isArray(f)&&f.length)?f
   : (["Tampered","Duplicate","NonCompliant"].includes(n.authenticityStatus)?[n.authenticityStatus]:[]); }
 function authBadge(n){ const f=authFails(n);
-  const label=f.length>1?(f[0]+" +"+(f.length-1)):(n.authenticityStatus||"Unverified");
+  // The badge names the status only. A card is scanned at a glance, so a count sitting next
+  // to the word competed with it; the full list stays on hover, and the detail panel and the
+  // checkout notice both still report every failed layer.
+  const label=n.authenticityStatus||"Unverified";
   const tip=f.length>1?(' title="Failed '+f.length+' layers: '+f.join(", ")+'"'):"";
   return '<span class="badge '+esc(n.authenticityStatus)+'"'+tip+'>'+esc(label)+'</span>'; }
 const AUTH_REASON={Tampered:"The metadata doesn't match its on-chain hash (possible fake)",
