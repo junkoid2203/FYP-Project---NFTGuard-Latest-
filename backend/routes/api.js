@@ -200,6 +200,54 @@ router.post("/mint", wrap(async (req, res) => {
   res.json({ ok: true, nft: fresh || nft, txHash: chain.txHash, simulated: chain.simulated });
 }));
 
+// ---------------------------------------------------------------- transfer (FR 2.5)
+// Moving a token without a sale. The fraud rules already read TRANSFER records - Rule 3
+// looks for a sender and recipient that match, and Rules 1 and 2 count transfers alongside
+// sales - but nothing in the interface could create one, so those rules could only ever
+// fire on seeded data. This endpoint closes that gap.
+router.post("/transfer", wrap(async (req, res) => {
+  const { tokenId, walletAddress, toAddress } = req.body || {};
+  const nft = await Nft.findOne({ tokenId: Number(tokenId) });
+  if (!nft) return res.status(404).json({ error: "NFT not found" });
+
+  const ownerErr = notOwner(nft, walletAddress, "transfer");
+  if (ownerErr) return res.status(403).json({ error: ownerErr });
+
+  if (!/^0x[a-fA-F0-9]{40}$/.test(String(toAddress || "")))
+    return res.status(400).json({ error: "Recipient must be a wallet address (0x followed by 40 hex characters)" });
+
+  const senderBan = await blockedWallet(walletAddress);
+  if (senderBan) return res.status(403).json({ error: senderBan });
+  const recipientBan = await blockedWallet(toAddress);
+  if (recipientBan) return res.status(403).json({ error: "Recipient blocked — " + recipientBan });
+  const assetBlocked = blockedAsset(nft);
+  if (assetBlocked) return res.status(403).json({ error: assetBlocked });
+
+  // A transfer to your own address is allowed on purpose. It is not a mistake to guard
+  // against: it is precisely the behaviour Rule 3 exists to detect, and refusing it here
+  // would leave that rule with no way to be exercised through the interface.
+  const from = nft.ownerAddress;
+  nft.ownerAddress = toAddress;
+  nft.listed = false;            // a listing cannot outlive the owner who made it
+  await nft.save();
+
+  const tx = await Transaction.create({
+    tokenId: nft.tokenId, collectionName: nft.collectionName, txType: "TRANSFER",
+    senderAddress: from, recipientAddress: toAddress, priceEth: 0,
+    txHash: "0xsim" + [...Array(60)].map(() => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join(""),
+    simulated: true,
+  });
+  await cancelOwnOffers(nft.tokenId, toAddress);
+
+  let risk = null;
+  try { risk = await computeUnifiedRisk(nft.tokenId, { reverify: false }); }
+  catch (e) { console.warn("[transfer] risk:", e.message); }
+
+  res.json({ ok: true, transaction: tx, selfTransfer: String(from).toLowerCase() === String(toAddress).toLowerCase(),
+             risk: risk && { unifiedScore: risk.unifiedScore, riskLevel: risk.riskLevel,
+                             flags: (risk.flags || []).map(f => f.flagType) } });
+}));
+
 // ---------------------------------------------------------------- list (FR 2.3)
 router.post("/list", wrap(async (req, res) => {
   const { tokenId, priceEth, walletAddress } = req.body;

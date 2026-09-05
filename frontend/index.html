@@ -619,6 +619,7 @@ section{padding:56px 4vw 20px}
             <input id="mListPrice" type="number" min="0" step="0.01" placeholder="price ETH" style="width:120px;display:none">
             <button class="btn primary" id="mList" style="display:none">List for sale</button>
             <button class="btn" id="mCancel" style="display:none;border-color:#FF4D5E;color:#FF4D5E">Cancel listing</button>
+            <button class="btn" id="mTransfer" style="display:none">Transfer</button>
             <button class="btn" id="mVerify">Re-run verification</button>
             <button class="btn" id="mOffer">Make offer</button>
             <button class="btn" id="mListChain" style="display:none;border-color:var(--chain);color:var(--chain)">🦊 List on-chain</button>
@@ -1269,6 +1270,7 @@ async function openDetail(id){
   $("#mListPrice").style.display = ownedByMe ? "" : "none";
   $("#mListPrice").value = (ownedByMe && n.listed) ? n.priceEth : "";
   $("#mCancel").style.display = (ownedByMe && n.listed) ? "" : "none";
+  $("#mTransfer").style.display = ownedByMe ? "" : "none";
   // A token that genuinely lives in our Sepolia contract must only ever change hands
   // ON-CHAIN. The simulated list/cancel write to MongoDB alone, which silently desyncs
   // the database from the chain — that drift is what left "Test 1" claiming an owner
@@ -1278,6 +1280,7 @@ async function openDetail(id){
   if(onChain){
     $("#mList").style.display   = "none";   // simulated listing would not reach the chain
     $("#mCancel").style.display = "none";
+    $("#mTransfer").style.display = "none";  // a real token moves only through the chain
     $("#mListPrice").style.display = (chainable && ownedByMe) ? "" : "none";
   }
   $("#mListChain").style.display = (chainable && ownedByMe) ? "" : "none";
@@ -1819,6 +1822,33 @@ function authBadge(n){ const f=authFails(n);
 const AUTH_REASON={Tampered:"The metadata doesn't match its on-chain hash (possible fake)",
   Duplicate:"The image matches another minted NFT (likely copy-mint)",
   NonCompliant:"The contract failed the ERC-721 standard check"};
+
+/* ---------- transfer ---------- */
+$("#mTransfer").addEventListener("click", async () => {
+  const n = state.current; if (!n) return;
+  const to = prompt(
+    "Transfer \"" + n.name + "\" to which wallet address?"
+    + "  Paste any 0x address. Entering your OWN address records a self-transfer,"
+    + " which is what the fraud engine treats as a wash-trading signal.",
+    state.wallet || "0x");
+  if (to === null) return;
+  const addr = String(to).trim();
+  if (!/^0x[a-fA-F0-9]{40}$/.test(addr)) { toast("That is not a wallet address (0x + 40 hex characters)", "err"); return; }
+
+  if (LIVE) {
+    try {
+      const r = await api("/transfer", { method: "POST",
+        body: JSON.stringify({ tokenId: n.tokenId, walletAddress: state.wallet, toAddress: addr }) }, 20000);
+      toast(r.selfTransfer
+        ? `Sent #${n.tokenId} to your own address — recorded as a self-transfer`
+        : `Transferred #${n.tokenId} to ${shortAddr(addr)}`);
+      await refreshAfterAction(n.tokenId);
+    } catch (e) { toast("Transfer failed: " + e.message, "err"); }
+  } else {
+    n.ownerAddress = addr; n.listed = false;
+    toast(`Transferred #${n.tokenId} to ${shortAddr(addr)}`); renderGrid(); openDetail(n.tokenId);
+  }
+});
 
 /* ---------- re-verify ---------- */
 $("#mVerify").addEventListener("click",async()=>{
