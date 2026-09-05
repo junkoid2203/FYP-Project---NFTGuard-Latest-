@@ -248,6 +248,43 @@ router.post("/transfer", wrap(async (req, res) => {
                              flags: (risk.flags || []).map(f => f.flagType) } });
 }));
 
+// Records a transfer that MetaMask already settled on Sepolia. The chain is the authority
+// here: the browser signs safeTransferFrom, waits for the receipt, and only then asks the
+// server to store what happened, so the database follows the chain rather than guessing.
+router.post("/record-transfer", wrap(async (req, res) => {
+  const { tokenId, toAddress, txHash } = req.body || {};
+  if (!tokenId || !txHash) return res.status(400).json({ error: "tokenId and txHash are required" });
+  if (!/^0x[a-fA-F0-9]{40}$/.test(String(toAddress || "")))
+    return res.status(400).json({ error: "Recipient must be a wallet address (0x followed by 40 hex characters)" });
+
+  const nft = await Nft.findOne({ tokenId: Number(tokenId) });
+  if (!nft) return res.status(404).json({ error: "NFT not found" });
+
+  const recipientBan = await blockedWallet(toAddress);
+  if (recipientBan) return res.status(403).json({ error: "Recipient blocked — " + recipientBan });
+
+  const from = nft.ownerAddress;
+  nft.ownerAddress = toAddress;
+  nft.listed = false;          // the contract deletes the listing on transfer, so mirror that
+  await nft.save();
+
+  const tx = await Transaction.create({
+    tokenId: nft.tokenId, collectionName: nft.collectionName, txType: "TRANSFER",
+    senderAddress: from, recipientAddress: toAddress, priceEth: 0,
+    txHash, simulated: false,
+  });
+  await cancelOwnOffers(nft.tokenId, toAddress);
+
+  let risk = null;
+  try { risk = await computeUnifiedRisk(nft.tokenId, { reverify: false }); }
+  catch (e) { console.warn("[record-transfer] risk:", e.message); }
+
+  res.json({ ok: true, transaction: tx, txHash,
+             selfTransfer: String(from).toLowerCase() === String(toAddress).toLowerCase(),
+             risk: risk && { unifiedScore: risk.unifiedScore, riskLevel: risk.riskLevel,
+                             flags: (risk.flags || []).map(f => f.flagType) } });
+}));
+
 // ---------------------------------------------------------------- list (FR 2.3)
 router.post("/list", wrap(async (req, res) => {
   const { tokenId, priceEth, walletAddress } = req.body;

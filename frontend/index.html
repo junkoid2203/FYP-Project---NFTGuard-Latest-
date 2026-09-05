@@ -1281,7 +1281,9 @@ async function openDetail(id){
   if(onChain){
     $("#mList").style.display   = "none";   // simulated listing would not reach the chain
     $("#mCancel").style.display = "none";
-    $("#mTransfer").style.display = "none";  // a real token moves only through the chain
+    // A Sepolia token can still be transferred, but only through MetaMask, and not at all
+    // if it failed verification - the server would refuse to record it after the gas was spent.
+    $("#mTransfer").style.display = (chainable && ownedByMe && !authBlocked) ? "" : "none";
     $("#mListPrice").style.display = (chainable && ownedByMe && !authBlocked) ? "" : "none";
   }
   // An asset that failed authenticity verification cannot be listed - /record-list refuses
@@ -1843,6 +1845,22 @@ $("#mTransfer").addEventListener("click", async () => {
   const addr = String(to).trim();
   if (!/^0x[a-fA-F0-9]{40}$/.test(addr)) { toast("That is not a wallet address (0x + 40 hex characters)", "err"); return; }
 
+  // A token that lives in the Sepolia contract has to move on the chain; editing the
+  // database directly would leave the two disagreeing about who owns it.
+  if (isOnChainNft(n)) {
+    const b = $("#mTransfer"); const old = b.textContent; b.disabled = true; b.textContent = "Transferring…";
+    try {
+      const { hash, selfTransfer } = await transferOnChainUI(n, addr);
+      toast(selfTransfer
+        ? `Sent #${n.tokenId} to your own address on Sepolia — recorded as a self-transfer`
+        : `Transferred #${n.tokenId} to ${shortAddr(addr)} on Sepolia`);
+      window.open(sepoliaTx(hash), "_blank", "noopener");
+      await refreshAfterAction(n.tokenId);
+    } catch (e) { toast("On-chain transfer failed: " + (e.shortMessage || e.message), "err"); }
+    finally { b.disabled = false; b.textContent = old; }
+    return;
+  }
+
   if (LIVE) {
     try {
       const r = await api("/transfer", { method: "POST",
@@ -1935,7 +1953,8 @@ const MARKET_ABI=[
   "function cancelListing(uint256 tokenId) external",
   "function buy(uint256 tokenId) external payable",
   "function ownerOf(uint256 tokenId) external view returns (address)",
-  "function getListing(uint256 tokenId) external view returns (uint256 price, bool active)"
+  "function getListing(uint256 tokenId) external view returns (uint256 price, bool active)",
+  "function safeTransferFrom(address from, address to, uint256 tokenId) external"
 ];
 /* Only NFTs minted through our own contract exist on-chain; a seeded token lives in
    MongoDB only, so listForSale() on it would revert. */
@@ -1970,6 +1989,24 @@ async function listOnChainUI(n, priceEth){
   const receipt=await tx.wait();
   await api("/record-list",{method:"POST",body:JSON.stringify({tokenId:n.tokenId, priceEth:Number(priceEth), txHash:receipt.hash})},20000);
   return receipt.hash;
+}
+
+/* Transfer on-chain: the owner signs safeTransferFrom, so the token really moves on Sepolia
+   and the database follows the receipt rather than being edited directly. The contract
+   deletes any listing on transfer, which is why the record endpoint unlists too. */
+async function transferOnChainUI(n, toAddress){
+  const signer=await chainSigner();
+  const c=new window.ethers.Contract(NFTGUARD_CONTRACT, MARKET_ABI, signer);
+  const me=(await signer.getAddress()).toLowerCase();
+  const owner=(await c.ownerOf(n.onChainTokenId)).toLowerCase();
+  if(owner!==me) throw new Error("This wallet does not own the token on-chain (owner is "+shortAddr(owner)+")");
+  toast("Confirm the transfer in MetaMask…");
+  const tx=await c.safeTransferFrom(me, toAddress, n.onChainTokenId);
+  toast("Transfer sent — waiting for Sepolia…");
+  const receipt=await tx.wait();
+  const r=await api("/record-transfer",{method:"POST",
+    body:JSON.stringify({tokenId:n.tokenId, toAddress, txHash:receipt.hash})},20000);
+  return {hash:receipt.hash, selfTransfer:r.selfTransfer, risk:r.risk};
 }
 
 /* Buy on-chain: buyer signs buy() and actually sends the price as msg.value. */
