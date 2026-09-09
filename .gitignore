@@ -11,6 +11,9 @@ ml/.venv/
 __pycache__/
 *.pyc
 
+# database dump written by `npm run export` (a local snapshot, not source)
+backend/data-export/
+
 # logs & OS files
 *.log
 .DS_Store
