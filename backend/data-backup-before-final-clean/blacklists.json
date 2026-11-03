@@ -1,0 +1,13 @@
+{
+  "collection": "blacklists",
+  "indexes": [
+    {
+      "name": "address_1",
+      "key": {
+        "address": 1
+      },
+      "unique": true
+    }
+  ],
+  "documents": []
+}

@@ -1,0 +1,1868 @@
+{
+  "collection": "riskscores",
+  "indexes": [
+    {
+      "name": "tokenId_1",
+      "key": {
+        "tokenId": 1
+      },
+      "unique": true
+    }
+  ],
+  "documents": [
+    {
+      "_id": "6a6a36c26ce674f51eb2c80b",
+      "tokenId": 1,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 90,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 31.5,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 31,
+        "escalation": {
+          "level": "severe",
+          "indicator": "fraud",
+          "strongestIndicator": 90,
+          "floor": 63,
+          "raisedFrom": 31
+        }
+      },
+      "calculatedAt": "2026-09-09T11:33:59.665Z",
+      "createdAt": "2026-07-29T17:22:10.708Z",
+      "fraudRisk": 90,
+      "priceRisk": 0,
+      "riskLevel": "Medium",
+      "unifiedScore": 63,
+      "updatedAt": "2026-09-09T11:33:59.665Z"
+    },
+    {
+      "_id": "6a6a36c26ce674f51eb2c81a",
+      "tokenId": 2,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 90,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 31.5,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 31,
+        "escalation": {
+          "level": "severe",
+          "indicator": "fraud",
+          "strongestIndicator": 90,
+          "floor": 63,
+          "raisedFrom": 31
+        }
+      },
+      "calculatedAt": "2026-09-09T11:33:59.707Z",
+      "createdAt": "2026-07-29T17:22:10.766Z",
+      "fraudRisk": 90,
+      "priceRisk": 0,
+      "riskLevel": "Medium",
+      "unifiedScore": 63,
+      "updatedAt": "2026-09-09T11:33:59.708Z"
+    },
+    {
+      "_id": "6a6a36c26ce674f51eb2c829",
+      "tokenId": 3,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 90,
+        "priceRisk": 100,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 31.5,
+          "priceAnomaly": 25
+        },
+        "weightedScore": 57,
+        "escalation": {
+          "level": "critical",
+          "indicator": "price",
+          "strongestIndicator": 100,
+          "floor": 92,
+          "raisedFrom": 57
+        }
+      },
+      "calculatedAt": "2026-09-09T11:33:59.744Z",
+      "createdAt": "2026-07-29T17:22:10.818Z",
+      "fraudRisk": 90,
+      "priceRisk": 100,
+      "riskLevel": "High",
+      "unifiedScore": 92,
+      "updatedAt": "2026-09-09T11:33:59.744Z"
+    },
+    {
+      "_id": "6a6a36c26ce674f51eb2c837",
+      "tokenId": 4,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 83,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 20.8
+        },
+        "weightedScore": 21,
+        "escalation": {
+          "level": "severe",
+          "indicator": "price",
+          "strongestIndicator": 83,
+          "floor": 68,
+          "raisedFrom": 21
+        }
+      },
+      "calculatedAt": "2026-09-09T11:33:59.776Z",
+      "createdAt": "2026-07-29T17:22:10.862Z",
+      "fraudRisk": 0,
+      "priceRisk": 83,
+      "riskLevel": "Medium",
+      "unifiedScore": 68,
+      "updatedAt": "2026-09-09T11:33:59.777Z"
+    },
+    {
+      "_id": "6a6a36c26ce674f51eb2c845",
+      "tokenId": 5,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 80,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 28,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 28,
+        "escalation": {
+          "level": "moderate",
+          "indicator": "fraud",
+          "strongestIndicator": 80,
+          "floor": 50,
+          "raisedFrom": 28
+        }
+      },
+      "calculatedAt": "2026-09-09T11:33:59.808Z",
+      "createdAt": "2026-07-29T17:22:10.902Z",
+      "fraudRisk": 80,
+      "priceRisk": 0,
+      "riskLevel": "Medium",
+      "unifiedScore": 50,
+      "updatedAt": "2026-09-09T11:33:59.808Z"
+    },
+    {
+      "_id": "6a6a36c26ce674f51eb2c852",
+      "tokenId": 6,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-09T11:33:59.838Z",
+      "createdAt": "2026-07-29T17:22:10.943Z",
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "riskLevel": "Low",
+      "unifiedScore": 0,
+      "updatedAt": "2026-09-09T11:33:59.838Z"
+    },
+    {
+      "_id": "6a6a36c26ce674f51eb2c860",
+      "tokenId": 7,
+      "__v": 0,
+      "authRisk": 100,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 100,
+        "fraudRisk": 90,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 40,
+          "fraud": 31.5,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 72,
+        "escalation": {
+          "level": "critical",
+          "indicator": "authenticity",
+          "strongestIndicator": 100,
+          "floor": 92,
+          "raisedFrom": 72
+        }
+      },
+      "calculatedAt": "2026-09-09T11:33:59.873Z",
+      "createdAt": "2026-07-29T17:22:10.984Z",
+      "fraudRisk": 90,
+      "priceRisk": 0,
+      "riskLevel": "High",
+      "unifiedScore": 92,
+      "updatedAt": "2026-09-09T11:33:59.873Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c86e",
+      "tokenId": 8,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 90,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 31.5,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 31,
+        "escalation": {
+          "level": "severe",
+          "indicator": "fraud",
+          "strongestIndicator": 90,
+          "floor": 63,
+          "raisedFrom": 31
+        }
+      },
+      "calculatedAt": "2026-09-09T11:33:59.903Z",
+      "createdAt": "2026-07-29T17:22:11.024Z",
+      "fraudRisk": 90,
+      "priceRisk": 0,
+      "riskLevel": "Medium",
+      "unifiedScore": 63,
+      "updatedAt": "2026-09-09T11:33:59.903Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c87c",
+      "tokenId": 9,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 80,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 28,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 28,
+        "escalation": {
+          "level": "moderate",
+          "indicator": "fraud",
+          "strongestIndicator": 80,
+          "floor": 50,
+          "raisedFrom": 28
+        }
+      },
+      "calculatedAt": "2026-09-09T11:33:59.934Z",
+      "createdAt": "2026-07-29T17:22:11.067Z",
+      "fraudRisk": 80,
+      "priceRisk": 0,
+      "riskLevel": "Medium",
+      "unifiedScore": 50,
+      "updatedAt": "2026-09-09T11:33:59.934Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c88a",
+      "tokenId": 10,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 90,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 31.5,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 31,
+        "escalation": {
+          "level": "severe",
+          "indicator": "fraud",
+          "strongestIndicator": 90,
+          "floor": 63,
+          "raisedFrom": 31
+        }
+      },
+      "calculatedAt": "2026-09-09T11:33:59.975Z",
+      "createdAt": "2026-07-29T17:22:11.107Z",
+      "fraudRisk": 90,
+      "priceRisk": 0,
+      "riskLevel": "Medium",
+      "unifiedScore": 63,
+      "updatedAt": "2026-09-09T11:33:59.975Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c898",
+      "tokenId": 11,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 90,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 31.5,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 31,
+        "escalation": {
+          "level": "severe",
+          "indicator": "fraud",
+          "strongestIndicator": 90,
+          "floor": 63,
+          "raisedFrom": 31
+        }
+      },
+      "calculatedAt": "2026-09-09T11:34:00.014Z",
+      "createdAt": "2026-07-29T17:22:11.150Z",
+      "fraudRisk": 90,
+      "priceRisk": 0,
+      "riskLevel": "Medium",
+      "unifiedScore": 63,
+      "updatedAt": "2026-09-09T11:34:00.014Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c8a6",
+      "tokenId": 12,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 90,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 31.5,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 31,
+        "escalation": {
+          "level": "severe",
+          "indicator": "fraud",
+          "strongestIndicator": 90,
+          "floor": 63,
+          "raisedFrom": 31
+        }
+      },
+      "calculatedAt": "2026-09-09T11:34:00.051Z",
+      "createdAt": "2026-07-29T17:22:11.187Z",
+      "fraudRisk": 90,
+      "priceRisk": 0,
+      "riskLevel": "Medium",
+      "unifiedScore": 63,
+      "updatedAt": "2026-09-09T11:34:00.052Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c8b4",
+      "tokenId": 13,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 80,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 28,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 28,
+        "escalation": {
+          "level": "moderate",
+          "indicator": "fraud",
+          "strongestIndicator": 80,
+          "floor": 50,
+          "raisedFrom": 28
+        }
+      },
+      "calculatedAt": "2026-09-09T11:34:00.080Z",
+      "createdAt": "2026-07-29T17:22:11.229Z",
+      "fraudRisk": 80,
+      "priceRisk": 0,
+      "riskLevel": "Medium",
+      "unifiedScore": 50,
+      "updatedAt": "2026-09-09T11:34:00.081Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c8c2",
+      "tokenId": 14,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 80,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 28,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 28,
+        "escalation": {
+          "level": "moderate",
+          "indicator": "fraud",
+          "strongestIndicator": 80,
+          "floor": 50,
+          "raisedFrom": 28
+        }
+      },
+      "calculatedAt": "2026-09-09T11:34:00.110Z",
+      "createdAt": "2026-07-29T17:22:11.268Z",
+      "fraudRisk": 80,
+      "priceRisk": 0,
+      "riskLevel": "Medium",
+      "unifiedScore": 50,
+      "updatedAt": "2026-09-09T11:34:00.110Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c8cf",
+      "tokenId": 15,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-09T11:34:00.137Z",
+      "createdAt": "2026-07-29T17:22:11.304Z",
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "riskLevel": "Low",
+      "unifiedScore": 0,
+      "updatedAt": "2026-09-09T11:34:00.137Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c8dc",
+      "tokenId": 16,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-09T11:34:00.163Z",
+      "createdAt": "2026-07-29T17:22:11.343Z",
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "riskLevel": "Low",
+      "unifiedScore": 0,
+      "updatedAt": "2026-09-09T11:34:00.163Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c8ea",
+      "tokenId": 17,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 92,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 23
+        },
+        "weightedScore": 23,
+        "escalation": {
+          "level": "critical",
+          "indicator": "price",
+          "strongestIndicator": 92,
+          "floor": 78,
+          "raisedFrom": 23
+        }
+      },
+      "calculatedAt": "2026-09-10T10:50:37.681Z",
+      "createdAt": "2026-07-29T17:22:11.377Z",
+      "fraudRisk": 0,
+      "priceRisk": 92,
+      "riskLevel": "High",
+      "unifiedScore": 78,
+      "updatedAt": "2026-09-10T10:50:37.681Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c8f7",
+      "tokenId": 18,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-09T11:34:00.225Z",
+      "createdAt": "2026-07-29T17:22:11.411Z",
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "riskLevel": "Low",
+      "unifiedScore": 0,
+      "updatedAt": "2026-09-09T11:34:00.225Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c904",
+      "tokenId": 19,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-10T10:15:19.702Z",
+      "createdAt": "2026-07-29T17:22:11.448Z",
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "riskLevel": "Low",
+      "unifiedScore": 0,
+      "updatedAt": "2026-09-10T10:15:19.702Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c911",
+      "tokenId": 20,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-10T10:15:06.942Z",
+      "createdAt": "2026-07-29T17:22:11.482Z",
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "riskLevel": "Low",
+      "unifiedScore": 0,
+      "updatedAt": "2026-09-10T10:15:06.943Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c91e",
+      "tokenId": 21,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-10T10:14:44.212Z",
+      "createdAt": "2026-07-29T17:22:11.517Z",
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "riskLevel": "Low",
+      "unifiedScore": 0,
+      "updatedAt": "2026-09-10T10:14:44.212Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c92b",
+      "tokenId": 22,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 100,
+        "priceRisk": 100,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 35,
+          "priceAnomaly": 25
+        },
+        "weightedScore": 60,
+        "escalation": {
+          "level": "critical",
+          "indicator": "price",
+          "strongestIndicator": 100,
+          "floor": 92,
+          "raisedFrom": 60
+        }
+      },
+      "calculatedAt": "2026-09-09T11:34:00.352Z",
+      "createdAt": "2026-07-29T17:22:11.566Z",
+      "fraudRisk": 100,
+      "priceRisk": 100,
+      "riskLevel": "High",
+      "unifiedScore": 92,
+      "updatedAt": "2026-09-09T11:34:00.352Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c938",
+      "tokenId": 23,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-10T10:14:49.947Z",
+      "createdAt": "2026-07-29T17:22:11.605Z",
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "riskLevel": "Low",
+      "unifiedScore": 0,
+      "updatedAt": "2026-09-10T10:14:49.947Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c945",
+      "tokenId": 24,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-09T11:34:00.409Z",
+      "createdAt": "2026-07-29T17:22:11.641Z",
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "riskLevel": "Low",
+      "unifiedScore": 0,
+      "updatedAt": "2026-09-09T11:34:00.409Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c952",
+      "tokenId": 25,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-09T11:34:00.434Z",
+      "createdAt": "2026-07-29T17:22:11.677Z",
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "riskLevel": "Low",
+      "unifiedScore": 0,
+      "updatedAt": "2026-09-09T11:34:00.435Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c95f",
+      "tokenId": 26,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-09T11:34:00.460Z",
+      "createdAt": "2026-07-29T17:22:11.711Z",
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "riskLevel": "Low",
+      "unifiedScore": 0,
+      "updatedAt": "2026-09-09T11:34:00.460Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c96c",
+      "tokenId": 27,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 75,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 26.3,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 26,
+        "escalation": {
+          "level": "moderate",
+          "indicator": "fraud",
+          "strongestIndicator": 75,
+          "floor": 49,
+          "raisedFrom": 26
+        }
+      },
+      "calculatedAt": "2026-09-10T10:42:18.374Z",
+      "createdAt": "2026-07-29T17:22:11.750Z",
+      "fraudRisk": 75,
+      "priceRisk": 0,
+      "riskLevel": "Medium",
+      "unifiedScore": 49,
+      "updatedAt": "2026-09-10T10:42:18.375Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c979",
+      "tokenId": 28,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 64,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 16
+        },
+        "weightedScore": 16,
+        "escalation": {
+          "level": "moderate",
+          "indicator": "price",
+          "strongestIndicator": 64,
+          "floor": 51,
+          "raisedFrom": 16
+        }
+      },
+      "calculatedAt": "2026-09-10T10:35:49.234Z",
+      "createdAt": "2026-07-29T17:22:11.785Z",
+      "fraudRisk": 0,
+      "priceRisk": 64,
+      "riskLevel": "Medium",
+      "unifiedScore": 51,
+      "updatedAt": "2026-09-10T10:35:49.234Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c987",
+      "tokenId": 29,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 91,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 22.8
+        },
+        "weightedScore": 23,
+        "escalation": {
+          "level": "critical",
+          "indicator": "price",
+          "strongestIndicator": 91,
+          "floor": 77,
+          "raisedFrom": 23
+        }
+      },
+      "calculatedAt": "2026-09-09T11:34:00.540Z",
+      "createdAt": "2026-07-29T17:22:11.824Z",
+      "fraudRisk": 0,
+      "priceRisk": 91,
+      "riskLevel": "High",
+      "unifiedScore": 77,
+      "updatedAt": "2026-09-09T11:34:00.540Z"
+    },
+    {
+      "_id": "6a6a36c36ce674f51eb2c994",
+      "tokenId": 30,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-09T11:34:00.570Z",
+      "createdAt": "2026-07-29T17:22:11.861Z",
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "riskLevel": "Low",
+      "unifiedScore": 0,
+      "updatedAt": "2026-09-09T11:34:00.571Z"
+    },
+    {
+      "_id": "6a72c7a808a53bd42aa01c39",
+      "tokenId": 31,
+      "authRisk": 0,
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "unifiedScore": 0,
+      "riskLevel": "Low",
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-10T09:15:45.088Z",
+      "__v": 0,
+      "createdAt": "2026-08-05T05:18:32.442Z",
+      "updatedAt": "2026-09-10T09:15:45.088Z"
+    },
+    {
+      "_id": "6a72c7a808a53bd42aa01c3a",
+      "tokenId": 32,
+      "authRisk": 0,
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "unifiedScore": 0,
+      "riskLevel": "Low",
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-09T11:34:00.619Z",
+      "__v": 0,
+      "createdAt": "2026-08-05T05:18:32.443Z",
+      "updatedAt": "2026-09-09T11:34:00.619Z"
+    },
+    {
+      "_id": "6a72c7a808a53bd42aa01c3b",
+      "tokenId": 33,
+      "authRisk": 100,
+      "fraudRisk": 0,
+      "priceRisk": 100,
+      "unifiedScore": 92,
+      "riskLevel": "High",
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 100,
+        "fraudRisk": 0,
+        "priceRisk": 100,
+        "contribution": {
+          "authenticity": 40,
+          "fraud": 0,
+          "priceAnomaly": 25
+        },
+        "weightedScore": 65,
+        "escalation": {
+          "level": "critical",
+          "indicator": "authenticity",
+          "strongestIndicator": 100,
+          "floor": 92,
+          "raisedFrom": 65
+        }
+      },
+      "calculatedAt": "2026-09-09T11:34:00.648Z",
+      "__v": 0,
+      "createdAt": "2026-08-05T05:18:32.443Z",
+      "updatedAt": "2026-09-09T11:34:00.648Z"
+    },
+    {
+      "_id": "6a72c7a808a53bd42aa01c3c",
+      "tokenId": 34,
+      "authRisk": 100,
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "unifiedScore": 92,
+      "riskLevel": "High",
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 100,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 40,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 40,
+        "escalation": {
+          "level": "critical",
+          "indicator": "authenticity",
+          "strongestIndicator": 100,
+          "floor": 92,
+          "raisedFrom": 40
+        }
+      },
+      "calculatedAt": "2026-09-09T11:34:00.670Z",
+      "__v": 0,
+      "createdAt": "2026-08-05T05:18:32.443Z",
+      "updatedAt": "2026-09-09T11:34:00.670Z"
+    },
+    {
+      "_id": "6a72c7a808a53bd42aa01c3d",
+      "tokenId": 36,
+      "authRisk": 0,
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "unifiedScore": 0,
+      "riskLevel": "Low",
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-09T11:34:00.716Z",
+      "__v": 0,
+      "createdAt": "2026-08-05T05:18:32.443Z",
+      "updatedAt": "2026-09-09T11:34:00.716Z"
+    },
+    {
+      "_id": "6a72c7a808a53bd42aa01c3e",
+      "tokenId": 37,
+      "authRisk": 100,
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "unifiedScore": 92,
+      "riskLevel": "High",
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 100,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 40,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 40,
+        "escalation": {
+          "level": "critical",
+          "indicator": "authenticity",
+          "strongestIndicator": 100,
+          "floor": 92,
+          "raisedFrom": 40
+        }
+      },
+      "calculatedAt": "2026-09-09T11:34:00.748Z",
+      "__v": 0,
+      "createdAt": "2026-08-05T05:18:32.444Z",
+      "updatedAt": "2026-09-09T11:34:00.748Z"
+    },
+    {
+      "_id": "6a72c7a808a53bd42aa01c3f",
+      "tokenId": 38,
+      "authRisk": 100,
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "unifiedScore": 92,
+      "riskLevel": "High",
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 100,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 40,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 40,
+        "escalation": {
+          "level": "critical",
+          "indicator": "authenticity",
+          "strongestIndicator": 100,
+          "floor": 92,
+          "raisedFrom": 40
+        }
+      },
+      "calculatedAt": "2026-09-09T11:34:00.779Z",
+      "__v": 0,
+      "createdAt": "2026-08-05T05:18:32.444Z",
+      "updatedAt": "2026-09-09T11:34:00.779Z"
+    },
+    {
+      "_id": "6a72c7a808a53bd42aa01c40",
+      "tokenId": 39,
+      "authRisk": 100,
+      "fraudRisk": 45,
+      "priceRisk": 98,
+      "unifiedScore": 92,
+      "riskLevel": "High",
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 100,
+        "fraudRisk": 45,
+        "priceRisk": 98,
+        "contribution": {
+          "authenticity": 40,
+          "fraud": 15.7,
+          "priceAnomaly": 24.5
+        },
+        "weightedScore": 80,
+        "escalation": {
+          "level": "critical",
+          "indicator": "authenticity",
+          "strongestIndicator": 100,
+          "floor": 92,
+          "raisedFrom": 80
+        }
+      },
+      "calculatedAt": "2026-09-09T11:34:00.808Z",
+      "__v": 0,
+      "createdAt": "2026-08-05T05:18:32.444Z",
+      "updatedAt": "2026-09-09T11:34:00.808Z"
+    },
+    {
+      "_id": "6a72c7a808a53bd42aa01c41",
+      "tokenId": 40,
+      "authRisk": 0,
+      "fraudRisk": 45,
+      "priceRisk": 0,
+      "unifiedScore": 40,
+      "riskLevel": "Medium",
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 45,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 15.7,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 16,
+        "escalation": {
+          "level": "moderate",
+          "indicator": "fraud",
+          "strongestIndicator": 45,
+          "floor": 40,
+          "raisedFrom": 16
+        }
+      },
+      "calculatedAt": "2026-09-09T11:34:00.833Z",
+      "__v": 0,
+      "createdAt": "2026-08-05T05:18:32.444Z",
+      "updatedAt": "2026-09-09T11:34:00.833Z"
+    },
+    {
+      "_id": "6a72c7a808a53bd42aa01c42",
+      "tokenId": 41,
+      "authRisk": 0,
+      "fraudRisk": 0,
+      "priceRisk": 100,
+      "unifiedScore": 92,
+      "riskLevel": "High",
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 100,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 25
+        },
+        "weightedScore": 25,
+        "escalation": {
+          "level": "critical",
+          "indicator": "price",
+          "strongestIndicator": 100,
+          "floor": 92,
+          "raisedFrom": 25
+        }
+      },
+      "calculatedAt": "2026-09-09T11:34:00.858Z",
+      "__v": 0,
+      "createdAt": "2026-08-05T05:18:32.444Z",
+      "updatedAt": "2026-09-09T11:34:00.858Z"
+    },
+    {
+      "_id": "6a72c7a808a53bd42aa01c43",
+      "tokenId": 42,
+      "authRisk": 100,
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "unifiedScore": 92,
+      "riskLevel": "High",
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 100,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 40,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 40,
+        "escalation": {
+          "level": "critical",
+          "indicator": "authenticity",
+          "strongestIndicator": 100,
+          "floor": 92,
+          "raisedFrom": 40
+        }
+      },
+      "calculatedAt": "2026-09-09T11:34:00.880Z",
+      "__v": 0,
+      "createdAt": "2026-08-05T05:18:32.444Z",
+      "updatedAt": "2026-09-09T11:34:00.881Z"
+    },
+    {
+      "_id": "6a72c7a808a53bd42aa01c44",
+      "tokenId": 44,
+      "authRisk": 0,
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "unifiedScore": 0,
+      "riskLevel": "Low",
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-09T11:34:00.922Z",
+      "__v": 0,
+      "createdAt": "2026-08-05T05:18:32.445Z",
+      "updatedAt": "2026-09-09T11:34:00.922Z"
+    },
+    {
+      "_id": "6a72c7a808a53bd42aa01c45",
+      "tokenId": 45,
+      "authRisk": 100,
+      "fraudRisk": 45,
+      "priceRisk": 0,
+      "unifiedScore": 92,
+      "riskLevel": "High",
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 100,
+        "fraudRisk": 45,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 40,
+          "fraud": 15.7,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 56,
+        "escalation": {
+          "level": "critical",
+          "indicator": "authenticity",
+          "strongestIndicator": 100,
+          "floor": 92,
+          "raisedFrom": 56
+        }
+      },
+      "calculatedAt": "2026-09-09T11:34:00.949Z",
+      "__v": 0,
+      "createdAt": "2026-08-05T05:18:32.445Z",
+      "updatedAt": "2026-09-09T11:34:00.949Z"
+    },
+    {
+      "_id": "6a72c7a808a53bd42aa01c46",
+      "tokenId": 46,
+      "authRisk": 0,
+      "fraudRisk": 0,
+      "priceRisk": 61,
+      "unifiedScore": 50,
+      "riskLevel": "Medium",
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 61,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 15.3
+        },
+        "weightedScore": 15,
+        "escalation": {
+          "level": "moderate",
+          "indicator": "price",
+          "strongestIndicator": 61,
+          "floor": 50,
+          "raisedFrom": 15
+        }
+      },
+      "calculatedAt": "2026-09-09T11:34:00.974Z",
+      "__v": 0,
+      "createdAt": "2026-08-05T05:18:32.445Z",
+      "updatedAt": "2026-09-09T11:34:00.975Z"
+    },
+    {
+      "_id": "6a72c7a808a53bd42aa01c47",
+      "tokenId": 47,
+      "authRisk": 0,
+      "fraudRisk": 0,
+      "priceRisk": 61,
+      "unifiedScore": 50,
+      "riskLevel": "Medium",
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 61,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 15.3
+        },
+        "weightedScore": 15,
+        "escalation": {
+          "level": "moderate",
+          "indicator": "price",
+          "strongestIndicator": 61,
+          "floor": 50,
+          "raisedFrom": 15
+        }
+      },
+      "calculatedAt": "2026-09-09T11:34:00.998Z",
+      "__v": 0,
+      "createdAt": "2026-08-05T05:18:32.445Z",
+      "updatedAt": "2026-09-09T11:34:00.999Z"
+    },
+    {
+      "_id": "6a72c7a808a53bd42aa01c48",
+      "tokenId": 48,
+      "authRisk": 0,
+      "fraudRisk": 80,
+      "priceRisk": 61,
+      "unifiedScore": 50,
+      "riskLevel": "Medium",
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 80,
+        "priceRisk": 61,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 28,
+          "priceAnomaly": 15.3
+        },
+        "weightedScore": 43,
+        "escalation": {
+          "level": "moderate",
+          "indicator": "fraud",
+          "strongestIndicator": 80,
+          "floor": 50,
+          "raisedFrom": 43
+        }
+      },
+      "calculatedAt": "2026-09-09T11:34:01.027Z",
+      "__v": 0,
+      "createdAt": "2026-08-05T05:18:32.445Z",
+      "updatedAt": "2026-09-09T11:34:01.027Z"
+    },
+    {
+      "_id": "6a730482f845d9728ed3ac5b",
+      "tokenId": 35,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-09T11:34:00.693Z",
+      "createdAt": "2026-08-05T09:38:10.466Z",
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "riskLevel": "Low",
+      "unifiedScore": 0,
+      "updatedAt": "2026-09-09T11:34:00.693Z"
+    },
+    {
+      "_id": "6a730482f845d9728ed3acb9",
+      "tokenId": 43,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-09T11:34:00.901Z",
+      "createdAt": "2026-08-05T09:38:10.676Z",
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "riskLevel": "Low",
+      "unifiedScore": 0,
+      "updatedAt": "2026-09-09T11:34:00.901Z"
+    },
+    {
+      "_id": "6aa25efb3a6058dda64fca3e",
+      "tokenId": 49,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-10T07:40:43.322Z",
+      "createdAt": "2026-09-10T07:40:43.323Z",
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "riskLevel": "Low",
+      "unifiedScore": 0,
+      "updatedAt": "2026-09-10T07:40:43.323Z"
+    },
+    {
+      "_id": "6aa2609d3a6058dda64fcb4d",
+      "tokenId": 50,
+      "__v": 0,
+      "authRisk": 100,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 100,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 40,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 40,
+        "escalation": {
+          "level": "critical",
+          "indicator": "authenticity",
+          "strongestIndicator": 100,
+          "floor": 92,
+          "raisedFrom": 40
+        }
+      },
+      "calculatedAt": "2026-09-10T07:47:41.744Z",
+      "createdAt": "2026-09-10T07:47:41.745Z",
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "riskLevel": "High",
+      "unifiedScore": 92,
+      "updatedAt": "2026-09-10T07:47:41.745Z"
+    },
+    {
+      "_id": "6aa26e383a6058dda64fd2d0",
+      "tokenId": 51,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-10T08:45:44.964Z",
+      "createdAt": "2026-09-10T08:45:44.964Z",
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "riskLevel": "Low",
+      "unifiedScore": 0,
+      "updatedAt": "2026-09-10T08:45:44.964Z"
+    },
+    {
+      "_id": "6aa270a83a6058dda64fd5a5",
+      "tokenId": 52,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 0,
+        "escalation": null
+      },
+      "calculatedAt": "2026-09-10T08:56:08.948Z",
+      "createdAt": "2026-09-10T08:56:08.949Z",
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "riskLevel": "Low",
+      "unifiedScore": 0,
+      "updatedAt": "2026-09-10T08:56:08.949Z"
+    },
+    {
+      "_id": "6aa2712c3a6058dda64fd7bb",
+      "tokenId": 53,
+      "__v": 0,
+      "authRisk": 100,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 100,
+        "fraudRisk": 0,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 40,
+          "fraud": 0,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 40,
+        "escalation": {
+          "level": "critical",
+          "indicator": "authenticity",
+          "strongestIndicator": 100,
+          "floor": 92,
+          "raisedFrom": 40
+        }
+      },
+      "calculatedAt": "2026-09-10T09:09:23.813Z",
+      "createdAt": "2026-09-10T08:58:20.788Z",
+      "fraudRisk": 0,
+      "priceRisk": 0,
+      "riskLevel": "High",
+      "unifiedScore": 92,
+      "updatedAt": "2026-09-10T09:09:23.813Z"
+    },
+    {
+      "_id": "6aa275e53a6058dda64fdb4a",
+      "tokenId": 54,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 80,
+        "priceRisk": 0,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 28,
+          "priceAnomaly": 0
+        },
+        "weightedScore": 28,
+        "escalation": {
+          "level": "moderate",
+          "indicator": "fraud",
+          "strongestIndicator": 80,
+          "floor": 50,
+          "raisedFrom": 28
+        }
+      },
+      "calculatedAt": "2026-09-10T09:26:40.062Z",
+      "createdAt": "2026-09-10T09:18:29.886Z",
+      "fraudRisk": 80,
+      "priceRisk": 0,
+      "riskLevel": "Medium",
+      "unifiedScore": 50,
+      "updatedAt": "2026-09-10T09:26:40.062Z"
+    },
+    {
+      "_id": "6aa27e513a6058dda64fe1b9",
+      "tokenId": 55,
+      "__v": 0,
+      "authRisk": 0,
+      "breakdown": {
+        "weights": {
+          "authenticity": 0.4,
+          "fraud": 0.35,
+          "priceAnomaly": 0.25
+        },
+        "authRisk": 0,
+        "fraudRisk": 0,
+        "priceRisk": 45,
+        "contribution": {
+          "authenticity": 0,
+          "fraud": 0,
+          "priceAnomaly": 11.3
+        },
+        "weightedScore": 11,
+        "escalation": {
+          "level": "moderate",
+          "indicator": "price",
+          "strongestIndicator": 45,
+          "floor": 40,
+          "raisedFrom": 11
+        }
+      },
+      "calculatedAt": "2026-09-10T09:58:05.296Z",
+      "createdAt": "2026-09-10T09:54:25.978Z",
+      "fraudRisk": 0,
+      "priceRisk": 45,
+      "riskLevel": "Medium",
+      "unifiedScore": 40,
+      "updatedAt": "2026-09-10T09:58:05.296Z"
+    }
+  ]
+}

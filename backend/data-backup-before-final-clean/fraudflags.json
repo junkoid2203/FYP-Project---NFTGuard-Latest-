@@ -1,0 +1,918 @@
+{
+  "collection": "fraudflags",
+  "indexes": [
+    {
+      "name": "tokenId_1",
+      "key": {
+        "tokenId": 1
+      },
+      "unique": false
+    }
+  ],
+  "documents": [
+    {
+      "_id": "6aa1442717ee5ea6676072c9",
+      "tokenId": 1,
+      "flagType": "SELF_TRANSFER",
+      "description": "2 self-transfer(s) where sender and recipient are the same wallet (penalty scales with count)",
+      "penaltyScore": 90,
+      "evidence": {
+        "count": 2,
+        "txHashes": [
+          "0xe1f85a070e50f3e9219b2870b71a6022a16031a984a241d10531097999a1bca2",
+          "0x371063be06377b19d5a15a1fd2fd2ba94edf925e9d658d7176e055c6fb786301"
+        ]
+      },
+      "detectedAt": "2026-09-09T11:33:59.640Z",
+      "createdAt": "2026-09-09T11:33:59.640Z",
+      "updatedAt": "2026-09-09T11:33:59.640Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442717ee5ea6676072da",
+      "tokenId": 2,
+      "flagType": "SELF_TRANSFER",
+      "description": "2 self-transfer(s) where sender and recipient are the same wallet (penalty scales with count)",
+      "penaltyScore": 90,
+      "evidence": {
+        "count": 2,
+        "txHashes": [
+          "0x16525c3cb58a5850884906769b3ce070a71b64a483cb7eb500a3bdfe9a76fd2f",
+          "0x9f3faefecb0c00bfbe11569a9d685a795f1766b37732ea10014f71659f43e93f"
+        ]
+      },
+      "detectedAt": "2026-09-09T11:33:59.686Z",
+      "createdAt": "2026-09-09T11:33:59.687Z",
+      "updatedAt": "2026-09-09T11:33:59.687Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442717ee5ea6676072eb",
+      "tokenId": 3,
+      "flagType": "SELF_TRANSFER",
+      "description": "2 self-transfer(s) where sender and recipient are the same wallet (penalty scales with count)",
+      "penaltyScore": 90,
+      "evidence": {
+        "count": 2,
+        "txHashes": [
+          "0xc0c4827b82bf9140b9f90b79d6fd9ee25330e063ab37d053fec6381ce9927a55",
+          "0xf12f61cc99e9d37d1754b81d2c0b3f0c3256cbd9c3c79bef6d8a967e3c0c4af3"
+        ]
+      },
+      "detectedAt": "2026-09-09T11:33:59.726Z",
+      "createdAt": "2026-09-09T11:33:59.727Z",
+      "updatedAt": "2026-09-09T11:33:59.727Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442717ee5ea6676072f2",
+      "tokenId": 3,
+      "flagType": "PRICE_ANOMALY",
+      "description": "1 sale(s) exceed |Z| > 2.5 (max |Z| = 3.58)",
+      "penaltyScore": 66,
+      "evidence": {
+        "anomalies": [
+          {
+            "tokenId": 3,
+            "priceEth": 9.559095,
+            "timestamp": "2024-02-09T23:02:47.000Z",
+            "zScore": 3.58,
+            "anomaly": true
+          }
+        ]
+      },
+      "detectedAt": "2026-09-09T11:33:59.739Z",
+      "createdAt": "2026-09-09T11:33:59.739Z",
+      "updatedAt": "2026-09-09T11:33:59.739Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442717ee5ea6676072f5",
+      "tokenId": 3,
+      "flagType": "LISTING_PRICE_ANOMALY",
+      "description": "Listed at 9.559095 ETH — |Z| = 3.58 (> 2.5), ~1.8× the collection median of 5.233263 ETH",
+      "penaltyScore": 56,
+      "evidence": {
+        "listedPrice": 9.559095,
+        "zScore": 3.58,
+        "medianPrice": 5.233263,
+        "ratio": 1.827,
+        "direction": "over",
+        "sampleSize": 20
+      },
+      "detectedAt": "2026-09-09T11:33:59.742Z",
+      "createdAt": "2026-09-09T11:33:59.742Z",
+      "updatedAt": "2026-09-09T11:33:59.742Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442717ee5ea667607305",
+      "tokenId": 4,
+      "flagType": "PRICE_ANOMALY",
+      "description": "2 sale(s) exceed |Z| > 2.5 (max |Z| = 3.83)",
+      "penaltyScore": 83,
+      "evidence": {
+        "anomalies": [
+          {
+            "tokenId": 4,
+            "priceEth": 0.6,
+            "timestamp": "2023-08-13T02:15:45.000Z",
+            "zScore": -3.835,
+            "anomaly": true
+          },
+          {
+            "tokenId": 4,
+            "priceEth": 1,
+            "timestamp": "2023-08-29T06:20:19.000Z",
+            "zScore": -3.503,
+            "anomaly": true
+          }
+        ]
+      },
+      "detectedAt": "2026-09-09T11:33:59.772Z",
+      "createdAt": "2026-09-09T11:33:59.773Z",
+      "updatedAt": "2026-09-09T11:33:59.773Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442717ee5ea667607311",
+      "tokenId": 5,
+      "flagType": "SELF_TRANSFER",
+      "description": "1 self-transfer(s) where sender and recipient are the same wallet (penalty scales with count)",
+      "penaltyScore": 80,
+      "evidence": {
+        "count": 1,
+        "txHashes": [
+          "0x3816c57d308866f614394c47bc86b65df0b20b5c4a4586b88bf8e4584f48fc68"
+        ]
+      },
+      "detectedAt": "2026-09-09T11:33:59.794Z",
+      "createdAt": "2026-09-09T11:33:59.795Z",
+      "updatedAt": "2026-09-09T11:33:59.795Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa144279dc190c747445c15",
+      "flagType": "METADATA_TAMPERED",
+      "tokenId": 7,
+      "__v": 0,
+      "createdAt": "2026-09-09T11:33:59.847Z",
+      "description": "Off-chain metadata hash does not match on-chain SHA-256 anchor",
+      "detectedAt": "2026-09-09T11:33:59.847Z",
+      "evidence": {
+        "onChainHash": "0xc77f8cc9c283ca8a62c8c9c3cbdabe21e3723d86911a068cbde682bfc76bb516",
+        "offChainHash": "0x6261adbbaef09cac5170e1aad586bc7a6635c4d0f3af4f4ec16b123587312e09"
+      },
+      "penaltyScore": 100,
+      "updatedAt": "2026-09-09T11:33:59.847Z"
+    },
+    {
+      "_id": "6aa1442717ee5ea667607332",
+      "tokenId": 7,
+      "flagType": "SELF_TRANSFER",
+      "description": "2 self-transfer(s) where sender and recipient are the same wallet (penalty scales with count)",
+      "penaltyScore": 90,
+      "evidence": {
+        "count": 2,
+        "txHashes": [
+          "0x194d346fcf15576b959b2e4242a4231fab5142d608f00ae2f09ea07ffb1972d5",
+          "0xd347553c96a62797052e6a6f947a0518caac66f915bd4fea0ee283ff07fb3555"
+        ]
+      },
+      "detectedAt": "2026-09-09T11:33:59.859Z",
+      "createdAt": "2026-09-09T11:33:59.859Z",
+      "updatedAt": "2026-09-09T11:33:59.859Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442717ee5ea667607343",
+      "tokenId": 8,
+      "flagType": "SELF_TRANSFER",
+      "description": "2 self-transfer(s) where sender and recipient are the same wallet (penalty scales with count)",
+      "penaltyScore": 90,
+      "evidence": {
+        "count": 2,
+        "txHashes": [
+          "0xc57b43867153086c8b175fcdbb36e4caea61aa45523d866ff0c585ec9349ff41",
+          "0x408a968e3a691347781f65a210480d270015088960cb2494835987147fd40adc"
+        ]
+      },
+      "detectedAt": "2026-09-09T11:33:59.888Z",
+      "createdAt": "2026-09-09T11:33:59.889Z",
+      "updatedAt": "2026-09-09T11:33:59.889Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442717ee5ea667607354",
+      "tokenId": 9,
+      "flagType": "SELF_TRANSFER",
+      "description": "1 self-transfer(s) where sender and recipient are the same wallet (penalty scales with count)",
+      "penaltyScore": 80,
+      "evidence": {
+        "count": 1,
+        "txHashes": [
+          "0x6f880e2c51825ccd82785e3cd7f209caa968df44e21dac8e7eaa7430fdead55e"
+        ]
+      },
+      "detectedAt": "2026-09-09T11:33:59.918Z",
+      "createdAt": "2026-09-09T11:33:59.918Z",
+      "updatedAt": "2026-09-09T11:33:59.918Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442717ee5ea667607365",
+      "tokenId": 10,
+      "flagType": "SELF_TRANSFER",
+      "description": "2 self-transfer(s) where sender and recipient are the same wallet (penalty scales with count)",
+      "penaltyScore": 90,
+      "evidence": {
+        "count": 2,
+        "txHashes": [
+          "0x3a683b6af88a070154999fe98dbc4f96b4108c91c2802d30faef59c482a807d5",
+          "0xe6046c4d89b6d7cb6f7d2977802e197fafe8cd4ed6f7ab3c03d2b30f268874da"
+        ]
+      },
+      "detectedAt": "2026-09-09T11:33:59.953Z",
+      "createdAt": "2026-09-09T11:33:59.953Z",
+      "updatedAt": "2026-09-09T11:33:59.953Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442717ee5ea667607376",
+      "tokenId": 11,
+      "flagType": "SELF_TRANSFER",
+      "description": "2 self-transfer(s) where sender and recipient are the same wallet (penalty scales with count)",
+      "penaltyScore": 90,
+      "evidence": {
+        "count": 2,
+        "txHashes": [
+          "0x5b22c90530d5efed97d7603246eca8e4bcad621cd5c88b4892043d6ec0bfad8e",
+          "0x275df8e739ce8c3ae602d1d47e9f093a2e93ee8fc45398e7c2afcd6b18f7c9f5"
+        ]
+      },
+      "detectedAt": "2026-09-09T11:33:59.993Z",
+      "createdAt": "2026-09-09T11:33:59.993Z",
+      "updatedAt": "2026-09-09T11:33:59.993Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442817ee5ea667607387",
+      "tokenId": 12,
+      "flagType": "SELF_TRANSFER",
+      "description": "2 self-transfer(s) where sender and recipient are the same wallet (penalty scales with count)",
+      "penaltyScore": 90,
+      "evidence": {
+        "count": 2,
+        "txHashes": [
+          "0xc0010815e149700d51a978dce58d20ec9ff1195184ea40d5e26bec3b7d21bcfb",
+          "0x91684cd82ff7555f0e6e62d9482dfaa798b6a8bdb029fd026606fe78562856ce"
+        ]
+      },
+      "detectedAt": "2026-09-09T11:34:00.036Z",
+      "createdAt": "2026-09-09T11:34:00.037Z",
+      "updatedAt": "2026-09-09T11:34:00.037Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442817ee5ea667607398",
+      "tokenId": 13,
+      "flagType": "SELF_TRANSFER",
+      "description": "1 self-transfer(s) where sender and recipient are the same wallet (penalty scales with count)",
+      "penaltyScore": 80,
+      "evidence": {
+        "count": 1,
+        "txHashes": [
+          "0x91a8b35265d494b5f3689923a97844b3fdbc508b613bd6a0760e28ab192dedd2"
+        ]
+      },
+      "detectedAt": "2026-09-09T11:34:00.066Z",
+      "createdAt": "2026-09-09T11:34:00.067Z",
+      "updatedAt": "2026-09-09T11:34:00.067Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442817ee5ea6676073a9",
+      "tokenId": 14,
+      "flagType": "SELF_TRANSFER",
+      "description": "1 self-transfer(s) where sender and recipient are the same wallet (penalty scales with count)",
+      "penaltyScore": 80,
+      "evidence": {
+        "count": 1,
+        "txHashes": [
+          "0xc29a975fc52fe40f284b912c6a233c64446c4925d6efe9cd5bfbdef5b83a3d0a"
+        ]
+      },
+      "detectedAt": "2026-09-09T11:34:00.096Z",
+      "createdAt": "2026-09-09T11:34:00.096Z",
+      "updatedAt": "2026-09-09T11:34:00.096Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442817ee5ea667607424",
+      "tokenId": 22,
+      "flagType": "BUYER_SELLER_LOOP",
+      "description": "Wallet pair(s) traded this NFT 3x (0xbb5f1daedb4b896b3b7d6485e03a4b9ef38cef20<->0xbb5f1daedb4b896b3b7d6485e03a4b9ef38cef21) — wash trading pattern",
+      "penaltyScore": 45,
+      "evidence": {
+        "loops": [
+          {
+            "pair": "0xbb5f1daedb4b896b3b7d6485e03a4b9ef38cef20<->0xbb5f1daedb4b896b3b7d6485e03a4b9ef38cef21",
+            "count": 3
+          }
+        ],
+        "threshold": 3
+      },
+      "detectedAt": "2026-09-09T11:34:00.331Z",
+      "createdAt": "2026-09-09T11:34:00.331Z",
+      "updatedAt": "2026-09-09T11:34:00.331Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442817ee5ea667607426",
+      "tokenId": 22,
+      "flagType": "ABNORMAL_FREQUENCY",
+      "description": "4 transactions within 60 min vs collection baseline 1.0 per token",
+      "penaltyScore": 30,
+      "evidence": {
+        "maxInWindow": 4,
+        "windowMinutes": 60,
+        "baseline": 1.04,
+        "multiplier": 3
+      },
+      "detectedAt": "2026-09-09T11:34:00.333Z",
+      "createdAt": "2026-09-09T11:34:00.333Z",
+      "updatedAt": "2026-09-09T11:34:00.333Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442817ee5ea667607428",
+      "tokenId": 22,
+      "flagType": "RAPID_PRICE_ESCALATION",
+      "description": "1 consecutive sale(s) jumped >= 50% within 60 min (max +1012.3%)",
+      "penaltyScore": 30,
+      "evidence": {
+        "spikes": [
+          {
+            "from": 8.99,
+            "to": 100,
+            "increasePct": 1012.3,
+            "withinMinutes": 2.9
+          }
+        ]
+      },
+      "detectedAt": "2026-09-09T11:34:00.335Z",
+      "createdAt": "2026-09-09T11:34:00.335Z",
+      "updatedAt": "2026-09-09T11:34:00.335Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442817ee5ea66760742f",
+      "tokenId": 22,
+      "flagType": "PRICE_ANOMALY",
+      "description": "1 sale(s) exceed |Z| > 2.5 (max |Z| = 7.23)",
+      "penaltyScore": 100,
+      "evidence": {
+        "anomalies": [
+          {
+            "tokenId": 22,
+            "priceEth": 100,
+            "timestamp": "2026-08-24T17:44:01.785Z",
+            "zScore": 7.234,
+            "anomaly": true
+          }
+        ]
+      },
+      "detectedAt": "2026-09-09T11:34:00.349Z",
+      "createdAt": "2026-09-09T11:34:00.349Z",
+      "updatedAt": "2026-09-09T11:34:00.349Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442817ee5ea66760749a",
+      "tokenId": 29,
+      "flagType": "PRICE_ANOMALY",
+      "description": "1 sale(s) exceed |Z| > 2.5 (max |Z| = 6.06)",
+      "penaltyScore": 91,
+      "evidence": {
+        "anomalies": [
+          {
+            "tokenId": 29,
+            "priceEth": 87,
+            "timestamp": "2023-08-25T05:31:13.000Z",
+            "zScore": 6.059,
+            "anomaly": true
+          }
+        ]
+      },
+      "detectedAt": "2026-09-09T11:34:00.537Z",
+      "createdAt": "2026-09-09T11:34:00.537Z",
+      "updatedAt": "2026-09-09T11:34:00.537Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa144289dc190c747445dac",
+      "flagType": "METADATA_TAMPERED",
+      "tokenId": 33,
+      "__v": 0,
+      "createdAt": "2026-09-09T11:34:00.627Z",
+      "description": "Off-chain metadata hash does not match on-chain SHA-256 anchor",
+      "detectedAt": "2026-09-09T11:34:00.626Z",
+      "evidence": {
+        "onChainHash": "0x4cbc4a9153a5bf5fdcf893633b0f9cd626e6b0c3a401d62edb955cc8b169a17c",
+        "offChainHash": "0x70f47fb517dfed1bf8463e5c12c98c2adf38da4064e5bdfeaa9b77ab65685561"
+      },
+      "penaltyScore": 100,
+      "updatedAt": "2026-09-09T11:34:00.627Z"
+    },
+    {
+      "_id": "6aa1442817ee5ea6676074d9",
+      "tokenId": 33,
+      "flagType": "PRICE_ANOMALY",
+      "description": "2 sale(s) exceed |Z| > 2.5 (max |Z| = 7.36)",
+      "penaltyScore": 100,
+      "evidence": {
+        "anomalies": [
+          {
+            "tokenId": 33,
+            "priceEth": 1.26,
+            "timestamp": "2026-07-27T05:18:32.197Z",
+            "zScore": 4.519,
+            "anomaly": true
+          },
+          {
+            "tokenId": 33,
+            "priceEth": 1.8,
+            "timestamp": "2026-07-30T05:18:32.197Z",
+            "zScore": 7.364,
+            "anomaly": true
+          }
+        ]
+      },
+      "detectedAt": "2026-09-09T11:34:00.643Z",
+      "createdAt": "2026-09-09T11:34:00.643Z",
+      "updatedAt": "2026-09-09T11:34:00.643Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442817ee5ea6676074dc",
+      "tokenId": 33,
+      "flagType": "LISTING_PRICE_ANOMALY",
+      "description": "Listed at 1.8 ETH — |Z| = 7.36 (> 2.5), ~4.5× the collection median of 0.4025 ETH",
+      "penaltyScore": 94,
+      "evidence": {
+        "listedPrice": 1.8,
+        "zScore": 7.364,
+        "medianPrice": 0.4025,
+        "ratio": 4.472,
+        "direction": "over",
+        "sampleSize": 8
+      },
+      "detectedAt": "2026-09-09T11:34:00.646Z",
+      "createdAt": "2026-09-09T11:34:00.647Z",
+      "updatedAt": "2026-09-09T11:34:00.647Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa144289dc190c747445e08",
+      "tokenId": 37,
+      "flagType": "DUPLICATE_ASSET",
+      "__v": 0,
+      "createdAt": "2026-09-09T11:34:00.761Z",
+      "description": "Perceptual hash matches 1 existing asset(s)",
+      "detectedAt": "2026-09-09T11:34:00.761Z",
+      "evidence": {
+        "duplicates": [
+          {
+            "tokenId": 38,
+            "name": "Meta Beasts #89",
+            "distance": 0
+          }
+        ]
+      },
+      "penaltyScore": 100,
+      "updatedAt": "2026-09-09T11:34:00.761Z"
+    },
+    {
+      "_id": "6aa144289dc190c747445e0b",
+      "flagType": "DUPLICATE_ASSET",
+      "tokenId": 38,
+      "__v": 0,
+      "createdAt": "2026-09-09T11:34:00.764Z",
+      "description": "Perceptual hash matches 1 existing asset(s)",
+      "detectedAt": "2026-09-09T11:34:00.764Z",
+      "evidence": {
+        "duplicates": [
+          {
+            "tokenId": 37,
+            "name": "Meta Beasts #88",
+            "distance": 0
+          }
+        ]
+      },
+      "penaltyScore": 100,
+      "updatedAt": "2026-09-09T11:34:00.764Z"
+    },
+    {
+      "_id": "6aa144289dc190c747445e1b",
+      "tokenId": 39,
+      "flagType": "METADATA_TAMPERED",
+      "__v": 0,
+      "createdAt": "2026-09-09T11:34:00.787Z",
+      "description": "Off-chain metadata hash does not match on-chain SHA-256 anchor",
+      "detectedAt": "2026-09-09T11:34:00.787Z",
+      "evidence": {
+        "onChainHash": "0x329c2fd3e588fdfe3c59b7443d6093ac9480c302ce615ac68bd34d9450c40e28",
+        "offChainHash": "0x2edef06924b54e13378195744c079ba53ee6c06be7b560e47a9dfa68a9c3333d"
+      },
+      "penaltyScore": 100,
+      "updatedAt": "2026-09-09T11:34:00.787Z"
+    },
+    {
+      "_id": "6aa1442817ee5ea66760753f",
+      "tokenId": 39,
+      "flagType": "BUYER_SELLER_LOOP",
+      "description": "Wallet pair(s) traded this NFT 4x (0xa8c60b4c59c48a6437603a5fe9e497a352b9ef11<->0xc8c50e72762ab6c52ac3d8d043369ba41e7f7aae) — wash trading pattern",
+      "penaltyScore": 45,
+      "evidence": {
+        "loops": [
+          {
+            "pair": "0xa8c60b4c59c48a6437603a5fe9e497a352b9ef11<->0xc8c50e72762ab6c52ac3d8d043369ba41e7f7aae",
+            "count": 4
+          }
+        ],
+        "threshold": 3
+      },
+      "detectedAt": "2026-09-09T11:34:00.796Z",
+      "createdAt": "2026-09-09T11:34:00.796Z",
+      "updatedAt": "2026-09-09T11:34:00.796Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442817ee5ea667607546",
+      "tokenId": 39,
+      "flagType": "PRICE_ANOMALY",
+      "description": "2 sale(s) exceed |Z| > 2.5 (max |Z| = 5.28)",
+      "penaltyScore": 98,
+      "evidence": {
+        "anomalies": [
+          {
+            "tokenId": 39,
+            "priceEth": 2.363,
+            "timestamp": "2026-07-29T05:18:32.199Z",
+            "zScore": 2.955,
+            "anomaly": true
+          },
+          {
+            "tokenId": 39,
+            "priceEth": 3.544,
+            "timestamp": "2026-07-31T17:18:32.199Z",
+            "zScore": 5.281,
+            "anomaly": true
+          }
+        ]
+      },
+      "detectedAt": "2026-09-09T11:34:00.805Z",
+      "createdAt": "2026-09-09T11:34:00.805Z",
+      "updatedAt": "2026-09-09T11:34:00.805Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442817ee5ea667607552",
+      "tokenId": 40,
+      "flagType": "BUYER_SELLER_LOOP",
+      "description": "Wallet pair(s) traded this NFT 4x (0x8ef50679eec25925eb7f78f6f88294f70cdf46e3<->0xea12be5d058eae8f07ba54d918a691bf63bfd015) — wash trading pattern",
+      "penaltyScore": 45,
+      "evidence": {
+        "loops": [
+          {
+            "pair": "0x8ef50679eec25925eb7f78f6f88294f70cdf46e3<->0xea12be5d058eae8f07ba54d918a691bf63bfd015",
+            "count": 4
+          }
+        ],
+        "threshold": 3
+      },
+      "detectedAt": "2026-09-09T11:34:00.822Z",
+      "createdAt": "2026-09-09T11:34:00.823Z",
+      "updatedAt": "2026-09-09T11:34:00.823Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442817ee5ea667607568",
+      "tokenId": 41,
+      "flagType": "PRICE_ANOMALY",
+      "description": "1 sale(s) exceed |Z| > 2.5 (max |Z| = 3.12)",
+      "penaltyScore": 61,
+      "evidence": {
+        "anomalies": [
+          {
+            "tokenId": 41,
+            "priceEth": 3.2,
+            "timestamp": "2026-07-30T05:18:32.199Z",
+            "zScore": 3.12,
+            "anomaly": true
+          }
+        ]
+      },
+      "detectedAt": "2026-09-09T11:34:00.854Z",
+      "createdAt": "2026-09-09T11:34:00.854Z",
+      "updatedAt": "2026-09-09T11:34:00.854Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442817ee5ea66760756b",
+      "tokenId": 41,
+      "flagType": "LISTING_PRICE_ANOMALY",
+      "description": "Listed at 3.2 ETH — |Z| = 3.12 (> 2.5), ~3.3× the collection median of 0.98 ETH",
+      "penaltyScore": 51,
+      "evidence": {
+        "listedPrice": 3.2,
+        "zScore": 3.12,
+        "medianPrice": 0.98,
+        "ratio": 3.265,
+        "direction": "over",
+        "sampleSize": 11
+      },
+      "detectedAt": "2026-09-09T11:34:00.857Z",
+      "createdAt": "2026-09-09T11:34:00.857Z",
+      "updatedAt": "2026-09-09T11:34:00.857Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa144289dc190c747445e7c",
+      "flagType": "METADATA_TAMPERED",
+      "tokenId": 45,
+      "__v": 0,
+      "createdAt": "2026-09-09T11:34:00.929Z",
+      "description": "Off-chain metadata hash does not match on-chain SHA-256 anchor",
+      "detectedAt": "2026-09-09T11:34:00.929Z",
+      "evidence": {
+        "onChainHash": "0xb1c703111f841ec31cbdc52c48f0c0234cb56bfe6054fd9c5e3fd0c8316a26d3",
+        "offChainHash": "0x73fc78458a7f02c76afbf70455862b197867ddc0e10cb306abc852fed06cd5d0"
+      },
+      "penaltyScore": 100,
+      "updatedAt": "2026-09-09T11:34:00.929Z"
+    },
+    {
+      "_id": "6aa1442817ee5ea6676075a4",
+      "tokenId": 45,
+      "flagType": "BUYER_SELLER_LOOP",
+      "description": "Wallet pair(s) traded this NFT 4x (0x5eb163e2b28f3d036f85d758bbfa9b53ed10003c<->0xbc3119acaf2ade3e7da6e7fd09353ebe6292ebfe) — wash trading pattern",
+      "penaltyScore": 45,
+      "evidence": {
+        "loops": [
+          {
+            "pair": "0x5eb163e2b28f3d036f85d758bbfa9b53ed10003c<->0xbc3119acaf2ade3e7da6e7fd09353ebe6292ebfe",
+            "count": 4
+          }
+        ],
+        "threshold": 3
+      },
+      "detectedAt": "2026-09-09T11:34:00.937Z",
+      "createdAt": "2026-09-09T11:34:00.937Z",
+      "updatedAt": "2026-09-09T11:34:00.937Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442817ee5ea6676075ba",
+      "tokenId": 46,
+      "flagType": "PRICE_ANOMALY",
+      "description": "1 sale(s) exceed |Z| > 2.5 (max |Z| = 3.05)",
+      "penaltyScore": 61,
+      "evidence": {
+        "anomalies": [
+          {
+            "tokenId": 46,
+            "priceEth": 3.137,
+            "timestamp": "2026-08-01T17:18:32.200Z",
+            "zScore": 3.053,
+            "anomaly": true
+          }
+        ]
+      },
+      "detectedAt": "2026-09-09T11:34:00.972Z",
+      "createdAt": "2026-09-09T11:34:00.972Z",
+      "updatedAt": "2026-09-09T11:34:00.972Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442817ee5ea6676075cb",
+      "tokenId": 47,
+      "flagType": "PRICE_ANOMALY",
+      "description": "1 sale(s) exceed |Z| > 2.5 (max |Z| = 3.05)",
+      "penaltyScore": 61,
+      "evidence": {
+        "anomalies": [
+          {
+            "tokenId": 47,
+            "priceEth": 3.137,
+            "timestamp": "2026-08-01T17:18:32.201Z",
+            "zScore": 3.053,
+            "anomaly": true
+          }
+        ]
+      },
+      "detectedAt": "2026-09-09T11:34:00.996Z",
+      "createdAt": "2026-09-09T11:34:00.996Z",
+      "updatedAt": "2026-09-09T11:34:00.996Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442917ee5ea6676075d7",
+      "tokenId": 48,
+      "flagType": "SELF_TRANSFER",
+      "description": "1 self-transfer(s) where sender and recipient are the same wallet (penalty scales with count)",
+      "penaltyScore": 80,
+      "evidence": {
+        "count": 1,
+        "txHashes": [
+          "0xsim56f09855ced510ca58a91a9e40fb925faa1591562e98fb734d7379cde608"
+        ]
+      },
+      "detectedAt": "2026-09-09T11:34:01.014Z",
+      "createdAt": "2026-09-09T11:34:01.014Z",
+      "updatedAt": "2026-09-09T11:34:01.014Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa1442917ee5ea6676075de",
+      "tokenId": 48,
+      "flagType": "PRICE_ANOMALY",
+      "description": "1 sale(s) exceed |Z| > 2.5 (max |Z| = 3.05)",
+      "penaltyScore": 61,
+      "evidence": {
+        "anomalies": [
+          {
+            "tokenId": 48,
+            "priceEth": 3.137,
+            "timestamp": "2026-08-01T17:18:32.201Z",
+            "zScore": 3.053,
+            "anomaly": true
+          }
+        ]
+      },
+      "detectedAt": "2026-09-09T11:34:01.024Z",
+      "createdAt": "2026-09-09T11:34:01.024Z",
+      "updatedAt": "2026-09-09T11:34:01.024Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa2609d3a6058dda64fcb41",
+      "tokenId": 50,
+      "flagType": "DUPLICATE_ASSET",
+      "__v": 0,
+      "createdAt": "2026-09-10T07:47:41.652Z",
+      "description": "Perceptual hash matches 1 existing asset(s)",
+      "detectedAt": "2026-09-10T07:47:41.651Z",
+      "evidence": {
+        "duplicates": [
+          {
+            "tokenId": 49,
+            "name": "test duplicate",
+            "distance": 0
+          }
+        ]
+      },
+      "penaltyScore": 100,
+      "updatedAt": "2026-09-10T07:47:41.652Z"
+    },
+    {
+      "_id": "6aa273c33a6058dda64fd9b2",
+      "tokenId": 53,
+      "flagType": "NON_COMPLIANT_CONTRACT",
+      "__v": 0,
+      "createdAt": "2026-09-10T09:09:23.738Z",
+      "description": "Contract failed ERC-721/ERC-1155 interface check",
+      "detectedAt": "2026-09-10T09:09:23.737Z",
+      "evidence": {
+        "checked": true,
+        "found": true,
+        "bytecode": true,
+        "chain": "ethereum",
+        "chainLabel": "Ethereum",
+        "explorer": "https://etherscan.io/address/0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB",
+        "openseaBase": "ethereum",
+        "erc721": false,
+        "erc1155": false,
+        "compliant": false,
+        "source": "Ethereum · ERC-165 supportsInterface()",
+        "reason": "Contract does not declare ERC-721 (0x80ac58cd) or ERC-1155 (0xd9b67a26)"
+      },
+      "penaltyScore": 100,
+      "updatedAt": "2026-09-10T09:09:23.738Z"
+    },
+    {
+      "_id": "6aa277d0c14d023e9092b0cd",
+      "tokenId": 54,
+      "flagType": "SELF_TRANSFER",
+      "description": "1 self-transfer(s) where sender and recipient are the same wallet (penalty scales with count)",
+      "penaltyScore": 80,
+      "evidence": {
+        "count": 1,
+        "txHashes": [
+          "0x85367d6f4aeac8eca702940caf085449595668e732a31eca11a9b353531c7c8a"
+        ]
+      },
+      "detectedAt": "2026-09-10T09:26:40.047Z",
+      "createdAt": "2026-09-10T09:26:40.048Z",
+      "updatedAt": "2026-09-10T09:26:40.048Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa27f2dc14d023e9092b340",
+      "tokenId": 55,
+      "flagType": "LISTING_PRICE_ANOMALY",
+      "description": "Listed at 50001 ETH — 50001 ETH exceeds the 50000 ETH sanity ceiling — higher than any NFT has ever sold for, and this collection has only 0 sale(s) to judge against",
+      "penaltyScore": 45,
+      "evidence": {
+        "listedPrice": 50001,
+        "zScore": 0,
+        "medianPrice": 0,
+        "ratio": 0,
+        "direction": "over",
+        "sampleSize": 0
+      },
+      "detectedAt": "2026-09-10T09:58:05.291Z",
+      "createdAt": "2026-09-10T09:58:05.292Z",
+      "updatedAt": "2026-09-10T09:58:05.292Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa28805c14d023e9092b874",
+      "tokenId": 28,
+      "flagType": "PRICE_ANOMALY",
+      "description": "1 sale(s) exceed |Z| > 2.5 (max |Z| = 3.42)",
+      "penaltyScore": 64,
+      "evidence": {
+        "anomalies": [
+          {
+            "tokenId": 28,
+            "priceEth": 60,
+            "timestamp": "2026-09-10T10:34:32.402Z",
+            "zScore": 3.415,
+            "anomaly": true
+          }
+        ]
+      },
+      "detectedAt": "2026-09-10T10:35:49.230Z",
+      "createdAt": "2026-09-10T10:35:49.230Z",
+      "updatedAt": "2026-09-10T10:35:49.230Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa2898ac14d023e9092bad8",
+      "tokenId": 27,
+      "flagType": "BUYER_SELLER_LOOP",
+      "description": "Wallet pair(s) traded this NFT 3x (0xbb5f1daedb4b896b3b7d6485e03a4b9ef38cef20<->0xbb5f1daedb4b896b3b7d6485e03a4b9ef38cef21) — wash trading pattern",
+      "penaltyScore": 45,
+      "evidence": {
+        "loops": [
+          {
+            "pair": "0xbb5f1daedb4b896b3b7d6485e03a4b9ef38cef20<->0xbb5f1daedb4b896b3b7d6485e03a4b9ef38cef21",
+            "count": 3
+          }
+        ],
+        "threshold": 3
+      },
+      "detectedAt": "2026-09-10T10:42:18.343Z",
+      "createdAt": "2026-09-10T10:42:18.344Z",
+      "updatedAt": "2026-09-10T10:42:18.344Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa2898ac14d023e9092bada",
+      "tokenId": 27,
+      "flagType": "ABNORMAL_FREQUENCY",
+      "description": "4 transactions within 60 min vs collection baseline 1.3 per token",
+      "penaltyScore": 30,
+      "evidence": {
+        "maxInWindow": 4,
+        "windowMinutes": 60,
+        "baseline": 1.32,
+        "multiplier": 3
+      },
+      "detectedAt": "2026-09-10T10:42:18.345Z",
+      "createdAt": "2026-09-10T10:42:18.346Z",
+      "updatedAt": "2026-09-10T10:42:18.346Z",
+      "__v": 0
+    },
+    {
+      "_id": "6aa28b7dc14d023e9092bbc7",
+      "tokenId": 17,
+      "flagType": "LISTING_PRICE_ANOMALY",
+      "description": "Listed at 100 ETH — |Z| = 7.21 (> 2.5), ~5.0× the collection median of 19.99 ETH",
+      "penaltyScore": 92,
+      "evidence": {
+        "listedPrice": 100,
+        "zScore": 7.21,
+        "medianPrice": 19.99,
+        "ratio": 5.003,
+        "direction": "over",
+        "sampleSize": 74
+      },
+      "detectedAt": "2026-09-10T10:50:37.679Z",
+      "createdAt": "2026-09-10T10:50:37.679Z",
+      "updatedAt": "2026-09-10T10:50:37.679Z",
+      "__v": 0
+    }
+  ]
+}

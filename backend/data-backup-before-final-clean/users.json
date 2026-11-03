@@ -1,0 +1,31 @@
+{
+  "collection": "users",
+  "indexes": [
+    {
+      "name": "username_1",
+      "key": {
+        "username": 1
+      },
+      "unique": true
+    },
+    {
+      "name": "email_1",
+      "key": {
+        "email": 1
+      },
+      "unique": true
+    }
+  ],
+  "documents": [
+    {
+      "_id": "6a32e5ea0e59af4f6c69c41b",
+      "username": "koid",
+      "email": "koid123@gmail.com",
+      "password": "$2a$10$AFR/b8fKz4p/ouQm6Eh9qunaKe9P//2IkApDaJfNzDQFGvnS3N5/.",
+      "walletAddress": "0x71c3703dd09c14522880c4e1507d079e02fa0c96",
+      "simulatedBalance": 10,
+      "createdAt": "2026-06-17T18:22:34.565Z",
+      "__v": 0
+    }
+  ]
+}

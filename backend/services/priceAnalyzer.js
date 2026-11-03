@@ -131,12 +131,6 @@ async function priceRiskForToken(tokenId) {
   const nft = await Nft.findOne({ tokenId }).select("listed priceEth").lean();
   let listing = null;
   const enoughSales = stats.sampleSize >= (minSamplesForListing ?? 3);
-  // Without a real sample there is no "normal" to compare against, and a ratio is useless
-  // here: a brand-new collection whose only trades were 0.002 ETH made 0.02 look extreme,
-  // so an ordinary asking price on a freshly minted NFT was flagged. Fall back instead to
-  // an ABSOLUTE ceiling set above any price an NFT has ever fetched (the record is
-  // Beeple's ~38,000 ETH), so a small collection is only flagged for a figure that could
-  // not be a genuine ask.
   const absurd = thresholds.priceAnomaly.absurdPriceEth ?? 50000;
   const smallSampleExtreme = !enoughSales && nft && nft.priceEth >= absurd;
   if (nft && nft.listed && nft.priceEth > 0 && (enoughSales || smallSampleExtreme)) {

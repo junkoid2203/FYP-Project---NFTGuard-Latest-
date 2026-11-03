@@ -1,0 +1,54 @@
+{
+  "collection": "offers",
+  "indexes": [
+    {
+      "name": "tokenId_1",
+      "key": {
+        "tokenId": 1
+      },
+      "unique": false
+    }
+  ],
+  "documents": [
+    {
+      "_id": "6a7053c35dde03396981d909",
+      "tokenId": 35,
+      "fromAddress": "0x2b9c1e77a0d4f8631b5e2c9a7f04d61385ab24cd",
+      "priceEth": 0.9,
+      "status": "Accepted",
+      "createdAt": "2026-08-03T08:39:31.870Z",
+      "updatedAt": "2026-08-03T08:44:05.032Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a8c81427147451b9feee3fa",
+      "tokenId": 27,
+      "fromAddress": "0xbb5f1daedb4b896b3b7d6485e03a4b9ef38cef20",
+      "priceEth": 12.29,
+      "status": "Active",
+      "createdAt": "2026-08-24T17:37:06.308Z",
+      "updatedAt": "2026-08-24T17:37:06.308Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a8c816d7147451b9feee428",
+      "tokenId": 48,
+      "fromAddress": "0xbb5f1daedb4b896b3b7d6485e03a4b9ef38cef20",
+      "priceEth": 0.99,
+      "status": "Cancelled",
+      "createdAt": "2026-08-24T17:37:49.161Z",
+      "updatedAt": "2026-08-24T17:37:54.685Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a8c82117147451b9feee540",
+      "tokenId": 22,
+      "fromAddress": "0xbb5f1daedb4b896b3b7d6485e03a4b9ef38cef21",
+      "priceEth": 8.99,
+      "status": "Accepted",
+      "createdAt": "2026-08-24T17:40:33.012Z",
+      "updatedAt": "2026-08-24T17:41:08.443Z",
+      "__v": 0
+    }
+  ]
+}

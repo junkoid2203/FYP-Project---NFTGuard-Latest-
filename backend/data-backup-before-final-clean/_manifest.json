@@ -1,0 +1,38 @@
+{
+  "exportedAt": "2026-09-10T10:52:48.064Z",
+  "source": "127.0.0.1:27017",
+  "collections": {
+    "blacklists": {
+      "documents": 0,
+      "indexes": 1
+    },
+    "fraudflags": {
+      "documents": 46,
+      "indexes": 1
+    },
+    "nfts": {
+      "documents": 55,
+      "indexes": 2
+    },
+    "offers": {
+      "documents": 4,
+      "indexes": 1
+    },
+    "pricestats": {
+      "documents": 17,
+      "indexes": 1
+    },
+    "riskscores": {
+      "documents": 55,
+      "indexes": 1
+    },
+    "transactions": {
+      "documents": 248,
+      "indexes": 3
+    },
+    "users": {
+      "documents": 1,
+      "indexes": 2
+    }
+  }
+}
